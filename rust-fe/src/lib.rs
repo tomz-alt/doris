@@ -11,7 +11,7 @@ pub mod parser;
 pub mod planner;
 pub mod be;
 pub mod observability_tests;
-// pub mod regression; // Temporarily disabled
+pub mod regression;
 
 // Re-export commonly used types
 pub use error::{DorisError, Result};
