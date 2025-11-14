@@ -10,6 +10,7 @@ pub mod metadata;
 pub mod parser;
 pub mod planner;
 pub mod be;
+pub mod observability_tests;
 
 // Re-export commonly used types
 pub use error::{DorisError, Result};

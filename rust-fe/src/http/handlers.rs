@@ -136,7 +136,7 @@ pub async fn status_handler(State(state): State<Arc<AppState>>) -> impl IntoResp
     )
 }
 
-fn parse_csv_to_insert(db: &str, table: &str, data: &Bytes, separator: &str) -> Result<String, String> {
+pub(crate) fn parse_csv_to_insert(db: &str, table: &str, data: &Bytes, separator: &str) -> Result<String, String> {
     let content = String::from_utf8_lossy(data);
     let lines: Vec<&str> = content.lines().collect();
 
