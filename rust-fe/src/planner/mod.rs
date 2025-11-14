@@ -11,6 +11,7 @@ pub mod mysql_function_tests;
 pub mod ddl_tests;
 pub mod dml_tests;
 pub mod admin_tests;
+pub mod doris_feature_tests;
 
 pub use datafusion_planner::DataFusionPlanner;
 pub use plan_fragment::*;

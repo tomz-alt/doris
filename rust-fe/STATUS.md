@@ -542,8 +542,9 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 | DDL Statements | 45 | ✅ All passing | CREATE, ALTER, DROP, TRUNCATE operations |
 | DML Statements | 42 | ✅ All passing | INSERT, UPDATE, DELETE operations |
 | Admin Commands | 36 | ✅ All passing | SHOW, DESCRIBE, EXPLAIN, metadata queries |
+| **Doris Features** | **47** | **✅ All passing** | **MTMV, partitioning, bucketing, data models, rollup, colocation** |
 | Internal Components | 9 | ✅ All passing | DataFusion, converters, executors |
-| **Total** | **482** | **✅ 100% passing** | **COMPLETE REGRESSION + PROTOCOL COVERAGE** |
+| **Total** | **529** | **✅ 100% passing** | **COMPLETE REGRESSION + PROTOCOL + DORIS FEATURES** |
 
 ### Files Added/Modified
 
@@ -554,9 +555,10 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 - `src/planner/tpcds_tests.rs` - 700+ lines, 100 tests
 - `src/planner/sql_logic_tests.rs` - 700+ lines, 58 tests
 - `src/planner/mysql_function_tests.rs` - 400+ lines, 39 tests
-- `src/planner/ddl_tests.rs` - 650+ lines, 45 tests (**NEW**)
-- `src/planner/dml_tests.rs` - 600+ lines, 42 tests (**NEW**)
-- `src/planner/admin_tests.rs` - 550+ lines, 36 tests (**NEW**)
+- `src/planner/ddl_tests.rs` - 650+ lines, 45 tests
+- `src/planner/dml_tests.rs` - 600+ lines, 42 tests
+- `src/planner/admin_tests.rs` - 550+ lines, 36 tests
+- `src/planner/doris_feature_tests.rs` - 690 lines, 47 tests (**NEW**)
 - `src/http/stream_load_tests.rs` - 500+ lines, 24 tests
 - `src/observability_tests.rs` - 600+ lines, 19 tests
 - `examples/mock_be_server.rs` - 170 lines, gRPC server
@@ -566,8 +568,8 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 
 **Modified Files**:
 - `src/mysql/mod.rs` - Added protocol_tests module
-- `src/mysql/protocol_tests.rs` - Added password authentication and binary serialization tests (**+460 lines, +15 tests**)
-- `src/planner/mod.rs` - Added all test modules (parser, tpch, tpcds, sql_logic, mysql_function, ddl, dml, admin)
+- `src/mysql/protocol_tests.rs` - Added password authentication and binary serialization tests (+460 lines, +15 tests)
+- `src/planner/mod.rs` - Added all test modules (parser, tpch, tpcds, sql_logic, mysql_function, ddl, dml, admin, **doris_feature_tests**)
 - `src/http/mod.rs` - Added stream_load_tests module
 - `src/http/handlers.rs` - Made parse_csv_to_insert public for testing
 - `src/lib.rs` - Added observability_tests module
@@ -671,6 +673,7 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 - ✅ DDL Statement Tests: 45/45 passing (CREATE, ALTER, DROP, TRUNCATE)
 - ✅ DML Statement Tests: 42/42 passing (INSERT, UPDATE, DELETE)
 - ✅ Admin Command Tests: 36/36 passing (SHOW, DESCRIBE, EXPLAIN)
+- ✅ **Doris Feature Tests: 47/47 passing (MTMV, partitioning, bucketing, data models, rollup, colocation) - NEW!**
 - ✅ Internal Component Tests: 9/9 passing (DataFusion, converters, executors)
 - ✅ Test Infrastructure Research: Complete (472-line document)
-- 🎯 **Total: 482 tests (138 NEW!), 100% passing, COMPLETE REGRESSION + PROTOCOL COVERAGE!**
+- 🎯 **Total: 529 tests (185 NEW!), 100% passing, COMPLETE REGRESSION + PROTOCOL + DORIS FEATURES!**
