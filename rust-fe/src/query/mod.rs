@@ -2,7 +2,7 @@ mod executor;
 mod queue;
 
 pub use executor::QueryExecutor;
-pub use queue::QueryQueue;
+pub use queue::{QueryQueue, QueuedQuery};
 
 use crate::mysql::packet::{ColumnDefinition, ResultRow};
 

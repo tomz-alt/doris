@@ -4,7 +4,8 @@ use tracing::{debug, info, error};
 
 use crate::error::{DorisError, Result};
 use crate::be::BackendClientPool;
-use crate::mysql::packet::{ColumnDefinition, ColumnType, ResultRow};
+use crate::mysql::packet::{ColumnDefinition, ResultRow};
+use crate::mysql::ColumnType;
 use crate::planner::DataFusionPlanner;
 use datafusion::arrow::record_batch::RecordBatch;
 use datafusion::arrow::datatypes::DataType as ArrowDataType;

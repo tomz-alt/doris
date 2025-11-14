@@ -6,7 +6,7 @@ use datafusion::arrow::record_batch::RecordBatch;
 use std::sync::Arc;
 use tracing::{info, debug};
 
-use crate::metadata::catalog;
+use crate::metadata::catalog::catalog;
 use crate::metadata::schema::Table;
 use crate::error::{DorisError, Result};
 
@@ -31,7 +31,7 @@ impl DataFusionPlanner {
     }
 
     async fn register_catalog_tables(ctx: &SessionContext) {
-        let catalog = catalog::catalog();
+        let catalog = catalog();
 
         info!("Registering tables from metadata catalog");
 
@@ -118,7 +118,7 @@ fn table_to_arrow_schema(table: &Table) -> ArrowSchema {
                 crate::metadata::types::DataType::Float => ArrowDataType::Float32,
                 crate::metadata::types::DataType::Double => ArrowDataType::Float64,
                 crate::metadata::types::DataType::Decimal { precision, scale } => {
-                    ArrowDataType::Decimal128(*precision as u8, *scale as i8)
+                    ArrowDataType::Decimal128(*precision, (*scale) as i8)
                 }
                 crate::metadata::types::DataType::Varchar { .. }
                 | crate::metadata::types::DataType::Char { .. }

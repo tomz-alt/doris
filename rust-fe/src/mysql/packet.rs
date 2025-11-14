@@ -300,6 +300,7 @@ impl EofPacket {
 }
 
 // Column Definition
+#[derive(Debug, Clone)]
 pub struct ColumnDefinition {
     pub catalog: String,
     pub schema: String,
@@ -358,6 +359,7 @@ impl ColumnDefinition {
 }
 
 // Result Row
+#[derive(Debug, Clone)]
 pub struct ResultRow {
     pub values: Vec<Option<String>>,
 }

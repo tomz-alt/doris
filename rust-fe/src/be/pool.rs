@@ -42,7 +42,7 @@ impl BackendClientPool {
         // Round-robin selection
         let backend = self.select_backend();
 
-        debug!("Executing query {} on backend: {}", query_id, backend.addr());
+        debug!("Executing query {}", query_id);
 
         let mut client = backend.lock().await;
         client.execute_query(query_id, query).await

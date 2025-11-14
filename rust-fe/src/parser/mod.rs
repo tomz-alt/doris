@@ -4,7 +4,7 @@ use sqlparser::parser::Parser;
 use tracing::{debug, warn};
 
 use crate::error::{DorisError, Result};
-use crate::metadata::catalog;
+use crate::metadata::catalog::catalog;
 
 pub fn parse_sql(sql: &str) -> Result<Vec<Statement>> {
     debug!("Parsing SQL: {}", sql.trim());
@@ -34,8 +34,8 @@ pub fn validate_statement(stmt: &Statement) -> Result<()> {
 }
 
 fn validate_query(query: &sqlparser::ast::Query) -> Result<()> {
-    if let Some(ref body) = query.body.as_select() {
-        validate_select(body)?;
+    if let sqlparser::ast::SetExpr::Select(ref select) = *query.body {
+        validate_select(select)?;
     }
 
     Ok(())
@@ -170,7 +170,7 @@ pub fn extract_table_names(stmt: &Statement) -> Vec<String> {
     let mut tables = Vec::new();
 
     if let Statement::Query(query) = stmt {
-        if let Some(select) = query.body.as_select() {
+        if let sqlparser::ast::SetExpr::Select(ref select) = *query.body {
             for table_with_joins in &select.from {
                 if let TableFactor::Table { name, .. } = &table_with_joins.relation {
                     tables.push(name.to_string());
