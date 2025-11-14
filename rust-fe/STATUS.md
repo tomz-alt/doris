@@ -533,7 +533,9 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 | Integration | 2 | ✅ All passing | FE→BE pipeline, gRPC communication |
 | TPC-H Queries | 23 | ✅ All passing | All 22 standard TPC-H benchmark queries |
 | SQL Logic | 58 | ✅ All passing | Semantics, correctness, edge cases |
-| **Total** | **153** | **✅ 100% passing** | **Phase 1 + Phase 2 (partial) complete** |
+| MySQL Functions | 39 | ✅ All passing | String, math, date, aggregate, window functions |
+| Internal Components | 9 | ✅ All passing | DataFusion, converters, executors |
+| **Total** | **201** | **✅ 100% passing** | **Phase 1 + Phase 2 complete** |
 
 ### Files Added/Modified
 
@@ -542,13 +544,15 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 - `src/planner/parser_tests.rs` - 540 lines, 57 tests
 - `src/planner/tpch_tests.rs` - 900+ lines, 23 tests
 - `src/planner/sql_logic_tests.rs` - 700+ lines, 58 tests
+- `src/planner/mysql_function_tests.rs` - 400+ lines, 39 tests
 - `examples/mock_be_server.rs` - 170 lines, gRPC server
 - `examples/integration_test.rs` - 200+ lines, 2 integration tests
 - `docs/TEST_INFRASTRUCTURE_RESEARCH.md` - 472 lines, research
+- `docs/TEST_SUMMARY.md` - 480 lines, comprehensive summary
 
 **Modified Files**:
 - `src/mysql/mod.rs` - Added protocol_tests module
-- `src/planner/mod.rs` - Added parser_tests, tpch_tests, sql_logic_tests modules
+- `src/planner/mod.rs` - Added parser_tests, tpch_tests, sql_logic_tests, mysql_function_tests modules
 - `src/be/client.rs` - Added is_connected() method
 - `src/be/pool.rs` - Added auto-connect logic
 - `build.rs` - Enabled gRPC server generation

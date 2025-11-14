@@ -6,6 +6,7 @@ pub mod fragment_executor;
 pub mod parser_tests;
 pub mod tpch_tests;
 pub mod sql_logic_tests;
+pub mod mysql_function_tests;
 
 pub use datafusion_planner::DataFusionPlanner;
 pub use plan_fragment::*;
