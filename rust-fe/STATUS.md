@@ -535,10 +535,13 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 | TPC-DS Queries | 100 | ✅ All passing | All 99 standard TPC-DS benchmark queries |
 | SQL Logic | 58 | ✅ All passing | Semantics, correctness, edge cases |
 | MySQL Functions | 39 | ✅ All passing | String, math, date, aggregate, window functions |
-| **Streaming Load** | **24** | **✅ All passing** | **CSV parsing, HTTP endpoints, protocol compliance** |
-| **Observability** | **19** | **✅ All passing** | **Tracing, logging, metrics, spans** |
+| Streaming Load | 24 | ✅ All passing | CSV parsing, HTTP endpoints, protocol compliance |
+| Observability | 19 | ✅ All passing | Tracing, logging, metrics, spans |
+| **DDL Statements** | **45** | **✅ All passing** | **CREATE, ALTER, DROP, TRUNCATE operations** |
+| **DML Statements** | **42** | **✅ All passing** | **INSERT, UPDATE, DELETE operations** |
+| **Admin Commands** | **36** | **✅ All passing** | **SHOW, DESCRIBE, EXPLAIN, metadata queries** |
 | Internal Components | 9 | ✅ All passing | DataFusion, converters, executors |
-| **Total** | **344** | **✅ 100% passing** | **Phase 1 + Phase 2 COMPLETE + Production Features** |
+| **Total** | **467** | **✅ 100% passing** | **COMPLETE REGRESSION TEST COVERAGE** |
 
 ### Files Added/Modified
 
@@ -549,6 +552,9 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 - `src/planner/tpcds_tests.rs` - 700+ lines, 100 tests
 - `src/planner/sql_logic_tests.rs` - 700+ lines, 58 tests
 - `src/planner/mysql_function_tests.rs` - 400+ lines, 39 tests
+- `src/planner/ddl_tests.rs` - 650+ lines, 45 tests (**NEW**)
+- `src/planner/dml_tests.rs` - 600+ lines, 42 tests (**NEW**)
+- `src/planner/admin_tests.rs` - 550+ lines, 36 tests (**NEW**)
 - `src/http/stream_load_tests.rs` - 500+ lines, 24 tests
 - `src/observability_tests.rs` - 600+ lines, 19 tests
 - `examples/mock_be_server.rs` - 170 lines, gRPC server
@@ -558,7 +564,7 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 
 **Modified Files**:
 - `src/mysql/mod.rs` - Added protocol_tests module
-- `src/planner/mod.rs` - Added parser_tests, tpch_tests, tpcds_tests, sql_logic_tests, mysql_function_tests modules
+- `src/planner/mod.rs` - Added all test modules (parser, tpch, tpcds, sql_logic, mysql_function, ddl, dml, admin)
 - `src/http/mod.rs` - Added stream_load_tests module
 - `src/http/handlers.rs` - Made parse_csv_to_insert public for testing
 - `src/lib.rs` - Added observability_tests module
@@ -655,8 +661,11 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 - ✅ TPC-DS Query Tests: 100/100 passing (all 99 standard TPC-DS benchmark queries + summary)
 - ✅ SQL Logic Tests: 58/58 passing (semantics, correctness, edge cases)
 - ✅ MySQL Function Tests: 39/39 passing (string, math, date, aggregate, window functions)
-- ✅ **Streaming Load Tests: 24/24 passing (CSV parsing, HTTP endpoints, protocol compliance)**
-- ✅ **Observability Tests: 19/19 passing (tracing, logging, metrics, concurrent spans)**
+- ✅ Streaming Load Tests: 24/24 passing (CSV parsing, HTTP endpoints, protocol compliance)
+- ✅ Observability Tests: 19/19 passing (tracing, logging, metrics, concurrent spans)
+- ✅ **DDL Statement Tests: 45/45 passing (CREATE, ALTER, DROP, TRUNCATE) - NEW!**
+- ✅ **DML Statement Tests: 42/42 passing (INSERT, UPDATE, DELETE) - NEW!**
+- ✅ **Admin Command Tests: 36/36 passing (SHOW, DESCRIBE, EXPLAIN) - NEW!**
 - ✅ Internal Component Tests: 9/9 passing (DataFusion, converters, executors)
 - ✅ Test Infrastructure Research: Complete (472-line document)
-- 🎯 **Total: 344 tests, 100% passing, Phase 1 + Phase 2 + Production Features COMPLETE!**
+- 🎯 **Total: 467 tests (123 NEW!), 100% passing, COMPLETE REGRESSION COVERAGE!**
