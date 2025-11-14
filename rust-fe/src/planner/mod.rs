@@ -4,6 +4,7 @@ pub mod plan_converter;
 pub mod fragment_splitter;
 pub mod fragment_executor;
 pub mod parser_tests;
+pub mod tpch_tests;
 
 pub use datafusion_planner::DataFusionPlanner;
 pub use plan_fragment::*;

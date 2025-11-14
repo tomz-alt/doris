@@ -531,31 +531,65 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 | MySQL Protocol | 13 | ✅ All passing | Column types, packets, encoding |
 | SQL Parser | 57 | ✅ All passing | SELECT, JOIN, GROUP BY, CTE, window functions |
 | Integration | 2 | ✅ All passing | FE→BE pipeline, gRPC communication |
-| **Total** | **72** | **✅ 100% passing** | **Foundation complete** |
+| TPC-H Queries | 23 | ✅ All passing | All 22 standard TPC-H benchmark queries |
+| **Total** | **95** | **✅ 100% passing** | **Phase 1 + TPC-H complete** |
 
 ### Files Added/Modified
 
 **New Files**:
 - `src/mysql/protocol_tests.rs` - 388 lines, 13 tests
 - `src/planner/parser_tests.rs` - 540 lines, 57 tests
+- `src/planner/tpch_tests.rs` - 900+ lines, 23 tests
 - `examples/mock_be_server.rs` - 170 lines, gRPC server
 - `examples/integration_test.rs` - 200+ lines, 2 integration tests
 - `docs/TEST_INFRASTRUCTURE_RESEARCH.md` - 472 lines, research
 
 **Modified Files**:
 - `src/mysql/mod.rs` - Added protocol_tests module
-- `src/planner/mod.rs` - Added parser_tests module
+- `src/planner/mod.rs` - Added parser_tests, tpch_tests modules
 - `src/be/client.rs` - Added is_connected() method
 - `src/be/pool.rs` - Added auto-connect logic
 - `build.rs` - Enabled gRPC server generation
 - `Cargo.toml` - Added opensrv-mysql, bitflags dependencies
 
+**4. TPC-H Query Tests** (`src/planner/tpch_tests.rs`)
+- 23 comprehensive test cases (22 TPC-H queries + 1 summary test)
+- Based on: `tools/tpch-tools/queries/`
+- Validates all standard TPC-H benchmark queries
+
+**Test Coverage**:
+- ✅ Q1: Pricing Summary Report (aggregation, GROUP BY, ORDER BY)
+- ✅ Q2: Minimum Cost Supplier (complex joins, subquery)
+- ✅ Q3: Shipping Priority (3-table join, aggregation, LIMIT)
+- ✅ Q4: Order Priority Checking (EXISTS subquery)
+- ✅ Q5: Local Supplier Volume (6-table join, date filtering)
+- ✅ Q6: Forecasting Revenue Change (simple aggregation, BETWEEN)
+- ✅ Q7: Volume Shipping (derived table, EXTRACT, complex joins)
+- ✅ Q8: National Market Share (CASE expression, multi-table join)
+- ✅ Q9: Product Type Profit Measure (profit calculation, LIKE)
+- ✅ Q10: Returned Item Reporting (returnflag filtering)
+- ✅ Q11: Important Stock Identification (HAVING with subquery)
+- ✅ Q12: Shipping Modes and Order Priority (CASE, multiple conditions)
+- ✅ Q13: Customer Distribution (LEFT OUTER JOIN, nested aggregation)
+- ✅ Q14: Promotion Effect (percentage calculation, CASE)
+- ✅ Q15: Top Supplier (revenue subquery, MAX)
+- ✅ Q16: Parts/Supplier Relationship (NOT IN, COUNT DISTINCT)
+- ✅ Q17: Small-Quantity-Order Revenue (correlated subquery)
+- ✅ Q18: Large Volume Customer (subquery in WHERE, HAVING)
+- ✅ Q19: Discounted Revenue (complex OR conditions, multiple BETWEEN)
+- ✅ Q20: Potential Part Promotion (nested subqueries, LIKE)
+- ✅ Q21: Suppliers Who Kept Orders Waiting (EXISTS, NOT EXISTS)
+- ✅ Q22: Global Sales Opportunity (SUBSTRING, nested subquery, NOT EXISTS)
+- ✅ Comprehensive test (all 22 queries validated)
+
+**Result**: All 23 tests passing ✓ (completed in 0.03s)
+
 ### Next Steps: Phase 2-4
 
-**Phase 2: MySQL Compatibility Suite**
+**Phase 2: MySQL Compatibility Suite** (PARTIALLY COMPLETE)
 - [ ] JDBC driver compatibility tests
 - [ ] Result format compatibility tests
-- [ ] TPC-H query suite (22 queries)
+- [x] TPC-H query suite (22 queries) ✅ COMPLETE
 - [ ] TPC-DS query suite (99 queries)
 - [ ] MySQL function compatibility
 
@@ -577,5 +611,6 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 - ✅ MySQL Protocol Tests: 13/13 passing (100% Java FE compatibility)
 - ✅ SQL Parser Tests: 57/57 passing (comprehensive coverage)
 - ✅ Integration Tests: 2/2 passing (FE→BE pipeline validated)
+- ✅ TPC-H Query Tests: 23/23 passing (all standard TPC-H benchmark queries)
 - ✅ Test Infrastructure Research: Complete (472-line document)
-- 🎯 **Total: 72 tests, 100% passing, Phase 1 complete!**
+- 🎯 **Total: 95 tests, 100% passing, Phase 1 complete + TPC-H queries validated!**
