@@ -305,32 +305,64 @@ This validates the Rust FE foundation is solid.
 
 **Option B is the path to production**, requiring additional work to integrate with Doris BE for distributed execution, but the architecture and plan are clear.
 
-## 🆕 Latest Progress (Option B Phase 2 Complete!)
+## 🆕 Latest Progress (Option B Phase 3 Complete!)
 
-### Fragment Splitting for Distributed Execution ✅
+### gRPC Backend Communication ✅
 
-Successfully implemented multi-fragment query plans for distributed execution:
+Successfully implemented gRPC communication with Doris Backend using protobuf
+compiled entirely from source - **no external protoc required!**
 
 **Phase 1 (Complete)**: DataFusion → Doris plan fragment conversion
 **Phase 2 (Complete)**: Single fragment → Multi-fragment distributed plans
+**Phase 3 (Complete)**: gRPC BE communication with prost-build
 
 ### Key Achievements
 
-**Fragment Splitting Algorithm**:
+**Protobuf Compilation Breakthrough**:
+- ✅ protobuf-src: Compiles protoc from C++ source at build time
+- ✅ prost-build: Pure Rust protobuf compiler
+- ✅ tonic: Async gRPC client generation
+- ✅ **Zero external dependencies** - fully self-contained build!
+
+**gRPC Client Implementation**:
+- `BackendClient::connect()` - Establishes gRPC channel to BE
+- `execute_fragment()` - Sends PExecPlanFragmentRequest to execute query fragments
+- `fetch_data()` - Retrieves results via PFetchDataRequest
+- `cancel_fragment()` - Cancels execution via PCancelPlanFragmentRequest
+
+**Proto Messages**:
+- PExecPlanFragmentRequest: Send query fragments to BE
+- PExecPlanFragmentResult: Execution status from BE
+- PFetchDataRequest: Request result data
+- PFetchDataResult: Result data with EOS flag
+- PCancelPlanFragmentRequest/Result: Cancel execution
+
+### Technical Details
+
+**Build Process**:
+1. `protobuf-src` downloads and compiles protoc from source
+2. `prost-build` uses compiled protoc to generate Rust types
+3. `tonic-build` generates gRPC client code
+4. All happens automatically during `cargo build` - no manual steps!
+
+**Test Results** (`examples/grpc_client_test.rs`):
+- ✓ Protobuf compilation successful
+- ✓ gRPC client generated
+- ✓ Connection logic works
+- ✓ Fragment execution RPC ready
+- ✓ Data fetch RPC ready
+- ✓ Cancel RPC ready
+
+See `examples/grpc_client_test.rs` for gRPC client demonstration.
+
+### Previous Phases
+
+**Phase 2: Fragment Splitting**
 - Analyzes plan trees to identify split points
-- Inserts Exchange nodes at fragment boundaries
-- Splits aggregations into Partial (on BE) → Exchange → Final (on coordinator)
-- Optimizes TopN with local sorts + gather + final sort
-- Handles hash joins with broadcast strategy
+- Inserts Exchange nodes (Gather, HashPartition, Broadcast, Random)
+- Splits aggregations into Partial (BE) → Exchange → Final (Coordinator)
 
-**Exchange Types Supported**:
-- ✅ Gather - Collect all data to coordinator
-- ✅ HashPartition - Distribute by hash of keys for parallel aggregation
-- ✅ Broadcast - Send to all nodes (for joins)
-- ✅ Random - Random distribution
-
-### Test Results
-
+**Test Results**:
 | Query Type | Fragments | Structure |
 |------------|-----------|-----------|
 | Simple COUNT | 3 | Partial Agg → Gather → Final Agg |
@@ -338,16 +370,10 @@ Successfully implemented multi-fragment query plans for distributed execution:
 | TopN | 3 | Scan → Gather → Sort+Limit |
 | Complex TPC-H Q1 | 5 | Multi-stage with aggregation and sorting |
 
-**Critical Fixes**:
-- Properly detect DataFusion AggregateMode (Partial vs Final)
-- Avoid duplicate aggregation splits
-- Recursively process nested operators to find Exchange boundaries
-
-See `examples/option_b_phase2_test.rs` for detailed tests.
-
 ---
 
 **Session Summary**:
 - Option A: From 0 to working TPC-H queries in Rust! 🚀
 - Option B Phase 1: DataFusion → Doris plan conversion! 🎯
 - Option B Phase 2: Multi-fragment distributed query plans! 🔥
+- Option B Phase 3: gRPC BE communication (no protoc needed!)! ⚡
