@@ -544,6 +544,7 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 | Admin Commands | 36 | ✅ All passing | SHOW, DESCRIBE, EXPLAIN, metadata queries |
 | **Doris Features** | **47** | **✅ All passing** | **MTMV, partitioning, bucketing, data models, rollup, colocation** |
 | Internal Components | 9 | ✅ All passing | DataFusion, converters, executors |
+| **Regression Framework** | **273** | **📦 Infrastructure** | **JOIN, aggregate, subquery, function, datatype, edge cases** |
 | **Total** | **529** | **✅ 100% passing** | **COMPLETE REGRESSION + PROTOCOL + DORIS FEATURES** |
 
 ### Files Added/Modified
@@ -676,4 +677,4 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 - ✅ **Doris Feature Tests: 47/47 passing (MTMV, partitioning, bucketing, data models, rollup, colocation) - NEW!**
 - ✅ Internal Component Tests: 9/9 passing (DataFusion, converters, executors)
 - ✅ Test Infrastructure Research: Complete (472-line document)
-- 🎯 **Total: 529 tests (185 NEW!), 100% passing, COMPLETE REGRESSION + PROTOCOL + DORIS FEATURES!**
+- 🎯 **Total: 529 active tests + 273 regression framework = 802 comprehensive tests!**
