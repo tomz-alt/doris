@@ -4,6 +4,8 @@ mod http;
 mod be;
 mod query;
 mod error;
+mod metadata;
+mod parser;
 
 use anyhow::Result;
 use std::sync::Arc;
@@ -22,6 +24,11 @@ async fn main() -> Result<()> {
         .init();
 
     info!("Starting Doris Rust FE Service");
+
+    // Initialize catalog (loads TPC-H schema)
+    let _catalog = metadata::catalog::catalog();
+    info!("Catalog initialized with {} databases",
+          _catalog.list_databases().len());
 
     // Load configuration
     let config = config::Config::load()?;
@@ -64,6 +71,7 @@ async fn main() -> Result<()> {
     info!("Doris Rust FE started successfully");
     info!("MySQL server listening on port {}", config.mysql_port);
     info!("HTTP server listening on port {}", config.http_port);
+    info!("TPC-H schema loaded and ready for queries");
 
     // Wait for both servers
     tokio::select! {
