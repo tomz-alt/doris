@@ -61,6 +61,10 @@ chrono = "0.4"
 [build-dependencies]
 tonic-build = "0.11"
 
+[lib]
+name = "doris_rust_fe"
+path = "src/lib.rs"
+
 [[bin]]
 name = "doris-rust-fe"
 path = "src/main.rs"

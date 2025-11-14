@@ -85,7 +85,7 @@ impl DataFusionPlanner {
         Ok(())
     }
 
-    /// Execute a SQL query using DataFusion
+    /// Execute a SQL query using DataFusion (Option A - direct execution)
     pub async fn execute_query(&self, sql: &str) -> Result<Vec<RecordBatch>> {
         debug!("Executing query via DataFusion: {}", sql.trim());
 
@@ -98,6 +98,30 @@ impl DataFusionPlanner {
         debug!("Query returned {} batches", batches.len());
 
         Ok(batches)
+    }
+
+    /// Create physical plan from SQL (Option B - for plan conversion to Doris BE)
+    pub async fn create_physical_plan(&self, sql: &str) -> Result<std::sync::Arc<dyn datafusion::physical_plan::ExecutionPlan>> {
+        debug!("Creating physical plan for: {}", sql);
+
+        let df = self.ctx.sql(sql).await
+            .map_err(|e| DorisError::QueryExecution(format!("DataFusion SQL error: {}", e)))?;
+
+        let physical_plan = df.create_physical_plan().await
+            .map_err(|e| DorisError::QueryExecution(format!("Failed to create physical plan: {}", e)))?;
+
+        debug!("Physical plan created: {}", physical_plan.name());
+        Ok(physical_plan)
+    }
+
+    /// Create logical plan from SQL (for inspection/debugging)
+    pub async fn create_logical_plan(&self, sql: &str) -> Result<datafusion::logical_expr::LogicalPlan> {
+        debug!("Creating logical plan for: {}", sql);
+
+        let df = self.ctx.sql(sql).await
+            .map_err(|e| DorisError::QueryExecution(format!("DataFusion SQL error: {}", e)))?;
+
+        Ok(df.logical_plan().clone())
     }
 
     /// Get the DataFusion context (for advanced usage)
