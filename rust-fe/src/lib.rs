@@ -15,4 +15,4 @@ pub mod be;
 pub use error::{DorisError, Result};
 pub use config::Config;
 pub use query::{QueryExecutor, QueryResult};
-pub use planner::{DataFusionPlanner, PlanConverter, PlanFragment, QueryPlan};
+pub use planner::{DataFusionPlanner, PlanConverter, PlanFragment, QueryPlan, FragmentSplitter};

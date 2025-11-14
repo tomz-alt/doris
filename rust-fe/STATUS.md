@@ -305,36 +305,49 @@ This validates the Rust FE foundation is solid.
 
 **Option B is the path to production**, requiring additional work to integrate with Doris BE for distributed execution, but the architecture and plan are clear.
 
-## 🆕 Latest Progress (Option B Phase 1)
+## 🆕 Latest Progress (Option B Phase 2 Complete!)
 
-### Plan Conversion Working!
+### Fragment Splitting for Distributed Execution ✅
 
-Successfully implemented DataFusion → Doris plan fragment conversion:
+Successfully implemented multi-fragment query plans for distributed execution:
 
-**Test Query**: `SELECT COUNT(*) FROM lineitem`
+**Phase 1 (Complete)**: DataFusion → Doris plan fragment conversion
+**Phase 2 (Complete)**: Single fragment → Multi-fragment distributed plans
 
-**DataFusion Plan** → **Doris Fragment**:
-```
-AggregateExec (Final)       →  Aggregation (Final)
-  AggregateExec (Partial)   →    Aggregation (Partial)
-    CsvExec                 →      OlapScan
-```
+### Key Achievements
 
-**All Operators Supported**:
-- ✅ Table Scan → OlapScan
-- ✅ Filter → Select
-- ✅ Projection → Project
-- ✅ Aggregate → Aggregation
-- ✅ Sort → Sort
-- ✅ Limit → TopN
-- ✅ Join → HashJoin
+**Fragment Splitting Algorithm**:
+- Analyzes plan trees to identify split points
+- Inserts Exchange nodes at fragment boundaries
+- Splits aggregations into Partial (on BE) → Exchange → Final (on coordinator)
+- Optimizes TopN with local sorts + gather + final sort
+- Handles hash joins with broadcast strategy
 
-**Test Results**: 4/4 queries successfully convert (COUNT, Filter, GROUP BY, TPC-H Q1)
+**Exchange Types Supported**:
+- ✅ Gather - Collect all data to coordinator
+- ✅ HashPartition - Distribute by hash of keys for parallel aggregation
+- ✅ Broadcast - Send to all nodes (for joins)
+- ✅ Random - Random distribution
 
-See `examples/option_b_test.rs` and `OPTION_B_STATUS.md` for details.
+### Test Results
+
+| Query Type | Fragments | Structure |
+|------------|-----------|-----------|
+| Simple COUNT | 3 | Partial Agg → Gather → Final Agg |
+| GROUP BY | 3 | Partial Agg → HashPartition → Final Agg |
+| TopN | 3 | Scan → Gather → Sort+Limit |
+| Complex TPC-H Q1 | 5 | Multi-stage with aggregation and sorting |
+
+**Critical Fixes**:
+- Properly detect DataFusion AggregateMode (Partial vs Final)
+- Avoid duplicate aggregation splits
+- Recursively process nested operators to find Exchange boundaries
+
+See `examples/option_b_phase2_test.rs` for detailed tests.
 
 ---
 
 **Session Summary**:
 - Option A: From 0 to working TPC-H queries in Rust! 🚀
-- Option B: From design to working plan converter in one session! 🎯
+- Option B Phase 1: DataFusion → Doris plan conversion! 🎯
+- Option B Phase 2: Multi-fragment distributed query plans! 🔥

@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 use datafusion::physical_plan::{ExecutionPlan, displayable};
-use datafusion::physical_plan::aggregates::AggregateExec;
+use datafusion::physical_plan::aggregates::{AggregateExec, AggregateMode};
 use datafusion::physical_plan::filter::FilterExec;
 use datafusion::physical_plan::projection::ProjectionExec;
 use datafusion::physical_plan::sorts::sort::SortExec;
@@ -148,14 +148,20 @@ impl PlanConverter {
             })
             .collect();
 
-        debug!("Converted {} group by exprs and {} aggregate functions",
-               group_by_exprs.len(), agg_functions.len());
+        // Detect if this is a final (merge) aggregation or partial aggregation
+        let is_merge = matches!(
+            aggregate.mode(),
+            AggregateMode::Final | AggregateMode::FinalPartitioned
+        );
+
+        debug!("Converted {} group by exprs and {} aggregate functions (is_merge: {})",
+               group_by_exprs.len(), agg_functions.len(), is_merge);
 
         Ok(PlanNode::Aggregation {
             child: Box::new(child),
             group_by_exprs,
             agg_functions,
-            is_merge: false, // TODO: detect if this is a merge aggregation
+            is_merge,
         })
     }
 
