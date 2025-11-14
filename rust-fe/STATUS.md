@@ -72,7 +72,7 @@ rust-fe/
 ❌ **No Doris BE integration**: BE is not used at all
 ❌ **Not production-ready**: Works for PoC but not for real Doris deployment
 
-## 🔄 Option B: PLANNED (Not Yet Implemented)
+## 🔄 Option B: Phase 1 COMPLETE ✅ (Plan Conversion Working!)
 
 ### Goal
 
@@ -305,6 +305,36 @@ This validates the Rust FE foundation is solid.
 
 **Option B is the path to production**, requiring additional work to integrate with Doris BE for distributed execution, but the architecture and plan are clear.
 
+## 🆕 Latest Progress (Option B Phase 1)
+
+### Plan Conversion Working!
+
+Successfully implemented DataFusion → Doris plan fragment conversion:
+
+**Test Query**: `SELECT COUNT(*) FROM lineitem`
+
+**DataFusion Plan** → **Doris Fragment**:
+```
+AggregateExec (Final)       →  Aggregation (Final)
+  AggregateExec (Partial)   →    Aggregation (Partial)
+    CsvExec                 →      OlapScan
+```
+
+**All Operators Supported**:
+- ✅ Table Scan → OlapScan
+- ✅ Filter → Select
+- ✅ Projection → Project
+- ✅ Aggregate → Aggregation
+- ✅ Sort → Sort
+- ✅ Limit → TopN
+- ✅ Join → HashJoin
+
+**Test Results**: 4/4 queries successfully convert (COUNT, Filter, GROUP BY, TPC-H Q1)
+
+See `examples/option_b_test.rs` and `OPTION_B_STATUS.md` for details.
+
 ---
 
-**Session Summary**: From 0 to working TPC-H queries in Rust in one session! 🚀
+**Session Summary**:
+- Option A: From 0 to working TPC-H queries in Rust! 🚀
+- Option B: From design to working plan converter in one session! 🎯
