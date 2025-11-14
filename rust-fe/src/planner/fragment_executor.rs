@@ -6,6 +6,8 @@ use tracing::{debug, info, warn};
 use uuid::Uuid;
 
 use super::plan_fragment::*;
+use super::feature_flags::QueryFeatureFlags;
+use super::arrow_parser::ArrowResultParser;
 use crate::error::{DorisError, Result};
 use crate::be::BackendClientPool;
 use crate::query::QueryResult;
@@ -13,11 +15,19 @@ use crate::query::QueryResult;
 /// Coordinates execution of multi-fragment distributed queries
 pub struct FragmentExecutor {
     query_id: Uuid,
+    feature_flags: Arc<QueryFeatureFlags>,
 }
 
 impl FragmentExecutor {
     pub fn new(query_id: Uuid) -> Self {
-        Self { query_id }
+        Self::with_feature_flags(query_id, Arc::new(QueryFeatureFlags::default()))
+    }
+
+    pub fn with_feature_flags(query_id: Uuid, feature_flags: Arc<QueryFeatureFlags>) -> Self {
+        Self {
+            query_id,
+            feature_flags,
+        }
     }
 
     /// Execute a multi-fragment query plan on the BE cluster

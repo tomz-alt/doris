@@ -60,6 +60,7 @@ parking_lot = "0.12"
 uuid = { version = "1.6", features = ["v4", "serde"] }
 lazy_static = "1.4"
 chrono = "0.4"
+toml = "0.9.8"
 
 [build-dependencies]
 prost-build = "0.12"

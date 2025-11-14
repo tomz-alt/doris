@@ -2,23 +2,45 @@
 // This is key to Option B: distributing query execution across multiple BE nodes
 
 use std::sync::Arc;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 use uuid::Uuid;
 
 use super::plan_fragment::*;
+use super::feature_flags::QueryFeatureFlags;
+use super::cost_model::{JoinCostModel, JoinStrategy, estimate_node_statistics};
+use super::partition_pruner::{PartitionPruner, PartitionMetadata};
+use super::runtime_filters::RuntimeFilterBuilder;
+use super::bucket_shuffle::{BucketShuffleOptimizer, BucketInfo};
 use crate::error::{DorisError, Result};
 
 /// Splits a single-fragment query plan into multiple fragments for distributed execution
 pub struct FragmentSplitter {
     query_id: Uuid,
     next_fragment_id: u32,
+    feature_flags: Arc<QueryFeatureFlags>,
+    cost_model: JoinCostModel,
+    runtime_filter_builder: RuntimeFilterBuilder,
+    num_executors: usize,
 }
 
 impl FragmentSplitter {
     pub fn new(query_id: Uuid) -> Self {
+        Self::with_feature_flags(query_id, Arc::new(QueryFeatureFlags::default()), 10)
+    }
+
+    pub fn with_feature_flags(
+        query_id: Uuid,
+        feature_flags: Arc<QueryFeatureFlags>,
+        num_executors: usize,
+    ) -> Self {
+        let cost_model = JoinCostModel::new(num_executors);
         Self {
             query_id,
             next_fragment_id: 0,
+            feature_flags,
+            cost_model,
+            runtime_filter_builder: RuntimeFilterBuilder::new(),
+            num_executors,
         }
     }
 
@@ -171,21 +193,87 @@ impl FragmentSplitter {
                 let split_left = self.analyze_and_split(*left)?;
                 let split_right = self.analyze_and_split(*right)?;
 
-                // Strategy: Broadcast smaller (right) side to all nodes with larger (left) side
-                // TODO: Add cost-based optimization to choose between broadcast and shuffle
+                // Feature Flag: Cost-based join strategy selection
+                if self.feature_flags.cost_based_join_strategy {
+                    let left_stats = estimate_node_statistics(&split_left);
+                    let right_stats = estimate_node_statistics(&split_right);
 
-                // Broadcast right side
-                let broadcast_right = PlanNode::Exchange {
-                    child: Box::new(split_right),
-                    exchange_type: ExchangeType::Broadcast,
-                };
+                    let strategy = self.cost_model.choose_join_strategy(
+                        &left_stats,
+                        &right_stats,
+                        self.feature_flags.broadcast_threshold_bytes,
+                    );
 
-                Ok(PlanNode::HashJoin {
-                    left: Box::new(split_left),
-                    right: Box::new(broadcast_right),
-                    join_type,
-                    join_predicates,
-                })
+                    info!("Cost-based join strategy: {:?}", strategy);
+
+                    match strategy {
+                        JoinStrategy::Broadcast { broadcast_side } => {
+                            let (broadcast_child, probe_child) = match broadcast_side {
+                                super::cost_model::JoinSide::Right => (split_right, split_left),
+                                super::cost_model::JoinSide::Left => (split_left, split_right),
+                            };
+
+                            let broadcast_node = PlanNode::Exchange {
+                                child: Box::new(broadcast_child),
+                                exchange_type: ExchangeType::Broadcast,
+                            };
+
+                            if matches!(broadcast_side, super::cost_model::JoinSide::Left) {
+                                Ok(PlanNode::HashJoin {
+                                    left: Box::new(broadcast_node),
+                                    right: Box::new(probe_child),
+                                    join_type,
+                                    join_predicates,
+                                })
+                            } else {
+                                Ok(PlanNode::HashJoin {
+                                    left: Box::new(probe_child),
+                                    right: Box::new(broadcast_node),
+                                    join_type,
+                                    join_predicates,
+                                })
+                            }
+                        }
+                        JoinStrategy::Shuffle { .. } => {
+                            // Extract partition keys from join predicates
+                            let partition_keys = join_predicates.clone();
+
+                            let shuffle_left = PlanNode::Exchange {
+                                child: Box::new(split_left),
+                                exchange_type: ExchangeType::HashPartition {
+                                    partition_keys: partition_keys.clone(),
+                                },
+                            };
+
+                            let shuffle_right = PlanNode::Exchange {
+                                child: Box::new(split_right),
+                                exchange_type: ExchangeType::HashPartition {
+                                    partition_keys,
+                                },
+                            };
+
+                            Ok(PlanNode::HashJoin {
+                                left: Box::new(shuffle_left),
+                                right: Box::new(shuffle_right),
+                                join_type,
+                                join_predicates,
+                            })
+                        }
+                    }
+                } else {
+                    // Default strategy: Broadcast right side
+                    let broadcast_right = PlanNode::Exchange {
+                        child: Box::new(split_right),
+                        exchange_type: ExchangeType::Broadcast,
+                    };
+
+                    Ok(PlanNode::HashJoin {
+                        left: Box::new(split_left),
+                        right: Box::new(broadcast_right),
+                        join_type,
+                        join_predicates,
+                    })
+                }
             }
 
             // Recursively process other nodes
