@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package doris;
+
+// Simplified Backend Service for PoC
+service PBackendService {
+    rpc ExecPlanFragment(PExecPlanFragmentRequest) returns (PExecPlanFragmentResult);
+    rpc FetchData(PFetchDataRequest) returns (PFetchDataResult);
+    rpc CancelPlanFragment(PCancelPlanFragmentRequest) returns (PCancelPlanFragmentResult);
+}
+
+message PExecPlanFragmentRequest {
+    bytes query_id = 1;
+    int64 fragment_instance_id = 2;
+    string query = 3;
+    map<string, string> query_options = 4;
+}
+
+message PExecPlanFragmentResult {
+    int32 status_code = 1;
+    string message = 2;
+}
+
+message PFetchDataRequest {
+    bytes query_id = 1;
+    int64 fragment_instance_id = 2;
+}
+
+message PFetchDataResult {
+    int32 status_code = 1;
+    bytes data = 2;
+    bool eos = 3;
+}
+
+message PCancelPlanFragmentRequest {
+    bytes query_id = 1;
+    int64 fragment_instance_id = 2;
+}
+
+message PCancelPlanFragmentResult {
+    int32 status_code = 1;
+}
