@@ -6,6 +6,7 @@ mod query;
 mod error;
 mod metadata;
 mod parser;
+mod planner;
 
 use anyhow::Result;
 use std::sync::Arc;
@@ -18,12 +19,12 @@ async fn main() -> Result<()> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "doris_rust_fe=debug,tower_http=debug".into()),
+                .unwrap_or_else(|_| "doris_rust_fe=info,tower_http=info".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    info!("Starting Doris Rust FE Service");
+    info!("Starting Doris Rust FE Service with DataFusion");
 
     // Initialize catalog (loads TPC-H schema)
     let _catalog = metadata::catalog::catalog();
@@ -34,11 +35,25 @@ async fn main() -> Result<()> {
     let config = config::Config::load()?;
     info!("Configuration loaded: {:?}", config);
 
-    // Create shared state
-    let query_executor = Arc::new(query::QueryExecutor::new(
+    // Create shared state with DataFusion
+    info!("Initializing DataFusion query engine...");
+    let query_executor = Arc::new(query::QueryExecutor::with_datafusion(
         config.query_queue_size,
         config.max_concurrent_queries,
-    ));
+    ).await);
+    info!("DataFusion initialized successfully");
+
+    // Register TPC-H CSV data if directory is provided
+    if let Ok(tpch_data_dir) = std::env::var("TPCH_DATA_DIR") {
+        info!("TPC-H data directory specified: {}", tpch_data_dir);
+        match query_executor.register_tpch_csv(&tpch_data_dir).await {
+            Ok(_) => info!("TPC-H CSV data registered successfully"),
+            Err(e) => error!("Failed to register TPC-H data: {}", e),
+        }
+    } else {
+        info!("TPCH_DATA_DIR not set - queries will run on empty tables");
+        info!("To load TPC-H data, set: export TPCH_DATA_DIR=/path/to/tpch/data");
+    }
 
     let be_client_pool = Arc::new(be::BackendClientPool::new(config.backend_nodes.clone()));
 
@@ -68,10 +83,16 @@ async fn main() -> Result<()> {
         }
     });
 
-    info!("Doris Rust FE started successfully");
-    info!("MySQL server listening on port {}", config.mysql_port);
-    info!("HTTP server listening on port {}", config.http_port);
-    info!("TPC-H schema loaded and ready for queries");
+    info!("========================================");
+    info!("Doris Rust FE with DataFusion started successfully!");
+    info!("MySQL server: localhost:{}", config.mysql_port);
+    info!("HTTP server: localhost:{}", config.http_port);
+    info!("TPC-H schema: loaded and ready");
+    info!("Query engine: DataFusion (Arrow-based)");
+    info!("========================================");
+    info!("Connect with: mysql -h 127.0.0.1 -P {} -u root", config.mysql_port);
+    info!("Then run: USE tpch; SHOW TABLES; SELECT * FROM lineitem LIMIT 10;");
+    info!("========================================");
 
     // Wait for both servers
     tokio::select! {
