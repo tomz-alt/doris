@@ -59,7 +59,9 @@ lazy_static = "1.4"
 chrono = "0.4"
 
 [build-dependencies]
-tonic-build = "0.11"
+prost-build = "0.12"
+tonic-build = { version = "0.11", default-features = false, features = ["prost"] }
+protobuf-src = "1.1"  # Compiles protoc from source!
 
 [lib]
 name = "doris_rust_fe"

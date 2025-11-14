@@ -1,5 +1,5 @@
-mod client;
-mod pool;
+pub mod client;
+pub mod pool;
 
 pub use client::BackendClient;
 pub use pool::BackendClientPool;

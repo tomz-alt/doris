@@ -42,10 +42,41 @@ impl BackendClientPool {
         // Round-robin selection
         let backend = self.select_backend();
 
-        debug!("Executing query {}", query_id);
+        debug!("Executing query {} via gRPC", query_id);
 
         let mut client = backend.lock().await;
-        client.execute_query(query_id, query).await
+
+        // Execute fragment (use fragment_id = 0 for simple queries)
+        let result = client.execute_fragment(query_id, 0, query).await?;
+
+        if result.status_code != 0 {
+            return Err(crate::error::DorisError::BackendCommunication(
+                format!("BE returned error: {}", result.message)
+            ));
+        }
+
+        // Fetch data from BE
+        let fetch_result = client.fetch_data(query_id, 0).await?;
+
+        // Parse the result data
+        if fetch_result.data.is_empty() {
+            return Ok(QueryResult::empty());
+        }
+
+        // For now, return a simple result
+        // TODO: Parse Arrow format from BE
+        use crate::mysql::packet::{ColumnDefinition, ResultRow};
+        use crate::mysql::ColumnType;
+
+        let columns = vec![
+            ColumnDefinition::new("result".to_string(), ColumnType::VarString),
+        ];
+
+        let rows = vec![
+            ResultRow::new(vec![Some(format!("Received {} bytes from BE", fetch_result.data.len()))]),
+        ];
+
+        Ok(QueryResult::new_select(columns, rows))
     }
 
     pub async fn cancel_query(&self, query_id: Uuid) -> Result<()> {
@@ -58,7 +89,8 @@ impl BackendClientPool {
 
             let handle = tokio::spawn(async move {
                 let mut client = client.lock().await;
-                let _ = client.cancel_query(qid).await;
+                // Cancel fragment 0
+                let _ = client.cancel_fragment(qid, 0).await;
             });
 
             handles.push(handle);

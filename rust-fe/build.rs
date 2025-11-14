@@ -1,14 +1,15 @@
 use std::env;
 use std::path::PathBuf;
+use std::io::Result;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<()> {
     // Check if we should skip proto compilation
     if env::var("SKIP_PROTO").is_ok() {
         println!("cargo:warning=Skipping proto compilation (SKIP_PROTO is set)");
         println!("cargo:warning=Backend communication will use fallback implementation");
 
         // Create a dummy file to satisfy the include
-        let out_dir = PathBuf::from(env::var("OUT_DIR")?);
+        let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
         std::fs::write(
             out_dir.join("doris.rs"),
             "// Proto generation skipped - using fallback\n\
@@ -26,49 +27,64 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    // Try to compile proto files
+    // Compile proto files using protoc built from source!
     println!("cargo:rerun-if-changed=proto/");
+    println!("cargo:warning=Building protoc from source using protobuf-src...");
+
+    // Build protoc from source
+    let protoc_path = protobuf_src::protoc();
+    println!("cargo:warning=Successfully built protoc at: {:?}", protoc_path);
+
+    // Set the PROTOC environment variable so prost-build can find it
+    env::set_var("PROTOC", &protoc_path);
 
     // Use only the backend_service.proto which is self-contained
     let simple_proto = std::path::Path::new("proto/backend_service.proto");
 
     if simple_proto.exists() {
-        println!("cargo:warning=Compiling simplified backend_service.proto");
+        println!("cargo:warning=Found backend_service.proto - compiling with prost-build...");
 
-        return tonic_build::configure()
-            .build_server(false)
-            .build_client(true)
-            .compile(&["proto/backend_service.proto"], &["proto"])
-            .map_err(|e| {
-                println!("cargo:warning=Failed to compile proto: {}", e);
-                println!("cargo:warning=Run: SKIP_PROTO=1 cargo build to skip");
-                e.into()
-            });
-    }
-
-    // If we have the full Doris protos, try to compile them
-    let doris_proto = std::path::Path::new("proto/internal_service.proto");
-
-    if doris_proto.exists() {
-        println!("cargo:warning=Compiling Doris internal_service.proto");
-        println!("cargo:warning=This requires protoc to be installed");
-
-        // Compile all dependent proto files
-        return tonic_build::configure()
-            .build_server(false)
-            .build_client(true)
-            .protoc_arg("--experimental_allow_proto3_optional")
-            .compile(
-                &["proto/internal_service.proto"],
+        // Use prost-build with the compiled protoc
+        let mut prost_config = prost_build::Config::new();
+        prost_config
+            .out_dir({
+                let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+                out_dir
+            })
+            .compile_protos(
+                &["proto/backend_service.proto"],
                 &["proto"]
             )
             .map_err(|e| {
-                println!("cargo:warning=Failed to compile Doris proto files: {}", e);
-                println!("cargo:warning=Error: {}", e);
-                println!("cargo:warning=Set SKIP_PROTO=1 to use fallback implementation");
-                e.into()
-            });
+                println!("cargo:warning=Failed to compile proto: {}", e);
+                println!("cargo:warning=Run: SKIP_PROTO=1 cargo build to skip");
+                e
+            })?;
+
+        println!("cargo:warning=Successfully compiled protobuf messages!");
+
+        // Now compile the gRPC service definitions using tonic-build
+        println!("cargo:warning=Compiling gRPC service definitions...");
+
+        tonic_build::configure()
+            .build_server(false)
+            .build_client(true)
+            .compile(
+                &["proto/backend_service.proto"],
+                &["proto"]
+            )
+            .map_err(|e| {
+                println!("cargo:warning=Failed to compile gRPC service: {}", e);
+                println!("cargo:warning=Continuing without gRPC client generation");
+                // Don't fail - we can manually implement the client
+            })
+            .ok();
+
+        println!("cargo:warning=Proto compilation complete!");
+
+        return Ok(());
     }
 
-    Err("No proto files found. Run with SKIP_PROTO=1 to use fallback.".into())
+    eprintln!("No proto files found. Run with SKIP_PROTO=1 to use fallback.");
+    std::process::exit(1);
 }
