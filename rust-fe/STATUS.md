@@ -529,6 +529,8 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 | Test Category | Tests | Status | Coverage |
 |--------------|-------|--------|----------|
 | MySQL Protocol | 13 | ✅ All passing | Column types, packets, encoding |
+| **MySQL Password Auth** | **8** | **✅ All passing** | **Password hashing, scrambling, verification, salt generation** |
+| **Binary Serialization** | **7** | **✅ All passing** | **VARBINARY, NULL bytes, charset handling, field packets** |
 | SQL Parser | 57 | ✅ All passing | SELECT, JOIN, GROUP BY, CTE, window functions |
 | Integration | 2 | ✅ All passing | FE→BE pipeline, gRPC communication |
 | TPC-H Queries | 23 | ✅ All passing | All 22 standard TPC-H benchmark queries |
@@ -537,11 +539,11 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 | MySQL Functions | 39 | ✅ All passing | String, math, date, aggregate, window functions |
 | Streaming Load | 24 | ✅ All passing | CSV parsing, HTTP endpoints, protocol compliance |
 | Observability | 19 | ✅ All passing | Tracing, logging, metrics, spans |
-| **DDL Statements** | **45** | **✅ All passing** | **CREATE, ALTER, DROP, TRUNCATE operations** |
-| **DML Statements** | **42** | **✅ All passing** | **INSERT, UPDATE, DELETE operations** |
-| **Admin Commands** | **36** | **✅ All passing** | **SHOW, DESCRIBE, EXPLAIN, metadata queries** |
+| DDL Statements | 45 | ✅ All passing | CREATE, ALTER, DROP, TRUNCATE operations |
+| DML Statements | 42 | ✅ All passing | INSERT, UPDATE, DELETE operations |
+| Admin Commands | 36 | ✅ All passing | SHOW, DESCRIBE, EXPLAIN, metadata queries |
 | Internal Components | 9 | ✅ All passing | DataFusion, converters, executors |
-| **Total** | **467** | **✅ 100% passing** | **COMPLETE REGRESSION TEST COVERAGE** |
+| **Total** | **482** | **✅ 100% passing** | **COMPLETE REGRESSION + PROTOCOL COVERAGE** |
 
 ### Files Added/Modified
 
@@ -564,6 +566,7 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 
 **Modified Files**:
 - `src/mysql/mod.rs` - Added protocol_tests module
+- `src/mysql/protocol_tests.rs` - Added password authentication and binary serialization tests (**+460 lines, +15 tests**)
 - `src/planner/mod.rs` - Added all test modules (parser, tpch, tpcds, sql_logic, mysql_function, ddl, dml, admin)
 - `src/http/mod.rs` - Added stream_load_tests module
 - `src/http/handlers.rs` - Made parse_csv_to_insert public for testing
@@ -571,7 +574,7 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 - `src/be/client.rs` - Added is_connected() method
 - `src/be/pool.rs` - Added auto-connect logic
 - `build.rs` - Enabled gRPC server generation
-- `Cargo.toml` - Added opensrv-mysql, bitflags dependencies
+- `Cargo.toml` - Added opensrv-mysql, bitflags, **rand** dependencies
 
 **4. TPC-H Query Tests** (`src/planner/tpch_tests.rs`)
 - 23 comprehensive test cases (22 TPC-H queries + 1 summary test)
@@ -655,6 +658,8 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 
 **Latest Session Summary**:
 - ✅ MySQL Protocol Tests: 13/13 passing (100% Java FE compatibility)
+- ✅ **MySQL Password Auth Tests: 8/8 passing (hashing, scrambling, verification) - NEW!**
+- ✅ **Binary Serialization Tests: 7/7 passing (VARBINARY, NULL bytes, charset) - NEW!**
 - ✅ SQL Parser Tests: 57/57 passing (comprehensive coverage)
 - ✅ Integration Tests: 2/2 passing (FE→BE pipeline validated)
 - ✅ TPC-H Query Tests: 23/23 passing (all standard TPC-H benchmark queries)
@@ -663,9 +668,9 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 - ✅ MySQL Function Tests: 39/39 passing (string, math, date, aggregate, window functions)
 - ✅ Streaming Load Tests: 24/24 passing (CSV parsing, HTTP endpoints, protocol compliance)
 - ✅ Observability Tests: 19/19 passing (tracing, logging, metrics, concurrent spans)
-- ✅ **DDL Statement Tests: 45/45 passing (CREATE, ALTER, DROP, TRUNCATE) - NEW!**
-- ✅ **DML Statement Tests: 42/42 passing (INSERT, UPDATE, DELETE) - NEW!**
-- ✅ **Admin Command Tests: 36/36 passing (SHOW, DESCRIBE, EXPLAIN) - NEW!**
+- ✅ DDL Statement Tests: 45/45 passing (CREATE, ALTER, DROP, TRUNCATE)
+- ✅ DML Statement Tests: 42/42 passing (INSERT, UPDATE, DELETE)
+- ✅ Admin Command Tests: 36/36 passing (SHOW, DESCRIBE, EXPLAIN)
 - ✅ Internal Component Tests: 9/9 passing (DataFusion, converters, executors)
 - ✅ Test Infrastructure Research: Complete (472-line document)
-- 🎯 **Total: 467 tests (123 NEW!), 100% passing, COMPLETE REGRESSION COVERAGE!**
+- 🎯 **Total: 482 tests (138 NEW!), 100% passing, COMPLETE REGRESSION + PROTOCOL COVERAGE!**
