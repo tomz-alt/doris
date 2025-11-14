@@ -532,7 +532,8 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 | SQL Parser | 57 | ✅ All passing | SELECT, JOIN, GROUP BY, CTE, window functions |
 | Integration | 2 | ✅ All passing | FE→BE pipeline, gRPC communication |
 | TPC-H Queries | 23 | ✅ All passing | All 22 standard TPC-H benchmark queries |
-| **Total** | **95** | **✅ 100% passing** | **Phase 1 + TPC-H complete** |
+| SQL Logic | 58 | ✅ All passing | Semantics, correctness, edge cases |
+| **Total** | **153** | **✅ 100% passing** | **Phase 1 + Phase 2 (partial) complete** |
 
 ### Files Added/Modified
 
@@ -540,13 +541,14 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 - `src/mysql/protocol_tests.rs` - 388 lines, 13 tests
 - `src/planner/parser_tests.rs` - 540 lines, 57 tests
 - `src/planner/tpch_tests.rs` - 900+ lines, 23 tests
+- `src/planner/sql_logic_tests.rs` - 700+ lines, 58 tests
 - `examples/mock_be_server.rs` - 170 lines, gRPC server
 - `examples/integration_test.rs` - 200+ lines, 2 integration tests
 - `docs/TEST_INFRASTRUCTURE_RESEARCH.md` - 472 lines, research
 
 **Modified Files**:
 - `src/mysql/mod.rs` - Added protocol_tests module
-- `src/planner/mod.rs` - Added parser_tests, tpch_tests modules
+- `src/planner/mod.rs` - Added parser_tests, tpch_tests, sql_logic_tests modules
 - `src/be/client.rs` - Added is_connected() method
 - `src/be/pool.rs` - Added auto-connect logic
 - `build.rs` - Enabled gRPC server generation
@@ -584,6 +586,32 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 
 **Result**: All 23 tests passing ✓ (completed in 0.03s)
 
+**5. SQL Logic Tests** (`src/planner/sql_logic_tests.rs`)
+- 58 comprehensive test cases
+- Based on: regression-test patterns from Java FE
+- Validates SQL semantics, correctness, and edge cases
+
+**Test Coverage**:
+- ✅ **Literal Values** (5 tests): integers, floats, strings, booleans, NULL
+- ✅ **Arithmetic Expressions** (3 tests): basic operations, precedence, NULL handling
+- ✅ **Comparison Operators** (2 tests): equality, inequality, greater/less than, NULL comparisons
+- ✅ **Logical Operators** (3 tests): AND, OR, NOT with three-valued logic
+- ✅ **CASE Expressions** (3 tests): simple, searched, with NULL
+- ✅ **COALESCE/NULLIF** (2 tests): NULL handling functions
+- ✅ **String Functions** (5 tests): LENGTH, UPPER, LOWER, TRIM, CONCAT, SUBSTRING
+- ✅ **Aggregation Functions** (5 tests): COUNT, SUM, AVG, MIN, MAX, GROUP BY
+- ✅ **Predicates** (3 tests): BETWEEN, IN, LIKE
+- ✅ **Type Conversion** (4 tests): CAST to INTEGER, VARCHAR, DOUBLE, with NULL
+- ✅ **Date/Time Functions** (3 tests): CURRENT_DATE, CURRENT_TIMESTAMP, EXTRACT
+- ✅ **Subqueries** (4 tests): scalar, in WHERE, EXISTS, NOT EXISTS
+- ✅ **Window Functions** (3 tests): ROW_NUMBER, RANK, DENSE_RANK, window aggregates
+- ✅ **Set Operations** (4 tests): DISTINCT, UNION, UNION ALL
+- ✅ **Limiting Results** (2 tests): LIMIT, OFFSET
+- ✅ **Edge Cases** (4 tests): empty results, division by zero, long strings, nested expressions
+- ✅ **Complex Queries** (2 tests): multi-feature queries, comprehensive logic
+
+**Result**: All 58 tests passing ✓ (completed in 0.04s)
+
 ### Next Steps: Phase 2-4
 
 **Phase 2: MySQL Compatibility Suite** (PARTIALLY COMPLETE)
@@ -612,5 +640,6 @@ Comprehensive test infrastructure based on Java FE testing patterns, ensuring 10
 - ✅ SQL Parser Tests: 57/57 passing (comprehensive coverage)
 - ✅ Integration Tests: 2/2 passing (FE→BE pipeline validated)
 - ✅ TPC-H Query Tests: 23/23 passing (all standard TPC-H benchmark queries)
+- ✅ SQL Logic Tests: 58/58 passing (semantics, correctness, edge cases)
 - ✅ Test Infrastructure Research: Complete (472-line document)
-- 🎯 **Total: 95 tests, 100% passing, Phase 1 complete + TPC-H queries validated!**
+- 🎯 **Total: 153 tests, 100% passing, Phase 1 complete + Phase 2 (partial) complete!**
