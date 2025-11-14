@@ -67,7 +67,7 @@ fn main() -> Result<()> {
         println!("cargo:warning=Compiling gRPC service definitions...");
 
         tonic_build::configure()
-            .build_server(false)
+            .build_server(true)  // Enable server for mock BE
             .build_client(true)
             .compile(
                 &["proto/backend_service.proto"],

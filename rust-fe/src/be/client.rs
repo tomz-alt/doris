@@ -34,6 +34,10 @@ impl BackendClient {
         }
     }
 
+    pub fn is_connected(&self) -> bool {
+        self.client.is_some()
+    }
+
     pub async fn connect(&mut self) -> Result<()> {
         info!("Connecting to BE at {}:{}", self.host, self.grpc_port);
 

@@ -46,6 +46,12 @@ impl BackendClientPool {
 
         let mut client = backend.lock().await;
 
+        // Auto-connect if not already connected
+        if !client.is_connected() {
+            debug!("Auto-connecting to BE");
+            client.connect().await?;
+        }
+
         // Execute fragment (use fragment_id = 0 for simple queries)
         let result = client.execute_fragment(query_id, 0, query).await?;
 
