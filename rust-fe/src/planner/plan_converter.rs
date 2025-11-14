@@ -81,7 +81,7 @@ impl PlanConverter {
 
         // Check if this is a table scan
         let plan_name = plan.name();
-        if plan_name.contains("Scan") || plan_name.contains("Csv") || plan_name.contains("Empty") {
+        if plan_name.contains("Scan") || plan_name.contains("Csv") || plan_name.contains("Empty") || plan_name.contains("PlaceholderRow") {
             return self.convert_table_scan(plan);
         }
 

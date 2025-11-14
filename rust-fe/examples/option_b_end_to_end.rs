@@ -11,7 +11,6 @@
 ///
 /// Usage: TPCH_DATA_DIR=/home/user/doris/tpch-data cargo run --example option_b_end_to_end
 
-use datafusion::prelude::*;
 use uuid::Uuid;
 
 use doris_rust_fe::planner::{
@@ -37,7 +36,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Step 1: Initialize DataFusion planner
     println!("=== Step 1: Initialize DataFusion Planner ===");
-    let mut planner = DataFusionPlanner::new().await;
+    let planner = DataFusionPlanner::new().await;
     planner.register_tpch_csv_files(&data_dir).await?;
     println!("✓ DataFusion initialized with TPC-H schema\n");
 
@@ -46,11 +45,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("Simple Aggregation", "SELECT COUNT(*) FROM lineitem"),
         (
             "GROUP BY Aggregation",
-            "SELECT column_9, COUNT(*) as count FROM lineitem GROUP BY column_9",
+            "SELECT l_returnflag, COUNT(*) as count FROM lineitem GROUP BY l_returnflag",
         ),
         (
             "TopN Query",
-            "SELECT * FROM lineitem ORDER BY column_1 LIMIT 10",
+            "SELECT * FROM lineitem ORDER BY l_orderkey LIMIT 10",
         ),
     ];
 
