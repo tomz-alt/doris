@@ -14,7 +14,6 @@ mod tests {
     // Range Partitioning Tests (15 tests)
 
     #[test]
-    #[ignore]
     fn test_create_range_partition_table() {
         let sql = r#"
             CREATE TABLE sales (
@@ -32,7 +31,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_range_partition_by_int() {
         let sql = r#"
             CREATE TABLE users (
@@ -49,7 +47,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_add_range_partition() {
         let sql = r#"
             ALTER TABLE sales
@@ -59,21 +56,18 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_drop_partition() {
         let sql = "ALTER TABLE sales DROP PARTITION p20231";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_drop_partition_if_exists() {
         let sql = "ALTER TABLE sales DROP PARTITION IF EXISTS p20231";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_add_temp_partition() {
         let sql = r#"
             ALTER TABLE sales
@@ -83,7 +77,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_replace_partition() {
         let sql = r#"
             ALTER TABLE sales
@@ -93,28 +86,24 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_truncate_partition() {
         let sql = "ALTER TABLE sales TRUNCATE PARTITION p20231";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_query_specific_partition() {
         let sql = "SELECT * FROM sales PARTITION (p20231)";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_query_multiple_partitions() {
         let sql = "SELECT * FROM sales PARTITION (p20231, p20232)";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_partition_pruning() {
         let sql = r#"
             SELECT * FROM sales
@@ -124,7 +113,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_range_partition_multi_column() {
         let sql = r#"
             CREATE TABLE events (
@@ -141,7 +129,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_add_partition_with_properties() {
         let sql = r#"
             ALTER TABLE sales
@@ -152,7 +139,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_modify_partition_properties() {
         let sql = r#"
             ALTER TABLE sales
@@ -162,7 +148,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_show_partitions() {
         let sql = "SHOW PARTITIONS FROM sales";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
@@ -171,7 +156,6 @@ mod tests {
     // List Partitioning Tests (10 tests)
 
     #[test]
-    #[ignore]
     fn test_create_list_partition_table() {
         let sql = r#"
             CREATE TABLE regions (
@@ -189,7 +173,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_list_partition_single_value() {
         let sql = r#"
             CREATE TABLE status_table (
@@ -207,7 +190,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_add_list_partition() {
         let sql = r#"
             ALTER TABLE regions
@@ -217,7 +199,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_list_partition_default() {
         let sql = r#"
             CREATE TABLE categories (
@@ -233,35 +214,30 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_query_list_partition() {
         let sql = "SELECT * FROM regions PARTITION (p_north)";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_list_partition_pruning() {
         let sql = "SELECT * FROM regions WHERE region = 'US'";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_list_partition_multi_value_query() {
         let sql = "SELECT * FROM regions WHERE region IN ('US', 'CA')";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_drop_list_partition() {
         let sql = "ALTER TABLE regions DROP PARTITION p_south";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_modify_list_partition_values() {
         let sql = r#"
             ALTER TABLE regions
@@ -271,7 +247,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_list_partition_integer() {
         let sql = r#"
             CREATE TABLE priority_queue (
@@ -291,7 +266,6 @@ mod tests {
     // Dynamic Partitioning Tests (10 tests)
 
     #[test]
-    #[ignore]
     fn test_dynamic_partition_enable() {
         let sql = r#"
             CREATE TABLE auto_partitioned (
@@ -313,7 +287,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_dynamic_partition_by_week() {
         let sql = r#"
             ALTER TABLE auto_partitioned
@@ -327,7 +300,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_dynamic_partition_by_month() {
         let sql = r#"
             ALTER TABLE auto_partitioned
@@ -341,7 +313,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_dynamic_partition_disable() {
         let sql = r#"
             ALTER TABLE auto_partitioned
@@ -351,7 +322,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_dynamic_partition_hot_partition_num() {
         let sql = r#"
             ALTER TABLE auto_partitioned
@@ -361,7 +331,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_dynamic_partition_with_replication() {
         let sql = r#"
             ALTER TABLE auto_partitioned
@@ -374,7 +343,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_dynamic_partition_start_day_of_week() {
         let sql = r#"
             ALTER TABLE auto_partitioned
@@ -384,7 +352,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_dynamic_partition_start_day_of_month() {
         let sql = r#"
             ALTER TABLE auto_partitioned
@@ -394,7 +361,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_dynamic_partition_history_partition_num() {
         let sql = r#"
             ALTER TABLE auto_partitioned
@@ -404,7 +370,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_show_dynamic_partition_info() {
         let sql = "SHOW DYNAMIC PARTITION TABLES";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
@@ -413,7 +378,6 @@ mod tests {
     // Partition Operations (15 tests)
 
     #[test]
-    #[ignore]
     fn test_insert_into_partition() {
         let sql = r#"
             INSERT INTO sales PARTITION (p20231)
@@ -423,7 +387,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_insert_auto_partition() {
         let sql = r#"
             INSERT INTO sales
@@ -433,7 +396,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_update_partition() {
         let sql = r#"
             UPDATE sales PARTITION (p20231)
@@ -444,7 +406,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_delete_from_partition() {
         let sql = r#"
             DELETE FROM sales PARTITION (p20231)
@@ -454,14 +415,12 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_count_partition() {
         let sql = "SELECT COUNT(*) FROM sales PARTITION (p20231)";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_aggregate_partition() {
         let sql = r#"
             SELECT
@@ -474,7 +433,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_join_across_partitions() {
         let sql = r#"
             SELECT s1.*, s2.*
@@ -485,7 +443,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_partition_statistics() {
         let sql = r#"
             SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_DESCRIPTION
@@ -496,7 +453,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_partition_size() {
         let sql = r#"
             SELECT
@@ -511,7 +467,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_reorganize_partition() {
         let sql = r#"
             ALTER TABLE sales
@@ -523,7 +478,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_exchange_partition() {
         let sql = r#"
             ALTER TABLE sales
@@ -533,28 +487,24 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_analyze_partition() {
         let sql = "ANALYZE TABLE sales PARTITION (p20231)";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_partition_recovery() {
         let sql = "ADMIN REPAIR TABLE sales PARTITION (p20231)";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_partition_balance() {
         let sql = "ADMIN BALANCE DISK";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]
     fn test_check_partition_health() {
         let sql = "ADMIN CHECK TABLET (12345)";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());

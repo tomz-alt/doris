@@ -6,6 +6,9 @@ use tracing::{debug, warn};
 use crate::error::{DorisError, Result};
 use crate::metadata::catalog::catalog;
 
+pub mod doris_dialect;
+pub mod doris_parser;
+
 pub fn parse_sql(sql: &str) -> Result<Vec<Statement>> {
     debug!("Parsing SQL: {}", sql.trim());
 

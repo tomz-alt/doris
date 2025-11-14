@@ -61,14 +61,12 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_drop_materialized_view() {
         let sql = "DROP MATERIALIZED VIEW sales_by_date";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_refresh_materialized_view() {
         let sql = "REFRESH MATERIALIZED VIEW sales_by_date";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
@@ -204,7 +202,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_mv_with_partition() {
         let sql = r#"
             CREATE MATERIALIZED VIEW partitioned_mv
@@ -217,28 +214,24 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_show_materialized_views() {
         let sql = "SHOW MATERIALIZED VIEWS";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_describe_materialized_view() {
         let sql = "DESCRIBE sales_by_date";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_show_create_materialized_view() {
         let sql = "SHOW CREATE MATERIALIZED VIEW sales_by_date";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_alter_materialized_view_properties() {
         let sql = r#"
             ALTER MATERIALIZED VIEW sales_by_date
@@ -250,7 +243,6 @@ mod tests {
     // MTMV (Multi-Table Materialized View) Tests (30 tests)
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_create_mtmv_basic() {
         let sql = r#"
             CREATE MATERIALIZED VIEW IF NOT EXISTS mv_orders
@@ -264,7 +256,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_create_mtmv_with_join() {
         let sql = r#"
             CREATE MATERIALIZED VIEW mv_order_summary
@@ -282,7 +273,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_create_mtmv_with_partition() {
         let sql = r#"
             CREATE MATERIALIZED VIEW mv_sales_partitioned
@@ -299,7 +289,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_create_mtmv_deferred_build() {
         let sql = r#"
             CREATE MATERIALIZED VIEW mv_deferred
@@ -311,7 +300,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_create_mtmv_auto_refresh() {
         let sql = r#"
             CREATE MATERIALIZED VIEW mv_auto_refresh
@@ -325,7 +313,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_create_mtmv_on_commit() {
         let sql = r#"
             CREATE MATERIALIZED VIEW mv_on_commit
@@ -337,7 +324,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_create_mtmv_with_where() {
         let sql = r#"
             CREATE MATERIALIZED VIEW mv_filtered
@@ -351,7 +337,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_create_mtmv_with_union() {
         let sql = r#"
             CREATE MATERIALIZED VIEW mv_combined
@@ -365,7 +350,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_create_mtmv_with_subquery() {
         let sql = r#"
             CREATE MATERIALIZED VIEW mv_with_subquery
@@ -389,7 +373,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_create_mtmv_with_window_function() {
         let sql = r#"
             CREATE MATERIALIZED VIEW mv_ranked
@@ -406,35 +389,30 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_refresh_mtmv() {
         let sql = "REFRESH MATERIALIZED VIEW mv_orders";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_refresh_mtmv_complete() {
         let sql = "REFRESH MATERIALIZED VIEW mv_orders COMPLETE";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_refresh_mtmv_partition() {
         let sql = "REFRESH MATERIALIZED VIEW mv_sales_partitioned PARTITION (p20240101)";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_refresh_mtmv_auto() {
         let sql = "REFRESH MATERIALIZED VIEW mv_orders AUTO";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_alter_mtmv_refresh_mode() {
         let sql = r#"
             ALTER MATERIALIZED VIEW mv_orders
@@ -444,7 +422,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_alter_mtmv_properties() {
         let sql = r#"
             ALTER MATERIALIZED VIEW mv_orders
@@ -454,77 +431,66 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_drop_mtmv() {
         let sql = "DROP MATERIALIZED VIEW mv_orders";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_drop_mtmv_if_exists() {
         let sql = "DROP MATERIALIZED VIEW IF EXISTS mv_orders";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_show_mtmv() {
         let sql = "SHOW MATERIALIZED VIEW mv_orders";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_show_all_mtmv() {
         let sql = "SHOW MATERIALIZED VIEWS FROM database_name";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_describe_mtmv() {
         let sql = "DESC MATERIALIZED VIEW mv_orders";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_show_create_mtmv() {
         let sql = "SHOW CREATE MATERIALIZED VIEW mv_orders";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_mtmv_task_status() {
         let sql = "SHOW MTMV TASK ON mv_orders";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_pause_mtmv() {
         let sql = "PAUSE MATERIALIZED VIEW JOB ON mv_orders";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_resume_mtmv() {
         let sql = "RESUME MATERIALIZED VIEW JOB ON mv_orders";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_cancel_mtmv_task() {
         let sql = "CANCEL MATERIALIZED VIEW TASK ON mv_orders";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_mtmv_with_properties_in_select() {
         let sql = r#"
             CREATE MATERIALIZED VIEW mv_with_props
@@ -541,7 +507,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_mtmv_with_distributed_by_hash() {
         let sql = r#"
             CREATE MATERIALIZED VIEW mv_distributed
@@ -554,7 +519,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_mtmv_query_rewrite() {
         let sql = r#"
             SELECT order_date, total_amount
@@ -565,7 +529,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]  // Doris-specific MTMV syntax
     fn test_mtmv_with_cte() {
         let sql = r#"
             CREATE MATERIALIZED VIEW mv_with_cte

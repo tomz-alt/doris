@@ -68,7 +68,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_insert_with_label() {
         let sql = r#"
             INSERT INTO users WITH LABEL label_123
@@ -383,7 +382,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_update_with_limit() {
         let sql = "UPDATE users SET processed = true WHERE active = false LIMIT 100";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
@@ -543,7 +541,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_delete_with_join() {
         let sql = r#"
             DELETE u

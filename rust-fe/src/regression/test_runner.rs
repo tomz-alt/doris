@@ -1,7 +1,6 @@
 //! SQL Test Runner - provides infrastructure for executing SQL queries
 
-use datafusion::sql::parser::DFParser;
-use datafusion::sql::sqlparser::dialect::GenericDialect;
+use crate::parser::doris_parser::DorisParser;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExpectedResult {
@@ -12,9 +11,9 @@ pub enum ExpectedResult {
 }
 
 pub fn execute_test(sql: &str, expected: ExpectedResult) -> Result<(), String> {
-    let dialect = GenericDialect{};
-    let parsed = DFParser::parse_sql_with_dialect(sql, &dialect);
-    
+    // Use Doris parser to handle both standard and Doris-specific SQL
+    let parsed = DorisParser::parse_sql(sql);
+
     match parsed {
         Ok(statements) if !statements.is_empty() => {
             match expected {
@@ -27,7 +26,8 @@ pub fn execute_test(sql: &str, expected: ExpectedResult) -> Result<(), String> {
         Err(e) => {
             match expected {
                 ExpectedResult::Error(msg) => {
-                    if format!("{:?}", e).contains(&msg) {
+                    let error_str = format!("{:?}", e);
+                    if error_str.contains(&msg) {
                         Ok(())
                     } else {
                         Err(format!("Expected error '{}', got {:?}", msg, e))

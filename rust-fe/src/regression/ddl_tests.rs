@@ -48,7 +48,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_create_table_with_default_values() {
         let sql = r#"
             CREATE TABLE settings (
@@ -85,7 +84,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_create_table_with_partition() {
         let sql = r#"
             CREATE TABLE sales (
@@ -103,7 +101,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_create_table_with_buckets() {
         let sql = r#"
             CREATE TABLE distributed_table (
@@ -117,7 +114,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_create_table_duplicate_key() {
         let sql = r#"
             CREATE TABLE log_table (
@@ -132,7 +128,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_create_table_unique_key() {
         let sql = r#"
             CREATE TABLE user_profile (
@@ -147,7 +142,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_create_table_aggregate_key() {
         let sql = r#"
             CREATE TABLE metrics (
@@ -162,7 +156,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_create_table_with_properties() {
         let sql = r#"
             CREATE TABLE prop_table (
@@ -179,7 +172,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_create_table_with_bloom_filter() {
         let sql = r#"
             CREATE TABLE bloom_table (
@@ -195,7 +187,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_create_table_with_storage_policy() {
         let sql = r#"
             CREATE TABLE storage_table (
@@ -257,7 +248,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_create_table_with_map() {
         let sql = r#"
             CREATE TABLE map_table (
@@ -270,7 +260,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_create_table_with_struct() {
         let sql = r#"
             CREATE TABLE struct_table (
@@ -330,7 +319,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_alter_table_add_partition() {
         let sql = r#"
             ALTER TABLE sales
@@ -341,7 +329,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_alter_table_drop_partition() {
         let sql = "ALTER TABLE sales DROP PARTITION p202401";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
@@ -358,7 +345,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_alter_table_drop_rollup() {
         let sql = "ALTER TABLE sales DROP ROLLUP sales_by_date";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
@@ -366,7 +352,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_alter_table_set_properties() {
         let sql = r#"
             ALTER TABLE users
@@ -389,7 +374,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_alter_table_drop_index() {
         let sql = "ALTER TABLE users DROP INDEX idx_name";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
@@ -397,7 +381,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_alter_table_modify_distribution() {
         let sql = r#"
             ALTER TABLE users
@@ -408,7 +391,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_alter_table_set_comment() {
         let sql = r#"
             ALTER TABLE users
@@ -419,7 +401,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_alter_table_enable_feature() {
         let sql = "ALTER TABLE users ENABLE FEATURE 'BATCH_DELETE'";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
@@ -445,7 +426,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_alter_table_modify_replication() {
         let sql = r#"
             ALTER TABLE users
@@ -470,7 +450,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_drop_database() {
         let sql = "DROP DATABASE test_db";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
@@ -484,7 +463,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_drop_materialized_view() {
         let sql = "DROP MATERIALIZED VIEW mv_sales";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
@@ -498,7 +476,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_drop_index() {
         let sql = "DROP INDEX idx_name ON users";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
@@ -506,7 +483,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_drop_user() {
         let sql = "DROP USER test_user";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
@@ -520,7 +496,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_drop_resource() {
         let sql = "DROP RESOURCE test_resource";
         assert!(execute_test(sql, ExpectedResult::Success).is_ok());
@@ -542,7 +517,6 @@ mod tests {
 
     // Doris-specific syntax - ignored until Doris parser is implemented
     #[test]
-    #[ignore]
     fn test_create_database_with_properties() {
         let sql = r#"
             CREATE DATABASE my_database
