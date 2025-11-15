@@ -39,10 +39,10 @@ impl Default for Config {
 impl Config {
     pub fn load() -> Result<Self> {
         // Try to load from config file, otherwise use defaults
-        match fs::read_to_string("fe_config.json") {
+        let mut config = match fs::read_to_string("fe_config.json") {
             Ok(content) => {
                 let config: Config = serde_json::from_str(&content)?;
-                Ok(config)
+                config
             }
             Err(_) => {
                 // Use default config
@@ -52,8 +52,55 @@ impl Config {
                     "fe_config.json.example",
                     serde_json::to_string_pretty(&config)?
                 );
-                Ok(config)
+                config
+            }
+        };
+
+        // Override with environment variables if present
+        if let Ok(port) = std::env::var("FE_QUERY_PORT") {
+            if let Ok(port_num) = port.parse::<u16>() {
+                config.mysql_port = port_num;
             }
         }
+
+        if let Ok(port) = std::env::var("FE_HTTP_PORT") {
+            if let Ok(port_num) = port.parse::<u16>() {
+                config.http_port = port_num;
+            }
+        }
+
+        if let Ok(size) = std::env::var("QUERY_QUEUE_SIZE") {
+            if let Ok(queue_size) = size.parse::<usize>() {
+                config.query_queue_size = queue_size;
+            }
+        }
+
+        if let Ok(max) = std::env::var("MAX_CONCURRENT_QUERIES") {
+            if let Ok(max_queries) = max.parse::<usize>() {
+                config.max_concurrent_queries = max_queries;
+            }
+        }
+
+        // Parse BE_ADDR environment variable (format: "host:port" or "host:port:grpc_port")
+        if let Ok(be_addr) = std::env::var("BE_ADDR") {
+            let parts: Vec<&str> = be_addr.split(':').collect();
+            if parts.len() >= 2 {
+                if let Ok(port) = parts[1].parse::<u16>() {
+                    let grpc_port = if parts.len() >= 3 {
+                        parts[2].parse::<u16>().unwrap_or(9070)
+                    } else {
+                        9070  // Default gRPC port
+                    };
+
+                    config.backend_nodes = vec![BackendNode {
+                        host: parts[0].to_string(),
+                        port,
+                        grpc_port,
+                    }];
+                }
+            }
+        }
+
+        Ok(config)
     }
 }
