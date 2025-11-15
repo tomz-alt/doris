@@ -24,6 +24,17 @@ pub struct BackendClient {
     client: Option<PBackendServiceClient<Channel>>,
 }
 
+impl std::fmt::Debug for BackendClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BackendClient")
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .field("grpc_port", &self.grpc_port)
+            .field("client", &self.client.is_some())
+            .finish()
+    }
+}
+
 impl BackendClient {
     pub fn new(host: String, port: u16, grpc_port: u16) -> Self {
         Self {

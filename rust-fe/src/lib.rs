@@ -10,6 +10,7 @@ pub mod metadata;
 pub mod parser;
 pub mod planner;
 pub mod be;
+pub mod catalog;
 pub mod benchmark;
 pub mod observability_tests;
 pub mod regression;

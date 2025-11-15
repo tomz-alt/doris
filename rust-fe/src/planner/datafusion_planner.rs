@@ -85,6 +85,24 @@ impl DataFusionPlanner {
         Ok(())
     }
 
+    /// Register TPC-H tables backed by Doris BE (for quick prototype)
+    pub async fn register_tpch_be_tables(
+        &self,
+        be_client_pool: std::sync::Arc<crate::be::BackendClientPool>,
+        database: &str,
+    ) -> Result<()> {
+        info!("Registering BE-backed TPC-H tables for database: {}", database);
+
+        crate::catalog::tpch_tables::register_tpch_tables(
+            &self.ctx,
+            be_client_pool,
+            database,
+        ).await?;
+
+        info!("BE-backed TPC-H tables registered successfully");
+        Ok(())
+    }
+
     /// Execute a SQL query using DataFusion (Option A - direct execution)
     pub async fn execute_query(&self, sql: &str) -> Result<Vec<RecordBatch>> {
         debug!("Executing query via DataFusion: {}", sql.trim());

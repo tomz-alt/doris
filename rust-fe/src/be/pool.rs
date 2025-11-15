@@ -8,6 +8,7 @@ use crate::error::Result;
 use crate::query::QueryResult;
 use super::client::BackendClient;
 
+#[derive(Debug)]
 pub struct BackendClientPool {
     clients: DashMap<String, Arc<tokio::sync::Mutex<BackendClient>>>,
     backend_nodes: Vec<BackendNode>,

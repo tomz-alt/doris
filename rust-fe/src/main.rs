@@ -7,6 +7,7 @@ mod error;
 mod metadata;
 mod parser;
 mod planner;
+mod catalog;
 
 use anyhow::Result;
 use std::sync::Arc;
@@ -43,19 +44,28 @@ async fn main() -> Result<()> {
     ).await);
     info!("DataFusion initialized successfully");
 
-    // Register TPC-H CSV data if directory is provided
+    let be_client_pool = Arc::new(be::BackendClientPool::new(config.backend_nodes.clone()));
+
+    // Register BE-backed TPC-H tables (quick prototype)
+    // This allows Rust FE to "see" TPC-H tables stored in BE
+    info!("Registering BE-backed TPC-H tables (hardcoded schemas)...");
+    match query_executor.register_tpch_be_tables(be_client_pool.clone(), "tpch_sf1").await {
+        Ok(_) => info!("✓ BE-backed TPC-H tables registered successfully"),
+        Err(e) => error!("Failed to register BE-backed tables: {}", e),
+    }
+
+    // Optionally override with CSV data for local testing (if TPCH_DATA_DIR is set)
     if let Ok(tpch_data_dir) = std::env::var("TPCH_DATA_DIR") {
         info!("TPC-H data directory specified: {}", tpch_data_dir);
+        info!("This will override BE-backed tables with local CSV data");
         match query_executor.register_tpch_csv(&tpch_data_dir).await {
             Ok(_) => info!("TPC-H CSV data registered successfully"),
             Err(e) => error!("Failed to register TPC-H data: {}", e),
         }
     } else {
-        info!("TPCH_DATA_DIR not set - queries will run on empty tables");
-        info!("To load TPC-H data, set: export TPCH_DATA_DIR=/path/to/tpch/data");
+        info!("TPCH_DATA_DIR not set - using BE-backed tables");
+        info!("To override with local CSV, set: export TPCH_DATA_DIR=/path/to/tpch/data");
     }
-
-    let be_client_pool = Arc::new(be::BackendClientPool::new(config.backend_nodes.clone()));
 
     // Start MySQL server
     let mysql_server = mysql::MysqlServer::new(

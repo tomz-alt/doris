@@ -45,6 +45,19 @@ impl QueryExecutor {
         Ok(())
     }
 
+    /// Register BE-backed TPC-H tables (quick prototype for proving BE integration)
+    pub async fn register_tpch_be_tables(
+        &self,
+        be_client_pool: Arc<BackendClientPool>,
+        database: &str,
+    ) -> Result<()> {
+        if let Some(ref df) = self.datafusion {
+            df.register_tpch_be_tables(be_client_pool, database).await?;
+            info!("TPC-H BE-backed tables registered for database: {}", database);
+        }
+        Ok(())
+    }
+
     pub async fn queue_query(
         &self,
         query_id: Uuid,
