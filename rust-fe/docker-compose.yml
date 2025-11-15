@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # Shared Backend (used by both FEs)
+  doris-be:
+    image: apache/doris:2.1.0-be-x86_64
+    container_name: doris-be
+    hostname: doris-be
+    environment:
+      - BE_ADDR=doris-be:9050
+    ports:
+      - "8040:8040"  # BE webserver
+      - "9060:9060"  # BE service port
+      - "8060:8060"  # BE brpc port
+      - "9050:9050"  # BE heartbeat port
+    volumes:
+      - be-data:/opt/apache-doris/be/storage
+      - be-log:/opt/apache-doris/be/log
+    networks:
+      - doris-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8040/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  # Java FE (Baseline for comparison)
+  doris-fe-java:
+    image: apache/doris:2.1.0-fe-x86_64
+    container_name: doris-fe-java
+    hostname: doris-fe-java
+    environment:
+      - FE_SERVERS=fe1:doris-fe-java:9010
+      - FE_ID=1
+    ports:
+      - "8030:8030"  # HTTP port
+      - "9030:9030"  # MySQL port
+      - "9010:9010"  # Edit log port
+      - "9020:9020"  # RPC port
+    volumes:
+      - fe-java-data:/opt/apache-doris/fe/doris-meta
+      - fe-java-log:/opt/apache-doris/fe/log
+    networks:
+      - doris-network
+    depends_on:
+      doris-be:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mysql", "-h", "127.0.0.1", "-P", "9030", "-u", "root", "-e", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    command: >
+      bash -c "
+      echo 'priority_networks = doris-fe-java' >> /opt/apache-doris/fe/conf/fe.conf &&
+      /opt/apache-doris/fe/bin/start_fe.sh
+      "
+
+  # Rust FE (Optimized implementation)
+  doris-fe-rust:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: doris-fe-rust
+    hostname: doris-fe-rust
+    environment:
+      - FE_HTTP_PORT=8031
+      - FE_RPC_PORT=9021
+      - FE_QUERY_PORT=9031
+      - FE_EDIT_LOG_PORT=9011
+      - ENABLE_COST_BASED_JOIN=true
+      - ENABLE_PARTITION_PRUNING=true
+      - ENABLE_RUNTIME_FILTERS=true
+      - ENABLE_BUCKET_SHUFFLE=true
+      - WAIT_FOR_BE=doris-be:9050
+      - RUST_LOG=info
+    ports:
+      - "8031:8031"  # HTTP port
+      - "9031:9031"  # MySQL port
+      - "9011:9011"  # Edit log port
+      - "9021:9021"  # RPC port
+    volumes:
+      - fe-rust-data:/opt/doris-rust-fe/meta
+      - fe-rust-log:/opt/doris-rust-fe/log
+    networks:
+      - doris-network
+    depends_on:
+      doris-be:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mysql", "-h", "127.0.0.1", "-P", "9031", "-u", "root", "-e", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  # MySQL client for easy access
+  mysql-client:
+    image: mysql:8.0
+    container_name: doris-mysql-client
+    networks:
+      - doris-network
+    command: tail -f /dev/null  # Keep container running
+    depends_on:
+      - doris-fe-java
+      - doris-fe-rust
+
+volumes:
+  be-data:
+  be-log:
+  fe-java-data:
+  fe-java-log:
+  fe-rust-data:
+  fe-rust-log:
+
+networks:
+  doris-network:
+    driver: bridge
