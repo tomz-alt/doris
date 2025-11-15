@@ -31,10 +31,21 @@ warn() {
 # Step 1: Build and start containers
 step "Building Rust FE Docker image..."
 cd "$PROJECT_ROOT"
-docker-compose build doris-fe-rust
+
+# Support both docker-compose and docker compose
+if command -v docker-compose &> /dev/null; then
+    COMPOSE_CMD="docker-compose"
+elif docker compose version &> /dev/null; then
+    COMPOSE_CMD="docker compose"
+else
+    echo "Error: Neither 'docker-compose' nor 'docker compose' is available"
+    exit 1
+fi
+
+$COMPOSE_CMD build doris-fe-rust
 
 step "Starting containers (BE + Java FE + Rust FE)..."
-docker-compose up -d
+$COMPOSE_CMD up -d
 
 echo ""
 step "Waiting for services to start..."
@@ -133,12 +144,12 @@ echo "# Run test query comparison:"
 echo "./docker/test-query.sh"
 echo ""
 echo "# View logs:"
-echo "docker-compose logs -f doris-fe-rust"
-echo "docker-compose logs -f doris-fe-java"
+echo "$COMPOSE_CMD logs -f doris-fe-rust"
+echo "$COMPOSE_CMD logs -f doris-fe-java"
 echo ""
 echo "# Stop cluster:"
-echo "docker-compose down"
+echo "$COMPOSE_CMD down"
 echo ""
 echo "# Clean up everything (including data):"
-echo "docker-compose down -v"
+echo "$COMPOSE_CMD down -v"
 echo ""

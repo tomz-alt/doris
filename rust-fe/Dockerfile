@@ -31,6 +31,9 @@ RUN apt-get update && apt-get install -y \
     libssl3 \
     ca-certificates \
     mysql-client \
+    gettext-base \
+    netcat-openbsd \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create doris user
