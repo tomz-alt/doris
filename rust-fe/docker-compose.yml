@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Shared Backend (used by both FEs)
   doris-be:
-    image: apache/doris:2.1.0-be-x86_64
+    image: apache/doris:4.0.1-be-arm64
     container_name: doris-be
     hostname: doris-be
     environment:
@@ -30,7 +30,7 @@ services:
 
   # Java FE (Baseline for comparison)
   doris-fe-java:
-    image: apache/doris:2.1.0-fe-x86_64
+    image: apache/doris:4.0.1-fe-arm64
     container_name: doris-fe-java
     hostname: doris-fe-java
     environment:

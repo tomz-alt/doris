@@ -1,5 +1,5 @@
 # Rust FE Docker Image
-FROM rust:1.84-slim as builder
+FROM rustlang/rust:nightly-slim as builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -30,7 +30,7 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y \
     libssl3 \
     ca-certificates \
-    mysql-client \
+    default-mysql-client \
     gettext-base \
     netcat-openbsd \
     curl \
@@ -49,9 +49,6 @@ RUN mkdir -p /opt/doris-rust-fe/bin \
 # Copy binary from builder
 COPY --from=builder /app/target/release/doris-rust-fe /opt/doris-rust-fe/bin/
 
-# Copy configuration template
-COPY docker/fe.conf /opt/doris-rust-fe/conf/fe.conf.template
-
 USER doris
 WORKDIR /opt/doris-rust-fe
 
@@ -69,8 +66,4 @@ ENV FE_HTTP_PORT=8031 \
     FE_EDIT_LOG_PORT=9011 \
     RUST_LOG=info
 
-# Startup script
-COPY docker/start-fe.sh /opt/doris-rust-fe/bin/
-RUN chmod +x /opt/doris-rust-fe/bin/start-fe.sh
-
-CMD ["/opt/doris-rust-fe/bin/start-fe.sh"]
+CMD ["/opt/doris-rust-fe/bin/doris-rust-fe"]

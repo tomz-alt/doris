@@ -1,0 +1,38 @@
+# Simple Rust FE Docker Image (copies pre-built binary)
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libssl3 \
+    ca-certificates \
+    default-mysql-client \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create doris user
+RUN useradd -m -u 1000 -s /bin/bash doris
+
+# Create directories
+RUN mkdir -p /opt/doris-rust-fe/bin \
+    /opt/doris-rust-fe/conf \
+    /opt/doris-rust-fe/log \
+    /opt/doris-rust-fe/meta \
+    && chown -R doris:doris /opt/doris-rust-fe
+
+# Copy pre-built binary from target/release
+COPY target/release/doris-rust-fe /opt/doris-rust-fe/bin/
+
+USER doris
+WORKDIR /opt/doris-rust-fe
+
+# Expose ports
+EXPOSE 8031 9021 9031 9011
+
+# Environment variables
+ENV FE_HTTP_PORT=8031 \
+    FE_RPC_PORT=9021 \
+    FE_QUERY_PORT=9031 \
+    FE_EDIT_LOG_PORT=9011 \
+    RUST_LOG=info
+
+CMD ["/opt/doris-rust-fe/bin/doris-rust-fe"]
