@@ -229,9 +229,18 @@ impl OkPacket {
     }
 
     pub fn encode(&self) -> Bytes {
+        self.encode_with_header(0x00)
+    }
+
+    // Encode OK packet with 0xFE header (used to replace EOF when CLIENT_DEPRECATE_EOF is set)
+    pub fn encode_as_eof(&self) -> Bytes {
+        self.encode_with_header(0xfe)
+    }
+
+    fn encode_with_header(&self, header: u8) -> Bytes {
         let mut buf = BytesMut::new();
 
-        buf.put_u8(0x00); // OK packet header
+        buf.put_u8(header); // OK packet header (0x00 or 0xFE)
         write_lenenc_int(&mut buf, self.affected_rows);
         write_lenenc_int(&mut buf, self.last_insert_id);
         buf.put_u16_le(self.status_flags);

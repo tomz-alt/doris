@@ -84,6 +84,7 @@ pub const UTF8MB4_GENERAL_CI: u8 = 45;
 
 // Status flags
 pub const SERVER_STATUS_AUTOCOMMIT: u16 = 0x0002;
+pub const SERVER_MORE_RESULTS_EXISTS: u16 = 0x0008;
 
 // Column types
 #[derive(Debug, Clone, Copy)]

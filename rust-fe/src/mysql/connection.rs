@@ -21,6 +21,7 @@ pub struct MysqlConnection {
     query_executor: Arc<QueryExecutor>,
     be_client_pool: Arc<BackendClientPool>,
     salt: Vec<u8>,
+    client_capabilities: u32,
 }
 
 impl MysqlConnection {
@@ -41,6 +42,7 @@ impl MysqlConnection {
             query_executor,
             be_client_pool,
             salt: Vec::new(),
+            client_capabilities: 0,
         }
     }
 
@@ -48,17 +50,21 @@ impl MysqlConnection {
         info!("New MySQL connection: {}", self.connection_id);
 
         // Send handshake
+        info!("Sending handshake to connection: {}", self.connection_id);
         if let Err(e) = self.send_handshake().await {
             error!("Failed to send handshake: {}", e);
             return Err(e);
         }
+        info!("Handshake sent successfully to connection: {}", self.connection_id);
 
         // Receive handshake response
+        info!("Waiting for handshake response from connection: {}", self.connection_id);
         if let Err(e) = self.receive_handshake_response().await {
-            error!("Failed to authenticate: {}", e);
+            error!("Failed to authenticate connection {}: {}", self.connection_id, e);
             let _ = self.send_error(1045, "Access denied".to_string()).await;
             return Err(e);
         }
+        info!("Authentication successful for connection: {}", self.connection_id);
 
         // Send OK packet
         self.send_ok().await?;
@@ -100,8 +106,11 @@ impl MysqlConnection {
 
         let response = HandshakeResponse::decode(packet.payload)?;
 
-        debug!("Handshake response - username: {}, db: {:?}",
-               response.username, response.database);
+        debug!("Handshake response - username: {}, db: {:?}, capabilities: 0x{:08x}",
+               response.username, response.database, response.capability_flags);
+
+        // Store client capabilities
+        self.client_capabilities = response.capability_flags;
 
         // Simple authentication (accept any password for PoC)
         // In production, verify response.auth_response against scrambled password
@@ -287,33 +296,57 @@ impl MysqlConnection {
     }
 
     async fn send_result_set(&mut self, columns: Vec<ColumnDefinition>, rows: Vec<ResultRow>) -> Result<()> {
+        use super::protocol::CLIENT_DEPRECATE_EOF;
+
+        let deprecate_eof = (self.client_capabilities & CLIENT_DEPRECATE_EOF) != 0;
+        debug!("Sending result set: {} columns, {} rows, deprecate_eof: {}",
+               columns.len(), rows.len(), deprecate_eof);
+
         // Column count
         let mut col_count_buf = BytesMut::new();
         write_lenenc_int(&mut col_count_buf, columns.len() as u64);
         self.write_packet(Packet::new(self.sequence_id, col_count_buf.freeze())).await?;
         self.sequence_id += 1;
+        debug!("Sent column count");
 
         // Column definitions
-        for col in columns {
+        for (i, col) in columns.iter().enumerate() {
             self.write_packet(Packet::new(self.sequence_id, col.encode())).await?;
             self.sequence_id += 1;
+            debug!("Sent column {} definition", i);
         }
 
-        // EOF packet after columns (if not using CLIENT_DEPRECATE_EOF)
-        let eof = EofPacket::new();
-        self.write_packet(Packet::new(self.sequence_id, eof.encode())).await?;
-        self.sequence_id += 1;
+        // EOF packet after columns (only if not using CLIENT_DEPRECATE_EOF)
+        if !deprecate_eof {
+            debug!("Sending EOF after columns");
+            let eof = EofPacket::new();
+            self.write_packet(Packet::new(self.sequence_id, eof.encode())).await?;
+            self.sequence_id += 1;
+        } else {
+            debug!("Skipping EOF after columns (CLIENT_DEPRECATE_EOF)");
+        }
 
         // Rows
-        for row in rows {
+        for (i, row) in rows.iter().enumerate() {
             self.write_packet(Packet::new(self.sequence_id, row.encode())).await?;
             self.sequence_id += 1;
+            debug!("Sent row {}", i);
         }
 
-        // EOF packet after rows
-        let eof = EofPacket::new();
-        self.write_packet(Packet::new(self.sequence_id, eof.encode())).await?;
+        // Final packet: OK with 0xFE header if deprecate_eof, otherwise EOF
+        if deprecate_eof {
+            debug!("Sending final OK packet (with 0xFE header to replace EOF)");
+            // Send OK packet with 0xFE header and SERVER_MORE_RESULTS_EXISTS cleared
+            let mut ok = OkPacket::new();
+            ok.status_flags &= !SERVER_MORE_RESULTS_EXISTS;
+            self.write_packet(Packet::new(self.sequence_id, ok.encode_as_eof())).await?;
+        } else {
+            debug!("Sending final EOF packet");
+            let eof = EofPacket::new();
+            self.write_packet(Packet::new(self.sequence_id, eof.encode())).await?;
+        }
         self.sequence_id += 1;
+        debug!("Result set sent successfully");
 
         Ok(())
     }
@@ -341,16 +374,21 @@ impl MysqlConnection {
     async fn read_packet(&mut self) -> Result<Packet> {
         loop {
             // Try to decode a packet from buffer
+            debug!("Trying to decode packet, buffer len: {}", self.read_buffer.len());
             if let Some(packet) = Packet::decode(&mut self.read_buffer)? {
+                debug!("Decoded packet: seq={}, len={}", packet.sequence_id, packet.payload.len());
                 self.sequence_id = packet.sequence_id.wrapping_add(1);
                 return Ok(packet);
             }
 
             // Read more data
+            debug!("Reading more data from socket...");
             let mut buf = vec![0u8; 8192];
             let n = self.stream.read(&mut buf).await?;
 
+            debug!("Read {} bytes from socket", n);
             if n == 0 {
+                warn!("Client closed connection (read 0 bytes)");
                 return Err(DorisError::ConnectionClosed);
             }
 
