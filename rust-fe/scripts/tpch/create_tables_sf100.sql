@@ -1,15 +1,16 @@
 -- TPC-H SF100 Table Definitions for Doris
+-- Matches official TPC-H specification v2.18.0
 -- Optimized for 100GB scale factor with partitioning and distribution
 
--- Customer table
+-- Customer table (SF100: 15M rows)
 CREATE TABLE IF NOT EXISTS customer (
-    c_custkey     BIGINT NOT NULL,
+    c_custkey     INT NOT NULL,
     c_name        VARCHAR(25) NOT NULL,
     c_address     VARCHAR(40) NOT NULL,
     c_nationkey   INT NOT NULL,
-    c_phone       VARCHAR(15) NOT NULL,
+    c_phone       CHAR(15) NOT NULL,
     c_acctbal     DECIMAL(15,2) NOT NULL,
-    c_mktsegment  VARCHAR(10) NOT NULL,
+    c_mktsegment  CHAR(10) NOT NULL,
     c_comment     VARCHAR(117) NOT NULL
 )
 DUPLICATE KEY(c_custkey)
@@ -19,23 +20,24 @@ PROPERTIES (
     "storage_format" = "V2"
 );
 
--- Lineitem table (largest table - partitioned by ship date for pruning)
+-- Lineitem table (SF100: 600M rows - largest table)
+-- Partitioned by ship date for partition pruning optimization
 CREATE TABLE IF NOT EXISTS lineitem (
-    l_orderkey      BIGINT NOT NULL,
-    l_partkey       BIGINT NOT NULL,
-    l_suppkey       BIGINT NOT NULL,
+    l_orderkey      INT NOT NULL,
+    l_partkey       INT NOT NULL,
+    l_suppkey       INT NOT NULL,
     l_linenumber    INT NOT NULL,
     l_quantity      DECIMAL(15,2) NOT NULL,
     l_extendedprice DECIMAL(15,2) NOT NULL,
     l_discount      DECIMAL(15,2) NOT NULL,
     l_tax           DECIMAL(15,2) NOT NULL,
-    l_returnflag    VARCHAR(1) NOT NULL,
-    l_linestatus    VARCHAR(1) NOT NULL,
+    l_returnflag    CHAR(1) NOT NULL,
+    l_linestatus    CHAR(1) NOT NULL,
     l_shipdate      DATE NOT NULL,
     l_commitdate    DATE NOT NULL,
     l_receiptdate   DATE NOT NULL,
-    l_shipinstruct  VARCHAR(25) NOT NULL,
-    l_shipmode      VARCHAR(10) NOT NULL,
+    l_shipinstruct  CHAR(25) NOT NULL,
+    l_shipmode      CHAR(10) NOT NULL,
     l_comment       VARCHAR(44) NOT NULL
 )
 DUPLICATE KEY(l_orderkey, l_partkey, l_suppkey, l_linenumber)
@@ -56,10 +58,10 @@ PROPERTIES (
     "compression" = "LZ4"
 );
 
--- Nation table
+-- Nation table (25 rows - reference data)
 CREATE TABLE IF NOT EXISTS nation (
     n_nationkey INT NOT NULL,
-    n_name      VARCHAR(25) NOT NULL,
+    n_name      CHAR(25) NOT NULL,
     n_regionkey INT NOT NULL,
     n_comment   VARCHAR(152) NOT NULL
 )
@@ -69,15 +71,16 @@ PROPERTIES (
     "replication_num" = "3"
 );
 
--- Orders table (partitioned by order date for pruning)
+-- Orders table (SF100: 150M rows)
+-- Partitioned by order date for partition pruning optimization
 CREATE TABLE IF NOT EXISTS orders (
-    o_orderkey      BIGINT NOT NULL,
-    o_custkey       BIGINT NOT NULL,
-    o_orderstatus   VARCHAR(1) NOT NULL,
+    o_orderkey      INT NOT NULL,
+    o_custkey       INT NOT NULL,
+    o_orderstatus   CHAR(1) NOT NULL,
     o_totalprice    DECIMAL(15,2) NOT NULL,
     o_orderdate     DATE NOT NULL,
-    o_orderpriority VARCHAR(15) NOT NULL,
-    o_clerk         VARCHAR(15) NOT NULL,
+    o_orderpriority CHAR(15) NOT NULL,
+    o_clerk         CHAR(15) NOT NULL,
     o_shippriority  INT NOT NULL,
     o_comment       VARCHAR(79) NOT NULL
 )
@@ -98,15 +101,15 @@ PROPERTIES (
     "storage_format" = "V2"
 );
 
--- Part table
+-- Part table (SF100: 20M rows)
 CREATE TABLE IF NOT EXISTS part (
-    p_partkey     BIGINT NOT NULL,
+    p_partkey     INT NOT NULL,
     p_name        VARCHAR(55) NOT NULL,
-    p_mfgr        VARCHAR(25) NOT NULL,
-    p_brand       VARCHAR(10) NOT NULL,
+    p_mfgr        CHAR(25) NOT NULL,
+    p_brand       CHAR(10) NOT NULL,
     p_type        VARCHAR(25) NOT NULL,
     p_size        INT NOT NULL,
-    p_container   VARCHAR(10) NOT NULL,
+    p_container   CHAR(10) NOT NULL,
     p_retailprice DECIMAL(15,2) NOT NULL,
     p_comment     VARCHAR(23) NOT NULL
 )
@@ -117,10 +120,11 @@ PROPERTIES (
     "storage_format" = "V2"
 );
 
--- Partsupp table (colocated with part for bucket shuffle optimization)
+-- Partsupp table (SF100: 80M rows)
+-- Colocated with part for bucket shuffle optimization
 CREATE TABLE IF NOT EXISTS partsupp (
-    ps_partkey    BIGINT NOT NULL,
-    ps_suppkey    BIGINT NOT NULL,
+    ps_partkey    INT NOT NULL,
+    ps_suppkey    INT NOT NULL,
     ps_availqty   INT NOT NULL,
     ps_supplycost DECIMAL(15,2) NOT NULL,
     ps_comment    VARCHAR(199) NOT NULL
@@ -133,10 +137,10 @@ PROPERTIES (
     "colocate_with" = "part"
 );
 
--- Region table
+-- Region table (5 rows - reference data)
 CREATE TABLE IF NOT EXISTS region (
     r_regionkey INT NOT NULL,
-    r_name      VARCHAR(25) NOT NULL,
+    r_name      CHAR(25) NOT NULL,
     r_comment   VARCHAR(152) NOT NULL
 )
 DUPLICATE KEY(r_regionkey)
@@ -145,13 +149,13 @@ PROPERTIES (
     "replication_num" = "3"
 );
 
--- Supplier table
+-- Supplier table (SF100: 1M rows)
 CREATE TABLE IF NOT EXISTS supplier (
-    s_suppkey   BIGINT NOT NULL,
-    s_name      VARCHAR(25) NOT NULL,
+    s_suppkey   INT NOT NULL,
+    s_name      CHAR(25) NOT NULL,
     s_address   VARCHAR(40) NOT NULL,
     s_nationkey INT NOT NULL,
-    s_phone     VARCHAR(15) NOT NULL,
+    s_phone     CHAR(15) NOT NULL,
     s_acctbal   DECIMAL(15,2) NOT NULL,
     s_comment   VARCHAR(101) NOT NULL
 )
@@ -162,5 +166,25 @@ PROPERTIES (
     "storage_format" = "V2"
 );
 
--- Show table status
+-- Verify tables created
 SHOW TABLES;
+
+-- Check row counts (after data load)
+-- SELECT 'customer' as tbl, COUNT(*) FROM customer
+-- UNION ALL SELECT 'lineitem', COUNT(*) FROM lineitem
+-- UNION ALL SELECT 'nation', COUNT(*) FROM nation
+-- UNION ALL SELECT 'orders', COUNT(*) FROM orders
+-- UNION ALL SELECT 'part', COUNT(*) FROM part
+-- UNION ALL SELECT 'partsupp', COUNT(*) FROM partsupp
+-- UNION ALL SELECT 'region', COUNT(*) FROM region
+-- UNION ALL SELECT 'supplier', COUNT(*) FROM supplier;
+
+-- Expected counts for SF100:
+-- customer:    15,000,000
+-- lineitem:   600,037,902
+-- nation:              25
+-- orders:     150,000,000
+-- part:        20,000,000
+-- partsupp:    80,000,000
+-- region:               5
+-- supplier:     1,000,000
