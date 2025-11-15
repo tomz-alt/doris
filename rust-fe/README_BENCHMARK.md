@@ -6,14 +6,17 @@
 
 ✅ **TPC-H**: All 22 official queries
 ✅ **TPC-DS**: All 99 official queries
+✅ **FE API Benchmark**: E2E latency & resource testing with concurrency
 ✅ **Data Loading**: Use official `apache/doris/tools`
 ✅ **Benchmark Runner**: Pure bash scripts (no dependencies) with multi-round execution
 ✅ **Visualization**: ClickBench-style HTML reports with theme toggle
-✅ **Statistics**: Geometric mean, stdev, speedup calculations
+✅ **Statistics**: Geometric mean, QPS, latency, CPU, memory metrics
 
-## 🚀 Quick Start (3 Steps)
+## 🚀 Quick Start
 
-### 1. Load Data (Official Doris Tools)
+### TPC-H & TPC-DS (Query Performance)
+
+#### 1. Load Data (Official Doris Tools)
 
 ```bash
 # Clone Apache Doris
@@ -34,7 +37,7 @@ cd /tmp/doris/tools/tpcds-tools
 ./bin/load-tpcds-data.sh
 ```
 
-### 2. Run Benchmarks
+#### 2. Run Benchmarks
 
 ```bash
 cd /path/to/rust-fe
@@ -46,13 +49,36 @@ cd /path/to/rust-fe
 ./scripts/benchmark_tpcds.sh --scale 1 --rounds 3
 ```
 
-### 3. View Results
+#### 3. View Results
 
 ```bash
 # Open ClickBench-style HTML reports
 open tpch_results.html
 open tpcds_results.html
 ```
+
+### FE API Benchmark (Latency & Resource Testing)
+
+Test FE performance with increasing concurrency (no data loading required):
+
+```bash
+# Test Java FE
+./scripts/benchmark_fe_api.sh --mysql-port 9030 --http-port 8030
+
+# Test Rust FE
+./scripts/benchmark_fe_api.sh --mysql-port 9031 --http-port 8031
+
+# View results
+open fe_api_results.html
+```
+
+**Measures:**
+- QPS/RPS (throughput)
+- Average latency
+- CPU usage
+- Memory usage
+
+**See [FE_API_BENCHMARK.md](FE_API_BENCHMARK.md) for detailed usage.**
 
 ## 📁 Project Structure
 
@@ -61,11 +87,13 @@ rust-fe/
 ├── scripts/
 │   ├── benchmark_tpch.sh          # TPC-H benchmark runner (pure bash)
 │   ├── benchmark_tpcds.sh         # TPC-DS benchmark runner (pure bash)
+│   ├── benchmark_fe_api.sh        # FE API latency/resource benchmark
 │   ├── tpch/queries/              # 22 TPC-H queries
 │   └── tpcds/queries/             # 99 TPC-DS queries
 ├── docker/
 │   └── quickstart.sh              # Start Java FE + Rust FE cluster
-├── QUICK_START.md                 # ⭐ Complete step-by-step guide
+├── QUICK_START.md                 # ⭐ TPC-H/TPC-DS step-by-step guide
+├── FE_API_BENCHMARK.md            # ⭐ FE API benchmark guide
 ├── CLICKBENCH_VISUALIZATION.md    # Visualization documentation
 └── DATA_LOADING_GUIDE.md          # Data loading methodology
 
@@ -160,7 +188,8 @@ Worst Speedup (Q55):             1.5-2.0x
 
 | Document | Description |
 |----------|-------------|
-| **[QUICK_START.md](QUICK_START.md)** | ⭐ Complete step-by-step guide |
+| **[QUICK_START.md](QUICK_START.md)** | ⭐ TPC-H/TPC-DS step-by-step guide |
+| **[FE_API_BENCHMARK.md](FE_API_BENCHMARK.md)** | ⭐ FE API latency & resource benchmark |
 | **[CLICKBENCH_VISUALIZATION.md](CLICKBENCH_VISUALIZATION.md)** | Visualization features |
 | **[DATA_LOADING_GUIDE.md](DATA_LOADING_GUIDE.md)** | Official tools vs Stream Load |
 | **[BENCHMARK_GUIDE.md](BENCHMARK_GUIDE.md)** | Detailed usage guide |
@@ -249,11 +278,16 @@ Expected Rust FE improvements:
 
 **Complete Benchmark Suite:**
 - ✅ 121 queries (22 TPC-H + 99 TPC-DS)
+- ✅ FE API E2E latency & resource benchmark
 - ✅ Official Doris tools for data loading
+- ✅ Pure bash (no Python dependencies)
 - ✅ ClickBench-style visualization
 - ✅ Multi-round execution with statistics
+- ✅ QPS, latency, CPU, memory metrics
 - ✅ Production-ready methodology
 
-**Ready to validate Rust FE's 2.5-3.5x speedup!** 🚀📊
+**Ready to validate Rust FE's 2.5-3.5x speedup and superior resource efficiency!** 🚀📊
 
-See **[QUICK_START.md](QUICK_START.md)** for complete step-by-step instructions.
+**Get Started:**
+- **Query Performance**: See [QUICK_START.md](QUICK_START.md)
+- **API Performance**: See [FE_API_BENCHMARK.md](FE_API_BENCHMARK.md)
