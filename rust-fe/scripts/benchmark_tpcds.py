@@ -1,0 +1,1 @@
+/home/user/doris/rust-fe/scripts/benchmark_tpch.py
