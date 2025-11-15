@@ -102,14 +102,14 @@ Themes persist across page loads using localStorage.
 ### Generate TPC-H Report
 
 ```bash
-python3 scripts/benchmark_tpch.py --scale 1 --rounds 5
+./scripts/benchmark_tpch.sh --scale 1 --rounds 5
 open tpch_results.html
 ```
 
 ### Generate TPC-DS Report
 
 ```bash
-python3 scripts/benchmark_tpcds.py --scale 1 --rounds 5
+./scripts/benchmark_tpcds.sh --scale 1 --rounds 5
 open tpcds_results.html
 ```
 
@@ -175,11 +175,13 @@ open tpcds_results.html
 
 ### Zero Dependencies
 
-Unlike the original implementation which used Chart.js, this version:
-- ✅ **No JavaScript libraries** - Pure vanilla JS
+Pure bash implementation following ClickBench style:
+- ✅ **No Python** - Pure bash scripts
+- ✅ **No JavaScript libraries** - Pure vanilla JS in HTML
 - ✅ **No CSS frameworks** - Custom CSS with CSS variables
-- ✅ **No build step** - Direct HTML generation
+- ✅ **No build step** - Direct HTML generation from bash
 - ✅ **Fast loading** - Only Google Fonts CDN
+- ✅ **Minimal requirements** - Only `mysql`, `bc`, and `bash`
 
 ### CSS Variables
 
@@ -223,10 +225,10 @@ All colors and styles use CSS variables for easy theming:
 
 ## Customization
 
-To adjust visualization styles, edit `benchmark_clickbench.py`:
+To adjust visualization styles, edit the bash scripts (`benchmark_tpch.sh` or `benchmark_tpcds.sh`):
 
-```python
-# Change bar colors
+```css
+# Change bar colors in the HTML template
 --bar-java-color: #YOUR_COLOR;
 --bar-rust-color: #YOUR_COLOR;
 

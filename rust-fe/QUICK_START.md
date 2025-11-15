@@ -5,8 +5,9 @@ Complete guide for running TPC-H and TPC-DS benchmarks to compare Java FE vs Rus
 ## Prerequisites
 
 - Docker cluster running (Java FE + Rust FE + shared BE)
-- Python 3.7+ with mysql-connector-python
+- MySQL client (`mysql` command-line tool)
 - Git (to clone Apache Doris repo)
+- `bc` calculator (for statistics)
 
 ## Setup (One-time)
 
@@ -23,13 +24,7 @@ mysql -h 127.0.0.1 -P 9030 -u root -e "SELECT 1"  # Java FE
 mysql -h 127.0.0.1 -P 9031 -u root -e "SELECT 1"  # Rust FE
 ```
 
-### 2. Install Python Dependencies
-
-```bash
-pip3 install -r requirements.txt
-```
-
-### 3. Clone Apache Doris Repository
+### 2. Clone Apache Doris Repository
 
 ```bash
 git clone https://github.com/apache/doris.git /tmp/doris
@@ -76,7 +71,7 @@ mysql -h 127.0.0.1 -P 9030 -u root tpch_sf1 -e "SELECT COUNT(*) FROM lineitem"
 cd /path/to/rust-fe
 
 # Run 5 rounds with 2 warmup rounds
-python3 scripts/benchmark_tpch.py \
+./scripts/benchmark_tpch.sh \
     --scale 1 \
     --rounds 5 \
     --warmup 2 \
@@ -137,7 +132,7 @@ mysql -h 127.0.0.1 -P 9030 -u root tpcds_sf1 -e "SELECT COUNT(*) FROM store_sale
 cd /path/to/rust-fe
 
 # Run 3 rounds (99 queries will take longer)
-python3 scripts/benchmark_tpcds.py \
+./scripts/benchmark_tpcds.sh \
     --scale 1 \
     --rounds 3 \
     --warmup 1 \
@@ -178,7 +173,7 @@ cd /tmp/doris/tools/tpch-tools
 ./bin/load-tpch-data.sh
 
 cd /path/to/rust-fe
-python3 scripts/benchmark_tpch.py --scale 10 --rounds 3
+./scripts/benchmark_tpch.sh --scale 10 --rounds 3
 
 # TPC-DS SF100
 cd /tmp/doris/tools/tpcds-tools
@@ -187,7 +182,7 @@ cd /tmp/doris/tools/tpcds-tools
 ./bin/load-tpcds-data.sh
 
 cd /path/to/rust-fe
-python3 scripts/benchmark_tpcds.py --scale 100 --rounds 3
+./scripts/benchmark_tpcds.sh --scale 100 --rounds 3
 ```
 
 ## Directory Structure
@@ -195,14 +190,12 @@ python3 scripts/benchmark_tpcds.py --scale 100 --rounds 3
 ```
 rust-fe/
 ├── scripts/
-│   ├── benchmark_clickbench.py    # Core benchmark engine
-│   ├── benchmark_tpch.py          # TPC-H wrapper
-│   ├── benchmark_tpcds.py         # TPC-DS wrapper
+│   ├── benchmark_tpch.sh          # TPC-H benchmark runner (pure bash)
+│   ├── benchmark_tpcds.sh         # TPC-DS benchmark runner (pure bash)
 │   ├── tpch/queries/              # 22 TPC-H queries
 │   └── tpcds/queries/             # 99 TPC-DS queries
 ├── docker/
 │   └── quickstart.sh              # Start cluster
-├── requirements.txt               # Python dependencies
 └── *.md                           # Documentation
 
 /tmp/doris/tools/
@@ -305,23 +298,11 @@ mysql -h 127.0.0.1 -P 9030 -u root -e "SHOW BACKENDS\G"
 
 ## Advanced Usage
 
-### Custom Query Subset
-
-```bash
-# Run only specific queries
-mkdir -p scripts/tpch/queries_subset
-cp scripts/tpch/queries/q{1,3,6,10,18}.sql scripts/tpch/queries_subset/
-
-python3 scripts/benchmark_tpch.py \
-    --queries-dir scripts/tpch/queries_subset \
-    --output-html tpch_subset_results.html
-```
-
 ### Different FE Endpoints
 
 ```bash
 # Run against different Rust FE instance
-python3 scripts/benchmark_tpch.py \
+./scripts/benchmark_tpch.sh \
     --java-host 192.168.1.10 \
     --java-port 9030 \
     --rust-host 192.168.1.11 \
@@ -332,7 +313,7 @@ python3 scripts/benchmark_tpch.py \
 
 ```bash
 # 10 rounds with 5 warmup rounds
-python3 scripts/benchmark_tpch.py \
+./scripts/benchmark_tpch.sh \
     --rounds 10 \
     --warmup 5
 ```
@@ -364,7 +345,7 @@ EOF
 
 # 3. Run benchmark
 cd /path/to/rust-fe
-python3 scripts/benchmark_tpch.py --scale 1 --rounds 5
+./scripts/benchmark_tpch.sh --scale 1 --rounds 5
 
 # 4. View results
 open tpch_results.html
@@ -386,14 +367,14 @@ EOF
 ./bin/load-tpcds-data.sh
 
 cd /path/to/rust-fe
-python3 scripts/benchmark_tpcds.py --scale 1 --rounds 3
+./scripts/benchmark_tpcds.sh --scale 1 --rounds 3
 open tpcds_results.html
 ```
 
 ## Summary
 
 **Data Loading:** ✅ Use official Apache Doris tools
-**Benchmarking:** ✅ Use our ClickBench-style scripts
+**Benchmarking:** ✅ Pure bash scripts (no dependencies)
 **Visualization:** ✅ Beautiful HTML reports with theme toggle
 
 **Total Time (SF1):**

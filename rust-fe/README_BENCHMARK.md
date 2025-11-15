@@ -7,7 +7,7 @@
 ✅ **TPC-H**: All 22 official queries
 ✅ **TPC-DS**: All 99 official queries
 ✅ **Data Loading**: Use official `apache/doris/tools`
-✅ **Benchmark Runner**: Python scripts with multi-round execution
+✅ **Benchmark Runner**: Pure bash scripts (no dependencies) with multi-round execution
 ✅ **Visualization**: ClickBench-style HTML reports with theme toggle
 ✅ **Statistics**: Geometric mean, stdev, speedup calculations
 
@@ -40,10 +40,10 @@ cd /tmp/doris/tools/tpcds-tools
 cd /path/to/rust-fe
 
 # TPC-H (22 queries, ~30 min)
-python3 scripts/benchmark_tpch.py --scale 1 --rounds 5
+./scripts/benchmark_tpch.sh --scale 1 --rounds 5
 
 # TPC-DS (99 queries, ~90 min)
-python3 scripts/benchmark_tpcds.py --scale 1 --rounds 3
+./scripts/benchmark_tpcds.sh --scale 1 --rounds 3
 ```
 
 ### 3. View Results
@@ -59,14 +59,12 @@ open tpcds_results.html
 ```
 rust-fe/
 ├── scripts/
-│   ├── benchmark_clickbench.py    # Core benchmark engine (23KB)
-│   ├── benchmark_tpch.py          # TPC-H wrapper
-│   ├── benchmark_tpcds.py         # TPC-DS wrapper
+│   ├── benchmark_tpch.sh          # TPC-H benchmark runner (pure bash)
+│   ├── benchmark_tpcds.sh         # TPC-DS benchmark runner (pure bash)
 │   ├── tpch/queries/              # 22 TPC-H queries
 │   └── tpcds/queries/             # 99 TPC-DS queries
 ├── docker/
 │   └── quickstart.sh              # Start Java FE + Rust FE cluster
-├── requirements.txt               # Python dependencies
 ├── QUICK_START.md                 # ⭐ Complete step-by-step guide
 ├── CLICKBENCH_VISUALIZATION.md    # Visualization documentation
 └── DATA_LOADING_GUIDE.md          # Data loading methodology
@@ -178,20 +176,23 @@ cd /tmp/doris/tools/tpch-tools
 ./bin/create-tpch-tables.sh -s 10
 ./bin/load-tpch-data.sh
 
-python3 scripts/benchmark_tpch.py --scale 10 --rounds 3
+cd /path/to/rust-fe
+./scripts/benchmark_tpch.sh --scale 10 --rounds 3
 
 # SF100 (100GB)
+cd /tmp/doris/tools/tpch-tools
 ./bin/gen-tpch-data.sh -s 100
 ./bin/create-tpch-tables.sh -s 100
 ./bin/load-tpch-data.sh
 
-python3 scripts/benchmark_tpch.py --scale 100 --rounds 3
+cd /path/to/rust-fe
+./scripts/benchmark_tpch.sh --scale 100 --rounds 3
 ```
 
 ### Custom Output Files
 
 ```bash
-python3 scripts/benchmark_tpch.py \
+./scripts/benchmark_tpch.sh \
     --scale 1 \
     --rounds 5 \
     --output-html results/tpch_sf1_run1.html \
@@ -202,7 +203,7 @@ python3 scripts/benchmark_tpch.py \
 
 ```bash
 # 10 rounds with 5 warmup
-python3 scripts/benchmark_tpch.py --rounds 10 --warmup 5
+./scripts/benchmark_tpch.sh --rounds 10 --warmup 5
 ```
 
 ## 🔧 Methodology
