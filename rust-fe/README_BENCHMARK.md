@@ -62,21 +62,25 @@ open tpcds_results.html
 Test FE performance with increasing concurrency (no data loading required):
 
 ```bash
-# Test Java FE
-./scripts/benchmark_fe_api.sh --mysql-port 9030 --http-port 8030
+# Enhanced version with interactive charts (RECOMMENDED)
+./scripts/benchmark_fe_api_visual.sh --mysql-port 9030 --http-port 8030  # Java FE
+./scripts/benchmark_fe_api_visual.sh --mysql-port 9031 --http-port 8031  # Rust FE
 
-# Test Rust FE
-./scripts/benchmark_fe_api.sh --mysql-port 9031 --http-port 8031
-
-# View results
+# View results with interactive charts
 open fe_api_results.html
 ```
 
 **Measures:**
 - QPS/RPS (throughput)
 - Average latency
-- CPU usage
-- Memory usage
+- CPU usage (sampled every 100ms)
+- Memory usage (sampled every 100ms)
+
+**Visualizes:**
+- QPS/RPS vs Concurrency (SVG line charts)
+- Latency vs Concurrency
+- CPU vs Concurrency
+- Memory vs Concurrency
 
 **See [FE_API_BENCHMARK.md](FE_API_BENCHMARK.md) for detailed usage.**
 
@@ -87,7 +91,8 @@ rust-fe/
 ├── scripts/
 │   ├── benchmark_tpch.sh          # TPC-H benchmark runner (pure bash)
 │   ├── benchmark_tpcds.sh         # TPC-DS benchmark runner (pure bash)
-│   ├── benchmark_fe_api.sh        # FE API latency/resource benchmark
+│   ├── benchmark_fe_api.sh        # FE API benchmark (tables only)
+│   ├── benchmark_fe_api_visual.sh # FE API benchmark (with SVG charts) ⭐
 │   ├── tpch/queries/              # 22 TPC-H queries
 │   └── tpcds/queries/             # 99 TPC-DS queries
 ├── docker/

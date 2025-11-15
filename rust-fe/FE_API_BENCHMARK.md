@@ -16,28 +16,45 @@ For each concurrency level, the benchmark tracks:
 |--------|-------------|
 | **QPS/RPS** | Queries/Requests per second (throughput) |
 | **Latency** | Average response time in milliseconds |
-| **CPU Usage** | Average CPU utilization percentage |
-| **Memory Usage** | Average memory utilization percentage |
+| **CPU Usage** | Average CPU utilization percentage (sampled every 100ms) |
+| **Memory Usage** | Average memory utilization percentage (sampled every 100ms) |
+
+## Visualization
+
+**Two versions available:**
+
+1. **Standard** (`benchmark_fe_api.sh`) - Tables only
+2. **Enhanced** (`benchmark_fe_api_visual.sh`) - **RECOMMENDED** - Includes:
+   - **Interactive SVG line charts** showing trends vs concurrency
+   - **QPS/RPS charts** - Visualize throughput scaling
+   - **Latency charts** - Spot performance degradation
+   - **CPU charts** - Monitor resource consumption
+   - **Memory charts** - Track memory pressure
+   - **Theme toggle** - Light/dark mode support
+   - **Zero dependencies** - Pure vanilla JavaScript + SVG
 
 ## Quick Start
 
 ### 1. Basic Usage
 
 ```bash
-# Run with default settings
+# Standard version (tables only)
 ./scripts/benchmark_fe_api.sh
 
+# Enhanced version (with interactive charts) - RECOMMENDED
+./scripts/benchmark_fe_api_visual.sh
+
 # Test Java FE
-./scripts/benchmark_fe_api.sh --fe-host 127.0.0.1 --mysql-port 9030 --http-port 8030
+./scripts/benchmark_fe_api_visual.sh --fe-host 127.0.0.1 --mysql-port 9030 --http-port 8030
 
 # Test Rust FE
-./scripts/benchmark_fe_api.sh --fe-host 127.0.0.1 --mysql-port 9031 --http-port 8031
+./scripts/benchmark_fe_api_visual.sh --fe-host 127.0.0.1 --mysql-port 9031 --http-port 8031
 ```
 
 ### 2. View Results
 
 ```bash
-# Open HTML report
+# Open HTML report (with interactive charts!)
 open fe_api_results.html
 
 # View JSON data
@@ -411,10 +428,44 @@ This provides:
 
 **FE API E2E Benchmark:**
 - ✅ Tests MySQL protocol and Stream Load APIs
-- ✅ Measures QPS/RPS, latency, CPU, memory
-- ✅ Supports configurable concurrency levels
+- ✅ Measures QPS/RPS, latency, CPU, memory (100ms sampling)
+- ✅ Supports configurable concurrency levels (1-100+)
 - ✅ Pure bash (no dependencies beyond mysql/curl/bc)
-- ✅ Generates beautiful HTML reports
+- ✅ **Interactive SVG charts** visualizing performance trends
+- ✅ Generates beautiful HTML reports with theme toggle
 - ✅ Perfect for Java FE vs Rust FE comparison
+
+## How Metrics Are Measured
+
+**CPU & Memory Sampling:**
+```bash
+# Finds FE process
+FE_PID=$(ps aux | grep -E "DorisFeMain|rust-fe" | grep -v grep | awk '{print $2}')
+
+# Samples every 100ms during benchmark
+while benchmark_running; do
+    ps -p "$FE_PID" -o %cpu,%mem --no-headers
+    sleep 0.1
+done
+
+# Averages all samples
+avg_cpu = sum(cpu_samples) / sample_count
+```
+
+**Throughput (QPS/RPS):**
+```bash
+qps = total_requests / total_duration_seconds
+```
+
+**Latency:**
+```bash
+avg_latency_ms = (total_duration_seconds * 1000) / total_requests
+```
+
+**Visualization:**
+- Pure JavaScript SVG rendering (no Chart.js/libraries)
+- Responsive line charts showing trends
+- Automatic scaling based on data ranges
+- Theme-aware colors (light/dark mode)
 
 **Use it to validate Rust FE's superior throughput, lower latency, and better resource efficiency!** 🚀
