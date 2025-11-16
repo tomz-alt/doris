@@ -65,12 +65,11 @@ async fn register_lineitem(
         be_client_pool,
     ));
 
-    ctx.register_table(
-        &format!("{}.lineitem", database),
-        table,
-    ).map_err(|e| DorisError::QueryExecution(format!("Failed to register lineitem table: {}", e)))?;
+    // Register with simple table name - DataFusion will make it available in default schema
+    ctx.register_table("lineitem", table)
+        .map_err(|e| DorisError::QueryExecution(format!("Failed to register lineitem table: {}", e)))?;
 
-    info!("Registered table: {}.lineitem", database);
+    info!("Registered table: lineitem (for database: {})", database);
     Ok(())
 }
 
@@ -100,11 +99,11 @@ async fn register_orders(
     ));
 
     ctx.register_table(
-        &format!("{}.orders", database),
+        "orders",
         table,
     ).map_err(|e| DorisError::QueryExecution(format!("Failed to register table: {}", e)))?;
 
-    info!("Registered table: {}.orders", database);
+    info!("Registered table: orders (for database: {})", database);
     Ok(())
 }
 
@@ -133,11 +132,11 @@ async fn register_customer(
     ));
 
     ctx.register_table(
-        &format!("{}.customer", database),
+        "customer",
         table,
     ).map_err(|e| DorisError::QueryExecution(format!("Failed to register table: {}", e)))?;
 
-    info!("Registered table: {}.customer", database);
+    info!("Registered table: customer (for database: {})", database);
     Ok(())
 }
 
@@ -167,11 +166,11 @@ async fn register_part(
     ));
 
     ctx.register_table(
-        &format!("{}.part", database),
+        "part",
         table,
     ).map_err(|e| DorisError::QueryExecution(format!("Failed to register table: {}", e)))?;
 
-    info!("Registered table: {}.part", database);
+    info!("Registered table: part (for database: {})", database);
     Ok(())
 }
 
@@ -197,11 +196,11 @@ async fn register_partsupp(
     ));
 
     ctx.register_table(
-        &format!("{}.partsupp", database),
+        "partsupp",
         table,
     ).map_err(|e| DorisError::QueryExecution(format!("Failed to register table: {}", e)))?;
 
-    info!("Registered table: {}.partsupp", database);
+    info!("Registered table: partsupp (for database: {})", database);
     Ok(())
 }
 
@@ -229,11 +228,11 @@ async fn register_supplier(
     ));
 
     ctx.register_table(
-        &format!("{}.supplier", database),
+        "supplier",
         table,
     ).map_err(|e| DorisError::QueryExecution(format!("Failed to register table: {}", e)))?;
 
-    info!("Registered table: {}.supplier", database);
+    info!("Registered table: supplier (for database: {})", database);
     Ok(())
 }
 
@@ -258,11 +257,11 @@ async fn register_nation(
     ));
 
     ctx.register_table(
-        &format!("{}.nation", database),
+        "nation",
         table,
     ).map_err(|e| DorisError::QueryExecution(format!("Failed to register table: {}", e)))?;
 
-    info!("Registered table: {}.nation", database);
+    info!("Registered table: nation (for database: {})", database);
     Ok(())
 }
 
@@ -286,10 +285,10 @@ async fn register_region(
     ));
 
     ctx.register_table(
-        &format!("{}.region", database),
+        "region",
         table,
     ).map_err(|e| DorisError::QueryExecution(format!("Failed to register table: {}", e)))?;
 
-    info!("Registered table: {}.region", database);
+    info!("Registered table: region (for database: {})", database);
     Ok(())
 }

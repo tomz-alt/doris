@@ -7,6 +7,8 @@ fn main() -> Result<()> {
     if env::var("SKIP_PROTO").is_ok() {
         println!("cargo:warning=Skipping proto compilation (SKIP_PROTO is set)");
         println!("cargo:warning=Backend communication will use fallback implementation");
+        // Expose a cfg flag so code can avoid depending on generated gRPC types.
+        println!("cargo:rustc-cfg=skip_proto");
 
         // Create a dummy file to satisfy the include
         let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
@@ -38,21 +40,44 @@ fn main() -> Result<()> {
     // Set the PROTOC environment variable so prost-build can find it
     env::set_var("PROTOC", &protoc_path);
 
-    // Use only the backend_service.proto which is self-contained
-    let simple_proto = std::path::Path::new("proto/backend_service.proto");
+    // Compile proto files
+    let backend_proto = std::path::Path::new("proto/backend_service.proto");
+    let cloud_proto = std::path::Path::new("proto/cloud.proto");
 
-    if simple_proto.exists() {
-        println!("cargo:warning=Found backend_service.proto - compiling with prost-build...");
+    let mut proto_files = Vec::new();
+    let mut has_backend = false;
+    let mut has_cloud = false;
 
-        // Use prost-build with the compiled protoc
-        let mut prost_config = prost_build::Config::new();
-        prost_config
+    if backend_proto.exists() {
+        println!("cargo:warning=Found backend_service.proto");
+        proto_files.push("proto/backend_service.proto");
+        has_backend = true;
+    }
+
+    if cloud_proto.exists() {
+        println!("cargo:warning=Found cloud.proto");
+        // cloud.proto depends on olap_file.proto which depends on segment_v2.proto
+        // We need to compile all of them
+        proto_files.push("proto/segment_v2.proto");
+        proto_files.push("proto/olap_file.proto");
+        proto_files.push("proto/cloud.proto");
+        has_cloud = true;
+    }
+
+    if !proto_files.is_empty() {
+        println!("cargo:warning=Compiling {} proto files with tonic-build...", proto_files.len());
+
+        // Use tonic-build to compile all protos in one go
+        // This generates both message types AND gRPC service definitions
+        tonic_build::configure()
+            .build_server(has_cloud)  // Enable server for MetaService if cloud.proto exists
+            .build_client(has_backend) // Enable client for backend service
             .out_dir({
                 let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
                 out_dir
             })
-            .compile_protos(
-                &["proto/backend_service.proto"],
+            .compile(
+                &proto_files,
                 &["proto"]
             )
             .map_err(|e| {
@@ -60,25 +85,6 @@ fn main() -> Result<()> {
                 println!("cargo:warning=Run: SKIP_PROTO=1 cargo build to skip");
                 e
             })?;
-
-        println!("cargo:warning=Successfully compiled protobuf messages!");
-
-        // Now compile the gRPC service definitions using tonic-build
-        println!("cargo:warning=Compiling gRPC service definitions...");
-
-        tonic_build::configure()
-            .build_server(true)  // Enable server for mock BE
-            .build_client(true)
-            .compile(
-                &["proto/backend_service.proto"],
-                &["proto"]
-            )
-            .map_err(|e| {
-                println!("cargo:warning=Failed to compile gRPC service: {}", e);
-                println!("cargo:warning=Continuing without gRPC client generation");
-                // Don't fail - we can manually implement the client
-            })
-            .ok();
 
         println!("cargo:warning=Proto compilation complete!");
 

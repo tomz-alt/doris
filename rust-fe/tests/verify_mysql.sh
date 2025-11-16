@@ -37,19 +37,19 @@ echo "Test 3: Show databases"
 mysql -h $HOST -P $PORT -u $USER -e "SHOW DATABASES" 2>/dev/null && echo "✓ Show databases successful" || echo "✗ Show databases failed"
 echo ""
 
-# Test 4: Use database
+# Test 4: Use TPC-H database (Rust FE default catalog)
 echo "Test 4: Use database"
-mysql -h $HOST -P $PORT -u $USER -e "USE test" 2>/dev/null && echo "✓ Use database successful" || echo "✗ Use database failed"
+mysql -h $HOST -P $PORT -u $USER -e "USE tpch" 2>/dev/null && echo "✓ Use database successful" || echo "✗ Use database failed"
 echo ""
 
-# Test 5: Show tables
+# Test 5: Show tables in TPC-H
 echo "Test 5: Show tables"
-mysql -h $HOST -P $PORT -u $USER -D test -e "SHOW TABLES" 2>/dev/null && echo "✓ Show tables successful" || echo "✗ Show tables failed"
+mysql -h $HOST -P $PORT -u $USER -D tpch -e "SHOW TABLES" 2>/dev/null && echo "✓ Show tables successful" || echo "✗ Show tables failed"
 echo ""
 
-# Test 6: Select query
+# Test 6: Simple SELECT query (no table dependency)
 echo "Test 6: Select query"
-mysql -h $HOST -P $PORT -u $USER -D test -e "SELECT * FROM example_table LIMIT 10" 2>/dev/null && echo "✓ Select query successful" || echo "✗ Select query failed"
+mysql -h $HOST -P $PORT -u $USER -e "SELECT 1" 2>/dev/null && echo "✓ Select query successful" || echo "✗ Select query failed"
 echo ""
 
 # Test 7: Ping

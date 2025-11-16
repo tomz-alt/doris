@@ -72,13 +72,17 @@ impl HandshakePacket {
         // Generate random salt (20 bytes)
         let auth_plugin_data: Vec<u8> = (0..20).map(|i| (i * 7 + 13) as u8).collect();
 
+        // For wire-compatibility with the Java FE and MySQL clients, we
+        // advertise ourselves as a MySQL 5.7-compatible server using the
+        // classic UTF-8 charset (33). This matches the Java FE behavior and
+        // the expectations encoded in src/mysql/protocol_tests.rs.
         Self {
             protocol_version: 10,
-            server_version: "8.0.0-doris-rust".to_string(),
+            server_version: "5.7.99".to_string(),
             connection_id,
             auth_plugin_data,
             capability_flags: server_capabilities(),
-            character_set: UTF8MB4_GENERAL_CI,
+            character_set: 33, // utf8_general_ci
             status_flags: SERVER_STATUS_AUTOCOMMIT,
             auth_plugin_name: "mysql_native_password".to_string(),
         }

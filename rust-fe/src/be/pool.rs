@@ -39,6 +39,14 @@ impl BackendClientPool {
         pool
     }
 
+    #[cfg(skip_proto)]
+    pub async fn execute_query(&self, _query_id: Uuid, _query: &str) -> Result<QueryResult> {
+        // In SKIP_PROTO mode we don't have a real BE; return an empty
+        // result so callers can continue without gRPC.
+        Ok(QueryResult::empty())
+    }
+
+    #[cfg(not(skip_proto))]
     pub async fn execute_query(&self, query_id: Uuid, query: &str) -> Result<QueryResult> {
         // Round-robin selection
         let backend = self.select_backend();

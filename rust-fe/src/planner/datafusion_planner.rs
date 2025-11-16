@@ -93,6 +93,17 @@ impl DataFusionPlanner {
     ) -> Result<()> {
         info!("Registering BE-backed TPC-H tables for database: {}", database);
 
+        // First, deregister any existing empty tables
+        let tables = vec![
+            "lineitem", "orders", "customer", "part",
+            "partsupp", "supplier", "nation", "region"
+        ];
+        for table in tables {
+            if self.ctx.deregister_table(table).is_ok() {
+                debug!("Deregistered existing table: {}", table);
+            }
+        }
+
         crate::catalog::tpch_tables::register_tpch_tables(
             &self.ctx,
             be_client_pool,
@@ -101,6 +112,41 @@ impl DataFusionPlanner {
 
         info!("BE-backed TPC-H tables registered successfully");
         Ok(())
+    }
+
+    /// List tables in the DataFusion catalog
+    pub async fn list_tables(&self, _database: &str) -> Result<Vec<String>> {
+        // Get table names from DataFusion catalog
+        let catalog = self.ctx.catalog("datafusion").ok_or_else(|| {
+            DorisError::QueryExecution("Catalog not found".to_string())
+        })?;
+
+        let schema = catalog.schema("public").ok_or_else(|| {
+            DorisError::QueryExecution("Schema not found".to_string())
+        })?;
+
+        let tables: Vec<String> = schema.table_names();
+        Ok(tables)
+    }
+
+    /// Describe table schema (for DESCRIBE command)
+    pub async fn describe_table(&self, table_name: &str) -> Result<Vec<(String, String, bool)>> {
+        // Get table from DataFusion catalog
+        let table_provider = self.ctx.table(table_name)
+            .await
+            .map_err(|e| DorisError::QueryExecution(format!("Table '{}' not found: {}", table_name, e)))?;
+
+        let schema = table_provider.schema();
+
+        // Convert Arrow schema to MySQL-style description
+        let fields: Vec<(String, String, bool)> = schema.fields().iter()
+            .map(|field| {
+                let field_type = arrow_type_to_mysql_string(field.data_type());
+                (field.name().clone(), field_type, field.is_nullable())
+            })
+            .collect();
+
+        Ok(fields)
     }
 
     /// Execute a SQL query using DataFusion (Option A - direct execution)
@@ -188,6 +234,35 @@ fn table_to_arrow_schema(table: &Table) -> ArrowSchema {
         .collect();
 
     ArrowSchema::new(fields)
+}
+
+/// Convert Arrow DataType to MySQL type string (for DESCRIBE command)
+fn arrow_type_to_mysql_string(arrow_type: &ArrowDataType) -> String {
+    match arrow_type {
+        ArrowDataType::Int8 => "TINYINT".to_string(),
+        ArrowDataType::Int16 => "SMALLINT".to_string(),
+        ArrowDataType::Int32 => "INT".to_string(),
+        ArrowDataType::Int64 => "BIGINT".to_string(),
+        ArrowDataType::UInt8 => "TINYINT UNSIGNED".to_string(),
+        ArrowDataType::UInt16 => "SMALLINT UNSIGNED".to_string(),
+        ArrowDataType::UInt32 => "INT UNSIGNED".to_string(),
+        ArrowDataType::UInt64 => "BIGINT UNSIGNED".to_string(),
+        ArrowDataType::Float32 => "FLOAT".to_string(),
+        ArrowDataType::Float64 => "DOUBLE".to_string(),
+        ArrowDataType::Decimal128(precision, scale) => {
+            format!("DECIMAL({},{})", precision, scale)
+        }
+        ArrowDataType::Decimal256(precision, scale) => {
+            format!("DECIMAL({},{})", precision, scale)
+        }
+        ArrowDataType::Utf8 | ArrowDataType::LargeUtf8 => "VARCHAR(65535)".to_string(),
+        ArrowDataType::Binary | ArrowDataType::LargeBinary => "BLOB".to_string(),
+        ArrowDataType::Date32 | ArrowDataType::Date64 => "DATE".to_string(),
+        ArrowDataType::Timestamp(_, _) => "DATETIME".to_string(),
+        ArrowDataType::Time32(_) | ArrowDataType::Time64(_) => "TIME".to_string(),
+        ArrowDataType::Boolean => "BOOLEAN".to_string(),
+        _ => "VARCHAR(255)".to_string(), // Default
+    }
 }
 
 #[cfg(test)]

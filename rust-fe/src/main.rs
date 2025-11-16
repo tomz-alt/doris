@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
     // Register BE-backed TPC-H tables (quick prototype)
     // This allows Rust FE to "see" TPC-H tables stored in BE
     info!("Registering BE-backed TPC-H tables (hardcoded schemas)...");
-    match query_executor.register_tpch_be_tables(be_client_pool.clone(), "tpch_sf1").await {
+    match query_executor.register_tpch_be_tables(be_client_pool.clone(), "tpch").await {
         Ok(_) => info!("✓ BE-backed TPC-H tables registered successfully"),
         Err(e) => error!("Failed to register BE-backed tables: {}", e),
     }

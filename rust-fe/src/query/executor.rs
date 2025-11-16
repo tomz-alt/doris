@@ -7,10 +7,12 @@ use crate::be::BackendClientPool;
 use crate::mysql::packet::{ColumnDefinition, ResultRow};
 use crate::mysql::ColumnType;
 use crate::planner::DataFusionPlanner;
+use crate::parser;
 use datafusion::arrow::record_batch::RecordBatch;
 use datafusion::arrow::datatypes::DataType as ArrowDataType;
 use datafusion::arrow::array::*;
-use super::{QueryQueue, QueryResult, QueuedQuery};
+use sqlparser::ast::Statement;
+use super::{QueryQueue, QueryResult, QueuedQuery, SessionCtx};
 
 pub struct QueryExecutor {
     queue: Arc<QueryQueue>,
@@ -92,31 +94,53 @@ impl QueryExecutor {
         self.execute_internal(queued_query, be_client_pool).await
     }
 
+    /// Core, protocol-agnostic entrypoint used by all frontends.
+    ///
+    /// Frontends provide the SQL string and session context; this method
+    /// handles queuing, parsing, planning and routing to BE/DataFusion.
+    pub async fn execute_sql(
+        &self,
+        session: &mut SessionCtx,
+        sql: &str,
+        be_client_pool: &Arc<BackendClientPool>,
+    ) -> Result<QueryResult> {
+        let query_id = Uuid::new_v4();
+        let database = session.database.clone();
+
+        self.queue_query(query_id, sql.to_string(), database).await?;
+        self.execute_query(query_id, be_client_pool).await
+    }
+
     async fn execute_internal(
         &self,
         query: QueuedQuery,
         be_client_pool: &Arc<BackendClientPool>,
     ) -> Result<QueryResult> {
-        debug!("Executing query: {}", query.query.trim());
+        let sql = query.query.trim();
+        debug!("Executing query (parsed): {}", sql);
 
-        let query_lower = query.query.trim().to_lowercase();
+        // Parse SQL using the Doris-aware parser module.
+        let statements = parser::parse_sql(sql)?;
+        if statements.is_empty() {
+            return Err(DorisError::QueryExecution("Empty query".to_string()));
+        }
 
-        // Parse query type
-        if query_lower.starts_with("select") || query_lower.starts_with("with") {
-            self.execute_select(query, be_client_pool).await
-        } else if query_lower.starts_with("insert")
-            || query_lower.starts_with("update")
-            || query_lower.starts_with("delete")
-        {
-            self.execute_dml(query, be_client_pool).await
-        } else if query_lower.starts_with("create")
-            || query_lower.starts_with("drop")
-            || query_lower.starts_with("alter")
-        {
-            self.execute_ddl(query, be_client_pool).await
-        } else {
-            // Unknown query type, return empty result
-            Ok(QueryResult::empty())
+        // For now we only support a single statement per COM_QUERY.
+        let stmt = &statements[0];
+
+        // Validate against the catalog (tables/databases must exist).
+        parser::validate_statement(stmt)?;
+
+        match stmt {
+            Statement::Query(_) => self.execute_select(query, be_client_pool).await,
+            Statement::Insert { .. }
+            | Statement::Update { .. }
+            | Statement::Delete { .. } => self.execute_dml(query, be_client_pool).await,
+            Statement::CreateTable { .. }
+            | Statement::Drop { .. }
+            | Statement::AlterTable { .. } => self.execute_ddl(query, be_client_pool).await,
+            // Other statement types (SHOW, SET, etc.) are handled at the protocol layer.
+            _ => Ok(QueryResult::empty()),
         }
     }
 
@@ -258,6 +282,96 @@ impl QueryExecutor {
             self.queue.available_slots(),
             self.queue.max_concurrent(),
         )
+    }
+
+    /// List tables in a database (for SHOW TABLES command)
+    /// Uses global metadata catalog for table listing.
+    pub async fn list_tables(&self, database: &str) -> Result<Vec<String>> {
+        let catalog = crate::metadata::catalog::catalog();
+        catalog
+            .list_tables(database)
+            .map_err(|e| DorisError::QueryExecution(e))
+    }
+
+    /// Describe table schema (for DESCRIBE command)
+    /// Returns: Vec<(field_name, field_type, nullable)>
+    /// Uses global metadata catalog to build DESCRIBE output.
+    pub async fn describe_table(
+        &self,
+        database: &str,
+        table_name: &str,
+    ) -> Result<Vec<(String, String, bool)>> {
+        let catalog = crate::metadata::catalog::catalog();
+
+        let columns = catalog
+            .get_table_columns(database, table_name)
+            .ok_or_else(|| DorisError::QueryExecution(format!(
+                "Table '{}.{}' doesn't exist",
+                database, table_name
+            )))?;
+
+        let rows = columns
+            .into_iter()
+            .map(|col| {
+                let type_str = match col.data_type {
+                    crate::metadata::types::DataType::TinyInt => "TINYINT".to_string(),
+                    crate::metadata::types::DataType::SmallInt => "SMALLINT".to_string(),
+                    crate::metadata::types::DataType::Int => "INT".to_string(),
+                    crate::metadata::types::DataType::BigInt => "BIGINT".to_string(),
+                    crate::metadata::types::DataType::Float => "FLOAT".to_string(),
+                    crate::metadata::types::DataType::Double => "DOUBLE".to_string(),
+                    crate::metadata::types::DataType::Decimal { precision, scale } => {
+                        format!("DECIMAL({}, {})", precision, scale)
+                    }
+                    crate::metadata::types::DataType::Char { length } => {
+                        format!("CHAR({})", length)
+                    }
+                    crate::metadata::types::DataType::Varchar { length } => {
+                        format!("VARCHAR({})", length)
+                    }
+                    crate::metadata::types::DataType::String => "STRING".to_string(),
+                    crate::metadata::types::DataType::Text => "TEXT".to_string(),
+                    crate::metadata::types::DataType::Date => "DATE".to_string(),
+                    crate::metadata::types::DataType::DateTime => "DATETIME".to_string(),
+                    crate::metadata::types::DataType::Timestamp => "TIMESTAMP".to_string(),
+                    crate::metadata::types::DataType::Boolean => "BOOLEAN".to_string(),
+                    crate::metadata::types::DataType::Binary => "BINARY".to_string(),
+                    crate::metadata::types::DataType::Varbinary { length } => {
+                        format!("VARBINARY({})", length)
+                    }
+                    crate::metadata::types::DataType::Json => "JSON".to_string(),
+                    crate::metadata::types::DataType::Array(ref inner) => {
+                        format!("ARRAY<{:?}>", inner)
+                    }
+                };
+
+                (col.name, type_str, col.nullable)
+            })
+            .collect();
+
+        Ok(rows)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::be::BackendClientPool;
+
+    #[tokio::test]
+    async fn test_execute_sql_simple_select() {
+        let executor = QueryExecutor::with_datafusion(16, 4).await;
+        let be_pool = Arc::new(BackendClientPool::new(Vec::new()));
+        let mut session = SessionCtx::new();
+
+        let result = executor
+            .execute_sql(&mut session, "SELECT 1", &be_pool)
+            .await
+            .expect("execute_sql should succeed for SELECT 1");
+
+        assert!(!result.is_dml);
+        assert_eq!(result.rows.len(), 1);
+        assert_eq!(result.columns.len(), 1);
     }
 }
 

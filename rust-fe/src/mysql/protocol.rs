@@ -79,7 +79,10 @@ pub fn server_capabilities() -> u32 {
         | CLIENT_DEPRECATE_EOF
 }
 
-// Character set
+// Character sets
+// 33 = utf8_general_ci (MySQL 5.7 default, used by Java FE)
+// 45 = utf8mb4_general_ci
+pub const UTF8_GENERAL_CI: u8 = 33;
 pub const UTF8MB4_GENERAL_CI: u8 = 45;
 
 // Status flags

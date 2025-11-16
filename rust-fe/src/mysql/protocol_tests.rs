@@ -7,6 +7,15 @@
 #[cfg(test)]
 mod tests {
     use super::super::protocol::*;
+    use super::super::packet::{
+        HandshakePacket,
+        HandshakeResponse,
+        OkPacket,
+        ErrPacket,
+        EofPacket,
+        ResultRow,
+    };
+    use crate::error::DorisError;
     use bytes::{BytesMut, BufMut};
 
     const PROTOCOL_VERSION: u8 = 10;
@@ -87,6 +96,24 @@ mod tests {
         assert!(caps & CLIENT_TRANSACTIONS != 0, "TRANSACTIONS capability");
         assert!(caps & CLIENT_SECURE_CONNECTION != 0, "SECURE_CONNECTION capability");
         assert!(caps & CLIENT_PLUGIN_AUTH != 0, "PLUGIN_AUTH capability");
+        // The server advertises CLIENT_DEPRECATE_EOF and must implement
+        // OK-instead-of-EOF result-set semantics correctly.
+        assert!(caps & CLIENT_DEPRECATE_EOF != 0, "DEPRECATE_EOF capability");
+    }
+
+    /// HandshakePacket should use the same constants as the protocol tests.
+    #[test]
+    fn test_handshake_packet_defaults_match_protocol_constants() {
+        let connection_id = 1090u32;
+        let handshake = HandshakePacket::new(connection_id);
+
+        assert_eq!(handshake.protocol_version, PROTOCOL_VERSION);
+        assert_eq!(handshake.server_version, SERVER_VERSION);
+        assert_eq!(handshake.character_set, DEFAULT_CHARSET as u8);
+        assert_eq!(handshake.connection_id, connection_id);
+        // Handshake must advertise the same capabilities as server_capabilities.
+        let caps = server_capabilities();
+        assert_eq!(handshake.capability_flags, caps);
     }
 
     /// Handshake Packet Serialization Test
@@ -199,6 +226,62 @@ mod tests {
 
         // Verify charset
         assert_eq!(buf[8], 33, "Character set");
+    }
+
+    /// HandshakeResponse should reject packets that are too short.
+    #[test]
+    fn test_handshake_response_too_short() {
+        // Fewer than 32 bytes should be rejected as INVALID_PACKET.
+        let payload = bytes::Bytes::from_static(&[0u8; 16]);
+        let err = HandshakeResponse::decode(payload).unwrap_err();
+        match err {
+            DorisError::InvalidPacket(msg) => {
+                assert!(
+                    msg.contains("too short"),
+                    "expected 'too short' message but got: {}",
+                    msg
+                );
+            }
+            other => panic!("unexpected error type: {:?}", other),
+        }
+    }
+
+    /// HandshakeResponse should reject secure-connection auth data with
+    /// inconsistent lengths.
+    #[test]
+    fn test_handshake_response_bad_auth_length() {
+        use bytes::BufMut;
+
+        let mut buf = BytesMut::new();
+
+        // capability_flags: CLIENT_PROTOCOL_41 | CLIENT_SECURE_CONNECTION
+        let caps = CLIENT_PROTOCOL_41 | CLIENT_SECURE_CONNECTION;
+        buf.put_u32_le(caps);
+        // max_packet_size
+        buf.put_u32_le(1024 * 1024);
+        // character_set
+        buf.put_u8(33);
+        // reserved (23 bytes)
+        buf.put_bytes(0, 23);
+        // username "root\0"
+        buf.put_slice(b"root");
+        buf.put_u8(0);
+        // auth_response length says 10, but we only provide 5 bytes
+        buf.put_u8(10);
+        buf.put_slice(b"abcde");
+
+        let payload = buf.freeze();
+        let err = HandshakeResponse::decode(payload).unwrap_err();
+        match err {
+            DorisError::InvalidPacket(msg) => {
+                assert!(
+                    msg.contains("Auth response too short"),
+                    "expected 'Auth response too short' but got: {}",
+                    msg
+                );
+            }
+            other => panic!("unexpected error type: {:?}", other),
+        }
     }
 
     /// OK Packet Format Test
@@ -329,9 +412,25 @@ mod tests {
     fn test_length_encoded_integers() {
         let mut buf = BytesMut::new();
 
+        // 0 should be encoded as single byte
+        write_length_encoded_int(&mut buf, 0);
+        assert_eq!(buf[0], 0);
+        buf.clear();
+
         // Test small value (< 251)
         write_length_encoded_int(&mut buf, 100);
         assert_eq!(buf[0], 100);
+        buf.clear();
+
+        // Boundary at 250
+        write_length_encoded_int(&mut buf, 250);
+        assert_eq!(buf[0], 250);
+        buf.clear();
+
+        // 251 and above use markers
+        write_length_encoded_int(&mut buf, 251);
+        assert_eq!(buf[0], 0xfc);
+        assert_eq!(u16::from_le_bytes([buf[1], buf[2]]), 251);
         buf.clear();
 
         // Test 2-byte value
@@ -343,11 +442,92 @@ mod tests {
         // Test 3-byte value
         write_length_encoded_int(&mut buf, 70000);
         assert_eq!(buf[0], 0xfd);
+        let three = buf[1] as u32 | ((buf[2] as u32) << 8) | ((buf[3] as u32) << 16);
+        assert_eq!(three, 70000);
         buf.clear();
 
         // Test 8-byte value
         write_length_encoded_int(&mut buf, 20000000);
         assert_eq!(buf[0], 0xfe);
+        let eight = u64::from_le_bytes(buf[1..9].try_into().unwrap());
+        assert_eq!(eight, 20000000);
+    }
+
+    /// OKPacket encoding tests using implementation.
+    #[test]
+    fn test_ok_packet_encode() {
+        let mut ok = OkPacket::new();
+        ok.affected_rows = 5;
+        ok.last_insert_id = 42;
+        ok.status_flags = SERVER_STATUS_AUTOCOMMIT;
+        ok.warnings = 3;
+        ok.info = "done".to_string();
+
+        let bytes = ok.encode();
+        // Header
+        assert_eq!(bytes[0], 0x00);
+        // affected_rows = 5 (single-byte lenenc int)
+        assert_eq!(bytes[1], 5);
+        // last_insert_id = 42 (single-byte lenenc int)
+        assert_eq!(bytes[2], 42);
+        // status flags
+        assert_eq!(u16::from_le_bytes([bytes[3], bytes[4]]), SERVER_STATUS_AUTOCOMMIT);
+        // warnings
+        assert_eq!(u16::from_le_bytes([bytes[5], bytes[6]]), 3);
+        // info string
+        assert_eq!(&bytes[7..], b"done");
+
+        // encode_as_eof should use 0xFE header but same body layout.
+        let eof_like = ok.encode_as_eof();
+        assert_eq!(eof_like[0], 0xfe);
+        assert_eq!(eof_like[1..], bytes[1..]);
+    }
+
+    /// ErrPacket encoding tests using implementation.
+    #[test]
+    fn test_err_packet_encode() {
+        let err = ErrPacket::new(1064, "You have an error in your SQL".to_string());
+        let bytes = err.encode();
+
+        assert_eq!(bytes[0], 0xff);
+        assert_eq!(u16::from_le_bytes([bytes[1], bytes[2]]), 1064);
+        assert_eq!(bytes[3], b'#');
+        assert_eq!(&bytes[4..9], b"HY000");
+        let msg = String::from_utf8(bytes[9..].to_vec()).unwrap();
+        assert!(msg.starts_with("You have an error"));
+    }
+
+    /// EofPacket encoding tests using implementation.
+    #[test]
+    fn test_eof_packet_encode() {
+        let eof = EofPacket::new();
+        let bytes = eof.encode();
+        assert_eq!(bytes[0], 0xfe);
+        assert_eq!(bytes.len(), 5);
+        assert_eq!(u16::from_le_bytes([bytes[1], bytes[2]]), 0);
+        assert_eq!(u16::from_le_bytes([bytes[3], bytes[4]]), SERVER_STATUS_AUTOCOMMIT);
+    }
+
+    /// ResultRow encoding tests (text protocol).
+    #[test]
+    fn test_result_row_encode_null_and_values() {
+        let row = ResultRow::new(vec![
+            Some("abc".to_string()),
+            None,
+            Some("".to_string()),
+        ]);
+        let bytes = row.encode();
+
+        // First value: len=3 + 'abc'
+        assert_eq!(bytes[0], 3);
+        assert_eq!(&bytes[1..4], b"abc");
+
+        // Second value: NULL marker (0xfb)
+        assert_eq!(bytes[4], 0xfb);
+
+        // Third value: empty string is length 0 and no bytes.
+        assert_eq!(bytes[5], 0);
+        assert_eq!(bytes.len(), 6);
     }
 
     /// Command Type Tests

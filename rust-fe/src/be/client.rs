@@ -7,15 +7,40 @@ use crate::query::QueryResult;
 use crate::mysql::packet::{ColumnDefinition, ResultRow};
 use crate::mysql::ColumnType;
 
-// Include generated protobuf code
-mod pb {
-    include!(concat!(env!("OUT_DIR"), "/doris.rs"));
+// Generated protobuf types. When `skip_proto` is set (SKIP_PROTO=1), we
+// provide minimal stubs so the code compiles without gRPC support.
+#[cfg(skip_proto)]
+mod be_pb {
+    use std::marker::PhantomData;
+
+    // Dummy client type so the struct definition compiles; methods are never
+    // called when SKIP_PROTO=1.
+    pub struct PBackendServiceClient<T>(pub PhantomData<T>);
+
+    pub use crate::be::pb::doris::{
+        PExecPlanFragmentRequest,
+        PExecPlanFragmentResult,
+        PFetchDataRequest,
+        PFetchDataResult,
+        PCancelPlanFragmentRequest,
+        PCancelPlanFragmentResult,
+    };
 }
 
-use pb::p_backend_service_client::PBackendServiceClient;
-use pb::{PExecPlanFragmentRequest, PExecPlanFragmentResult};
-use pb::{PFetchDataRequest, PFetchDataResult};
-use pb::{PCancelPlanFragmentRequest, PCancelPlanFragmentResult};
+#[cfg(not(skip_proto))]
+mod be_pb {
+    pub use crate::be::pb::p_backend_service_client::PBackendServiceClient;
+    pub use crate::be::pb::{
+        PExecPlanFragmentRequest,
+        PExecPlanFragmentResult,
+        PFetchDataRequest,
+        PFetchDataResult,
+        PCancelPlanFragmentRequest,
+        PCancelPlanFragmentResult,
+    };
+}
+
+use be_pb::*;
 
 pub struct BackendClient {
     host: String,
@@ -49,6 +74,15 @@ impl BackendClient {
         self.client.is_some()
     }
 
+    #[cfg(skip_proto)]
+    pub async fn connect(&mut self) -> Result<()> {
+        error!("BE gRPC client is not available (SKIP_PROTO=1)");
+        Err(DorisError::BackendCommunication(
+            "BE gRPC client is disabled (SKIP_PROTO=1)".to_string(),
+        ))
+    }
+
+    #[cfg(not(skip_proto))]
     pub async fn connect(&mut self) -> Result<()> {
         info!("Connecting to BE at {}:{}", self.host, self.grpc_port);
 
@@ -81,6 +115,20 @@ impl BackendClient {
         }
     }
 
+    #[cfg(skip_proto)]
+    pub async fn execute_fragment(
+        &mut self,
+        _query_id: Uuid,
+        _fragment_id: i64,
+        _query_sql: &str,
+    ) -> Result<PExecPlanFragmentResult> {
+        error!("BE fragment execution is not available (SKIP_PROTO=1)");
+        Err(DorisError::BackendCommunication(
+            "BE fragment execution disabled (SKIP_PROTO=1)".to_string(),
+        ))
+    }
+
+    #[cfg(not(skip_proto))]
     pub async fn execute_fragment(
         &mut self,
         query_id: Uuid,
@@ -122,6 +170,19 @@ impl BackendClient {
         }
     }
 
+    #[cfg(skip_proto)]
+    pub async fn fetch_data(
+        &mut self,
+        _query_id: Uuid,
+        _fragment_id: i64,
+    ) -> Result<PFetchDataResult> {
+        error!("BE fetch_data is not available (SKIP_PROTO=1)");
+        Err(DorisError::BackendCommunication(
+            "BE fetch_data disabled (SKIP_PROTO=1)".to_string(),
+        ))
+    }
+
+    #[cfg(not(skip_proto))]
     pub async fn fetch_data(
         &mut self,
         query_id: Uuid,
@@ -160,6 +221,19 @@ impl BackendClient {
         }
     }
 
+    #[cfg(skip_proto)]
+    pub async fn cancel_fragment(
+        &mut self,
+        _query_id: Uuid,
+        _fragment_id: i64,
+    ) -> Result<PCancelPlanFragmentResult> {
+        error!("BE cancel_fragment is not available (SKIP_PROTO=1)");
+        Err(DorisError::BackendCommunication(
+            "BE cancel_fragment disabled (SKIP_PROTO=1)".to_string(),
+        ))
+    }
+
+    #[cfg(not(skip_proto))]
     pub async fn cancel_fragment(
         &mut self,
         query_id: Uuid,

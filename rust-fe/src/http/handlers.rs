@@ -9,7 +9,7 @@ use std::sync::Arc;
 use tracing::{info, error};
 use serde_json::json;
 
-use crate::query::QueryExecutor;
+use crate::query::{QueryExecutor, SessionCtx, ProtocolType};
 use crate::be::BackendClientPool;
 
 pub struct AppState {
@@ -57,50 +57,45 @@ pub async fn stream_load_handler(
         }
     };
 
-    // Queue and execute the insert query
-    let query_id = uuid::Uuid::new_v4();
+    // Execute via core execute_sql entrypoint using an HTTP session context
+    let mut session = SessionCtx::new();
+    session.database = Some(db.clone());
+    session.user = "stream_load".to_string();
+    session.protocol = ProtocolType::Http;
 
-    match state.query_executor.queue_query(query_id, insert_query, Some(db.clone())).await {
-        Ok(()) => {
-            match state.query_executor.execute_query(query_id, &state.be_client_pool).await {
-                Ok(result) => {
-                    info!("Stream load completed: {} rows affected", result.affected_rows);
+    match state
+        .query_executor
+        .execute_sql(&mut session, &insert_query, &state.be_client_pool)
+        .await
+    {
+        Ok(result) => {
+            info!("Stream load completed: {} rows affected", result.affected_rows);
 
-                    (
-                        StatusCode::OK,
-                        json!({
-                            "TxnId": query_id.to_string(),
-                            "Label": label,
-                            "Status": "Success",
-                            "Message": "OK",
-                            "NumberTotalRows": result.affected_rows,
-                            "NumberLoadedRows": result.affected_rows,
-                            "NumberFilteredRows": 0,
-                            "NumberUnselectedRows": 0,
-                            "LoadBytes": body.len(),
-                            "LoadTimeMs": 100,
-                        }).to_string(),
-                    ).into_response()
-                }
-                Err(e) => {
-                    error!("Stream load execution failed: {}", e);
-                    (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        json!({
-                            "Status": "Fail",
-                            "Message": format!("Execution error: {}", e),
-                        }).to_string(),
-                    ).into_response()
-                }
-            }
+            let txn_id = uuid::Uuid::new_v4();
+
+            (
+                StatusCode::OK,
+                json!({
+                    "TxnId": txn_id.to_string(),
+                    "Label": label,
+                    "Status": "Success",
+                    "Message": "OK",
+                    "NumberTotalRows": result.affected_rows,
+                    "NumberLoadedRows": result.affected_rows,
+                    "NumberFilteredRows": 0,
+                    "NumberUnselectedRows": 0,
+                    "LoadBytes": body.len(),
+                    "LoadTimeMs": 100,
+                }).to_string(),
+            ).into_response()
         }
         Err(e) => {
-            error!("Failed to queue stream load: {}", e);
+            error!("Stream load execution failed: {}", e);
             (
-                StatusCode::SERVICE_UNAVAILABLE,
+                StatusCode::INTERNAL_SERVER_ERROR,
                 json!({
                     "Status": "Fail",
-                    "Message": format!("Queue full: {}", e),
+                    "Message": format!("Execution error: {}", e),
                 }).to_string(),
             ).into_response()
         }

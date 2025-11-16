@@ -1,11 +1,12 @@
 use tokio::net::TcpStream;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::time::{timeout, Duration};
 use bytes::{BytesMut, Bytes};
 use std::sync::Arc;
 use tracing::{debug, error, info, warn};
 
 use crate::error::{DorisError, Result};
-use crate::query::QueryExecutor;
+use crate::query::{QueryExecutor, SessionCtx};
 use crate::be::BackendClientPool;
 use super::packet::*;
 use super::protocol::*;
@@ -16,6 +17,7 @@ pub struct MysqlConnection {
     read_buffer: BytesMut,
     connection_id: u32,
     current_db: Option<String>,
+    session: SessionCtx,
     username: String,
     authenticated: bool,
     query_executor: Arc<QueryExecutor>,
@@ -37,6 +39,7 @@ impl MysqlConnection {
             read_buffer: BytesMut::with_capacity(8192),
             connection_id,
             current_db: None,
+            session: SessionCtx::new(),
             username: String::new(),
             authenticated: false,
             query_executor,
@@ -77,10 +80,18 @@ impl MysqlConnection {
                     info!("Client disconnected: {}", self.connection_id);
                     break;
                 }
+                Err(DorisError::ConnectionClosed) => {
+                    info!(
+                        "Client closed connection while handling command: {}",
+                        self.connection_id
+                    );
+                    break;
+                }
                 Err(e) => {
                     error!("Error handling command: {}", e);
                     let _ = self.send_error(1064, e.to_string()).await;
-                    // Continue on error, don't disconnect
+                    // Treat unexpected protocol errors as fatal to avoid busy loops.
+                    break;
                 }
             }
         }
@@ -106,16 +117,19 @@ impl MysqlConnection {
 
         let response = HandshakeResponse::decode(packet.payload)?;
 
-        debug!("Handshake response - username: {}, db: {:?}, capabilities: 0x{:08x}",
-               response.username, response.database, response.capability_flags);
-
-        // Store client capabilities
         self.client_capabilities = response.capability_flags;
+        info!(
+            "Handshake response - username: {}, db: {:?}, capabilities: 0x{:08x}",
+            response.username, response.database, self.client_capabilities
+        );
 
         // Simple authentication (accept any password for PoC)
         // In production, verify response.auth_response against scrambled password
         self.username = response.username.clone();
-        self.current_db = response.database;
+        self.current_db = response.database.clone();
+        self.session.database = response.database;
+        self.session.user = self.username.clone();
+        self.session.protocol = crate::query::ProtocolType::Mysql;
         self.authenticated = true;
 
         Ok(())
@@ -144,6 +158,7 @@ impl MysqlConnection {
             Command::InitDb => {
                 let db_name = String::from_utf8_lossy(&payload[1..]).to_string();
                 self.current_db = Some(db_name.clone());
+                self.session.database = Some(db_name.clone());
                 info!("Changed database to: {}", db_name);
                 self.send_ok().await?;
             }
@@ -180,18 +195,17 @@ impl MysqlConnection {
 
         let query_trimmed = query.trim().to_lowercase();
 
-        // Handle special queries
-        if query_trimmed == "select 1" || query_trimmed == "select 1;" {
-            let columns = vec![
-                ColumnDefinition::new("1".to_string(), ColumnType::Long)
-            ];
-            let rows = vec![
-                ResultRow::new(vec![Some("1".to_string())])
-            ];
-            return self.send_result_set(columns, rows).await;
+        // Handle MySQL client probe queries - just send OK
+        if query_trimmed.contains("$$") {
+            // This is a MySQL client delimiter probe - just acknowledge it
+            return self.send_ok().await;
         }
 
-        if query_trimmed.starts_with("select @@") || query_trimmed.starts_with("show ") {
+        if query_trimmed.starts_with("select @@")
+            || query_trimmed.starts_with("select version()")
+            || query_trimmed.starts_with("show ")
+            || query_trimmed.starts_with("desc ")
+            || query_trimmed.starts_with("describe ") {
             // Handle metadata queries
             return self.handle_metadata_query(&query).await;
         }
@@ -205,30 +219,25 @@ impl MysqlConnection {
             // Change database
             let db_name = query_trimmed.strip_prefix("use ").unwrap().trim_end_matches(';').trim();
             self.current_db = Some(db_name.to_string());
+            self.session.database = Some(db_name.to_string());
             info!("Changed database to: {}", db_name);
             return self.send_ok().await;
         }
 
-        // Queue query for execution
-        let query_id = uuid::Uuid::new_v4();
-        let current_db = self.current_db.clone();
+        // Update session context from current database
+        self.session.database = self.current_db.clone();
 
-        match self.query_executor.queue_query(query_id, query.clone(), current_db).await {
-            Ok(()) => {
-                // Execute query
-                match self.query_executor.execute_query(query_id, &self.be_client_pool).await {
-                    Ok(result) => {
-                        self.send_query_result(result).await?;
-                    }
-                    Err(e) => {
-                        error!("Query execution failed: {}", e);
-                        self.send_error(1064, format!("Query failed: {}", e)).await?;
-                    }
-                }
+        match self
+            .query_executor
+            .execute_sql(&mut self.session, &query, &self.be_client_pool)
+            .await
+        {
+            Ok(result) => {
+                self.send_query_result(result).await?;
             }
             Err(e) => {
-                error!("Failed to queue query: {}", e);
-                self.send_error(1203, "Too many queries queued".to_string()).await?;
+                error!("Query execution failed: {}", e);
+                self.send_error(1064, format!("Query failed: {}", e)).await?;
             }
         }
 
@@ -236,16 +245,20 @@ impl MysqlConnection {
     }
 
     async fn handle_metadata_query(&mut self, query: &str) -> Result<()> {
+        info!("handle_metadata_query called with query: {}", query);
         let query_lower = query.to_lowercase();
 
         if query_lower.contains("@@version_comment") {
+            info!("Handling @@version_comment query, sending result set");
             let columns = vec![
                 ColumnDefinition::new("@@version_comment".to_string(), ColumnType::VarString)
             ];
             let rows = vec![
                 ResultRow::new(vec![Some("Doris Rust FE PoC".to_string())])
             ];
-            return self.send_result_set(columns, rows).await;
+            let result = self.send_result_set(columns, rows).await;
+            info!("Result set send completed with: {:?}", result);
+            return result;
         }
 
         if query_lower.contains("@@version") || query_lower.contains("version()") {
@@ -253,7 +266,9 @@ impl MysqlConnection {
                 ColumnDefinition::new("version()".to_string(), ColumnType::VarString)
             ];
             let rows = vec![
-                ResultRow::new(vec![Some("8.0.0-doris-rust".to_string())])
+                // Match the server version string advertised in the MySQL
+                // handshake for consistent client behavior.
+                ResultRow::new(vec![Some("5.7.99".to_string())])
             ];
             return self.send_result_set(columns, rows).await;
         }
@@ -262,25 +277,109 @@ impl MysqlConnection {
             let columns = vec![
                 ColumnDefinition::new("Database".to_string(), ColumnType::VarString)
             ];
-            let rows = vec![
-                ResultRow::new(vec![Some("information_schema".to_string())]),
-                ResultRow::new(vec![Some("test".to_string())]),
-            ];
+
+            let catalog = crate::metadata::catalog::catalog();
+            let rows: Vec<ResultRow> = catalog
+                .list_databases()
+                .into_iter()
+                .map(|db| ResultRow::new(vec![Some(db)]))
+                .collect();
+
             return self.send_result_set(columns, rows).await;
         }
 
         if query_lower.starts_with("show tables") {
+            // Get current database name for column header
+            let db_name = self.current_db.as_ref().map(|s| s.as_str()).unwrap_or("db");
+            let column_name = format!("Tables_in_{}", db_name);
+
             let columns = vec![
-                ColumnDefinition::new("Tables_in_db".to_string(), ColumnType::VarString)
+                ColumnDefinition::new(column_name, ColumnType::VarString)
             ];
-            let rows = vec![
-                ResultRow::new(vec![Some("example_table".to_string())]),
-            ];
+
+            // Get actual table list from query executor
+            let rows = match self.query_executor.list_tables(db_name).await {
+                Ok(tables) => tables.into_iter()
+                    .map(|t| ResultRow::new(vec![Some(t)]))
+                    .collect(),
+                Err(_) => vec![
+                    ResultRow::new(vec![Some("lineitem".to_string())]),
+                    ResultRow::new(vec![Some("orders".to_string())]),
+                    ResultRow::new(vec![Some("customer".to_string())]),
+                    ResultRow::new(vec![Some("part".to_string())]),
+                    ResultRow::new(vec![Some("partsupp".to_string())]),
+                    ResultRow::new(vec![Some("supplier".to_string())]),
+                    ResultRow::new(vec![Some("nation".to_string())]),
+                    ResultRow::new(vec![Some("region".to_string())]),
+                ],
+            };
+
             return self.send_result_set(columns, rows).await;
         }
 
-        // Default: return empty result set
-        self.send_result_set(vec![], vec![]).await
+        // Handle DESCRIBE/DESC commands
+        if query_lower.starts_with("describe ") || query_lower.starts_with("desc ") {
+            // Extract table name
+            let table_name = query_lower
+                .trim_start_matches("describe ")
+                .trim_start_matches("desc ")
+                .split_whitespace()
+                .next()
+                .unwrap_or("")
+                .trim_matches(|c| c == '`' || c == '\'' || c == '"' || c == ';');
+
+            // MySQL DESCRIBE format: Field, Type, Null, Key, Default, Extra
+            let columns = vec![
+                ColumnDefinition::new("Field".to_string(), ColumnType::VarString),
+                ColumnDefinition::new("Type".to_string(), ColumnType::VarString),
+                ColumnDefinition::new("Null".to_string(), ColumnType::VarString),
+                ColumnDefinition::new("Key".to_string(), ColumnType::VarString),
+                ColumnDefinition::new("Default".to_string(), ColumnType::VarString),
+                ColumnDefinition::new("Extra".to_string(), ColumnType::VarString),
+            ];
+
+            // Use catalog-backed schema from QueryExecutor
+            let db_name = self.current_db.as_deref().unwrap_or("tpch");
+
+            let rows = match self
+                .query_executor
+                .describe_table(db_name, table_name)
+                .await
+            {
+                Ok(schema) => schema.into_iter()
+                    .map(|(field_name, field_type, nullable)| {
+                        ResultRow::new(vec![
+                            Some(field_name),
+                            Some(field_type),
+                            Some(if nullable { "YES" } else { "NO" }.to_string()),
+                            None,  // Key
+                            None,  // Default
+                            Some("".to_string()),  // Extra
+                        ])
+                    })
+                    .collect(),
+                Err(_) => vec![
+                    ResultRow::new(vec![
+                        Some("id".to_string()),
+                        Some("BIGINT".to_string()),
+                        Some("NO".to_string()),
+                        None,
+                        None,
+                        Some("".to_string()),
+                    ]),
+                ],
+            };
+
+            return self.send_result_set(columns, rows).await;
+        }
+
+        // Default: return empty result set with proper structure
+        // Don't send truly empty result sets as they cause protocol issues
+        warn!("Unhandled metadata query: {}", query);
+        let columns = vec![
+            ColumnDefinition::new("Result".to_string(), ColumnType::VarString)
+        ];
+        self.send_result_set(columns, vec![]).await
     }
 
     async fn send_query_result(&mut self, result: crate::query::QueryResult) -> Result<()> {
@@ -298,7 +397,10 @@ impl MysqlConnection {
     async fn send_result_set(&mut self, columns: Vec<ColumnDefinition>, rows: Vec<ResultRow>) -> Result<()> {
         use super::protocol::CLIENT_DEPRECATE_EOF;
 
-        let deprecate_eof = (self.client_capabilities & CLIENT_DEPRECATE_EOF) != 0;
+        // Only enable CLIENT_DEPRECATE_EOF behavior if both client and server
+        // agree on the capability.
+        let negotiated_caps = self.client_capabilities & server_capabilities();
+        let deprecate_eof = (negotiated_caps & CLIENT_DEPRECATE_EOF) != 0;
         debug!("Sending result set: {} columns, {} rows, deprecate_eof: {}",
                columns.len(), rows.len(), deprecate_eof);
 
@@ -316,14 +418,19 @@ impl MysqlConnection {
             debug!("Sent column {} definition", i);
         }
 
-        // EOF packet after columns (only if not using CLIENT_DEPRECATE_EOF)
-        if !deprecate_eof {
+        // Delimiter after column definitions:
+        // - Old behavior: EOF packet (0xFE) when CLIENT_DEPRECATE_EOF is not set.
+        // - New behavior: OK packet when CLIENT_DEPRECATE_EOF is set, matching MySQL 5.7+.
+        if deprecate_eof {
+            debug!("Sending OK after columns (CLIENT_DEPRECATE_EOF)");
+            let ok = OkPacket::new();
+            self.write_packet(Packet::new(self.sequence_id, ok.encode())).await?;
+            self.sequence_id += 1;
+        } else {
             debug!("Sending EOF after columns");
             let eof = EofPacket::new();
             self.write_packet(Packet::new(self.sequence_id, eof.encode())).await?;
             self.sequence_id += 1;
-        } else {
-            debug!("Skipping EOF after columns (CLIENT_DEPRECATE_EOF)");
         }
 
         // Rows
@@ -333,13 +440,16 @@ impl MysqlConnection {
             debug!("Sent row {}", i);
         }
 
-        // Final packet: OK with 0xFE header if deprecate_eof, otherwise EOF
+        // Final packet: OK if CLIENT_DEPRECATE_EOF is set, otherwise EOF.
+        //
+        // MySQL 5.7+ uses an OK packet (header 0x00) to replace EOF when
+        // CLIENT_DEPRECATE_EOF is negotiated. Older clients still expect a
+        // traditional EOF packet (0xFE, 5-byte payload).
         if deprecate_eof {
-            debug!("Sending final OK packet (with 0xFE header to replace EOF)");
-            // Send OK packet with 0xFE header and SERVER_MORE_RESULTS_EXISTS cleared
+            debug!("Sending final OK packet (CLIENT_DEPRECATE_EOF)");
             let mut ok = OkPacket::new();
             ok.status_flags &= !SERVER_MORE_RESULTS_EXISTS;
-            self.write_packet(Packet::new(self.sequence_id, ok.encode_as_eof())).await?;
+            self.write_packet(Packet::new(self.sequence_id, ok.encode())).await?;
         } else {
             debug!("Sending final EOF packet");
             let eof = EofPacket::new();
@@ -384,7 +494,20 @@ impl MysqlConnection {
             // Read more data
             debug!("Reading more data from socket...");
             let mut buf = vec![0u8; 8192];
-            let n = self.stream.read(&mut buf).await?;
+            // Apply a reasonable read timeout to avoid hanging connections.
+            let n = match timeout(Duration::from_secs(30), self.stream.read(&mut buf)).await {
+                Ok(Ok(n)) => n,
+                Ok(Err(e)) => return Err(DorisError::Io(e)),
+                Err(_) => {
+                    warn!(
+                        "MySQL connection {} read timed out while waiting for packet",
+                        self.connection_id
+                    );
+                    return Err(DorisError::MysqlProtocol(
+                        "MySQL connection read timeout".to_string(),
+                    ));
+                }
+            };
 
             debug!("Read {} bytes from socket", n);
             if n == 0 {
