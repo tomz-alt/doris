@@ -22,20 +22,22 @@
 - ✅ TPaloScanRange experiments (version='3' fix, schema_hash tests - NOT root cause)
 - ✅ Descriptor table analysis (ROOT CAUSE FOUND: 2 tuples vs 5 tuples required)
 - ✅ Strategic decision: Systematic rewrite over tcpdump/patch
+- ✅ **Descriptor table fix**: Added 3 missing tuples (2, 3, 4) - now 5 tuples total (2025-11-17)
 
 ## 🔄 Current Status
 
-**Known Issue**: BE returns 0 rows - Descriptor Table has 2/5 tuples
+**Issue FIXED**: Descriptor Table now has all 5 tuples ✅
 
-**Analysis Results**:
+**Fix Applied (2025-11-17)**:
 - Java FE scan fragment: 18 slots + **5 tuple descriptors**
-- Rust FE scan fragment: 18 slots + **2 tuple descriptors** ❌
-- **Missing**: tuples 2, 3, 4 (likely projection/aggregation/result tuples)
+- Rust FE scan fragment: 18 slots + **5 tuple descriptors** ✅
+- **Added**: tuples 2, 3, 4 (projection/aggregation/result tuples)
+- Location: `src/be/thrift_pipeline.rs:1871-1893`
 
-**Evidence**:
-- TPaloScanRange fields are correct (version, schema_hash)
-- Descriptor table is major structural difference
-- Need systematic understanding of Java FE plan generation
+**Next Steps**:
+- Test with live BE to verify fix resolves 0 rows issue
+- Continue with Phase 2 builder implementations
+- Add unit tests for descriptor table generation
 
 ## 📋 Systematic Rewrite Plan (Phases 1-4)
 

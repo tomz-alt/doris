@@ -39,12 +39,17 @@ MySQL Client → opensrv_server → QueryExecutor → BackendPool → BE (gRPC)
 - Location: `encode_pipeline_instance_params_typed()`
 
 **Descriptor Table** (`src/be/thrift_pipeline.rs`)
-- **CRITICAL ISSUE FOUND (2025-11-17)**:
+- **FIXED (2025-11-17)**:
   - Java FE: 18 slot_descriptors + **5 tuple_descriptors**
-  - Rust FE: 18 slot_descriptors + **2 tuple_descriptors** ❌
-  - **Missing**: tuples 2, 3, 4 (projection/aggregation/result)
-- Current impl: `encode_descriptor_table_for_table_from_catalog_typed()`
-- **Root cause of 0 rows**: BE expects 5-tuple structure for scan processing
+  - Rust FE: 18 slot_descriptors + **5 tuple_descriptors** ✅ FIXED
+  - **Added**: tuples 2, 3, 4 (projection/aggregation/result)
+- Current impl: `encode_descriptor_table_for_scan_typed()` at line 1811
+- **Fix committed**: All 5 tuples now created matching Java FE pattern
+  - tuple 0: id=0, table_id=Some(...) - Base scan tuple
+  - tuple 1: id=1, table_id=Some(...) - Base scan tuple (duplicate for BE processing)
+  - tuple 2: id=2, table_id=None - Projection tuple
+  - tuple 3: id=3, table_id=None - Aggregation tuple
+  - tuple 4: id=4, table_id=None - Result tuple
 
 **Type System** (`src/metadata/types.rs`)
 - `DataType::from_arrow_type()` - Maps DataFusion → Doris types

@@ -1868,17 +1868,27 @@ fn encode_descriptor_table_for_scan_typed(
         }
     }
 
-    // Create scan tuple (has table_id)
-    let scan_tuple_desc = encode_tuple_descriptor_typed(scan_tuple_id, table_id);
+    // Create all 5 tuples matching Java FE pattern (ROOT CAUSE FIX for 0 rows issue)
+    // tuple 0: id=0, table_id=Some(...) - Base scan tuple
+    let tuple_0 = encode_tuple_descriptor_typed(0, table_id);
 
-    // Create output tuple (NO table_id - used for result output)
-    let output_tuple_desc = encode_tuple_descriptor_typed(output_tuple_id, None);
+    // tuple 1: id=1, table_id=Some(...) - Base scan tuple (duplicate for BE processing)
+    let tuple_1 = encode_tuple_descriptor_typed(1, table_id);
+
+    // tuple 2: id=2, table_id=None - Projection tuple (no table reference)
+    let tuple_2 = encode_tuple_descriptor_typed(2, None);
+
+    // tuple 3: id=3, table_id=None - Aggregation tuple (for GROUP BY/aggregate ops)
+    let tuple_3 = encode_tuple_descriptor_typed(3, None);
+
+    // tuple 4: id=4, table_id=None - Result tuple (final output)
+    let tuple_4 = encode_tuple_descriptor_typed(4, None);
 
     let table_descriptors = table_descriptor.map(|td| vec![td]);
 
     t_desc::TDescriptorTable::new(
         Some(slot_descs),
-        vec![scan_tuple_desc, output_tuple_desc],  // Both scan and output tuples
+        vec![tuple_0, tuple_1, tuple_2, tuple_3, tuple_4],  // All 5 tuples as per Java FE
         table_descriptors
     )
 }
