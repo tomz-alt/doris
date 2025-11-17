@@ -1,0 +1,102 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "fe-common",
+    "fe-catalog",
+    "fe-analysis",
+    "fe-nereids",
+    "fe-planner",
+    "fe-qe",
+    "fe-service",
+    "fe-rpc",
+    "fe-persist",
+    "fe-system",
+    "fe-statistics",
+    "fe-load",
+    "fe-transaction",
+    "fe-mysql-protocol",
+    "fe-http",
+    "fe-alter",
+    "fe-datasource",
+    "fe-ha",
+    "fe-metric",
+    "fe-job",
+    "fe-main",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["Apache Doris Community"]
+repository = "https://github.com/apache/doris"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+tokio-util = "0.7"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Database & SQL
+sqlparser = "0.43"
+
+# gRPC/RPC
+tonic = "0.11"
+prost = "0.12"
+
+# HTTP server
+axum = "0.7"
+tower = "0.4"
+hyper = "1.1"
+
+# Metrics
+prometheus = "0.13"
+
+# Utilities
+bytes = "1.5"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+lazy_static = "1.4"
+parking_lot = "0.12"
+dashmap = "5.5"
+crossbeam = "0.8"
+
+# Configuration
+config = "0.14"
+toml = "0.8"
+
+# System
+num_cpus = "1.16"
+
+# Version info
+rustc_version_runtime = "0.3"
+
+# Testing
+criterion = "0.5"
+proptest = "1.4"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.bench]
+inherits = "release"

@@ -1,0 +1,24 @@
+[package]
+name = "fe-catalog"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Workspace crates
+fe-common = { path = "../fe-common" }
+
+# External dependencies
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+parking_lot.workspace = true
+dashmap.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }

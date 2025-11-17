@@ -1,0 +1,25 @@
+[package]
+name = "fe-main"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "doris-fe"
+path = "src/main.rs"
+
+[dependencies]
+# Workspace crates
+fe-common = { path = "../fe-common" }
+fe-catalog = { path = "../fe-catalog" }
+
+# External dependencies
+tokio.workspace = true
+tokio-util.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true
+clap = { version = "4.4", features = ["derive"] }
+signal-hook = "0.3"
+signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }

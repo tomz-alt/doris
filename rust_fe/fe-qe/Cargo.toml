@@ -1,0 +1,10 @@
+[package]
+name = "fe-qe"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+fe-common = { path = "../fe-common" }
+serde.workspace = true
