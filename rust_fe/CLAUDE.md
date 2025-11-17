@@ -1,19 +1,18 @@
-# Rust FE Development Guide
+# Rust FE Dev Guide
 
 ## Context
-Migrating 4,654 Java files (48 modules) to Rust for better performance and lower memory usage.
+Migrating 4,654 Java files (48 modules) to Rust for performance/memory gains.
 
 ## Status
-- ✅ Phase 1: Infrastructure (fe-common)
-- ✅ Phase 2: Catalog basics (Database, Table, Column, Partition, Replica)
-- 🚧 Phase 2: Complete catalog (external tables, MVs, schema changes)
-- ⏳ Phase 3+: SQL parser, optimizer, execution
+✅ Phase 1: Infrastructure (fe-common)
+✅ Phase 2: Catalog (Database, Table, Column, Partition, Replica)
+🚧 Phase 3: SQL parser, optimizer, execution
 
-## Key Principles
-1. **Behavior Parity**: Match Java FE exactly
-2. **No Java Modifications**: Read-only reference
-3. **Test-Driven**: 52 tests verify parity (26 unit + 26 integration)
-4. **Incremental**: Module by module
+## Principles
+1. **Exact Java parity** - 67 tests verify behaviors
+2. **No Java mods** - Read-only reference
+3. **Test-driven** - Write tests first
+4. **Incremental** - Module by module
 
 ## Architecture
 - **Workspace**: 21 crates
@@ -21,10 +20,7 @@ Migrating 4,654 Java files (48 modules) to Rust for better performance and lower
 - **Concurrency**: Arc, RwLock, DashMap
 - **Errors**: Result<T, DorisError>
 
-## Next Steps
-1. Complete catalog features
+## Next
+1. External tables, MVs, schema changes
 2. SQL parser (fe-analysis)
 3. Query optimizer (fe-nereids)
-4. Services (HTTP/RPC/MySQL)
-
-Ref: rust_fe_migration_todos.md

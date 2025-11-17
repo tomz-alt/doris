@@ -1,28 +1,22 @@
 # TODO
 
-## Sprint 1 (Current)
-- [ ] External tables (MySQL, ES, Hive, Iceberg, etc.)
+## Now
+- [ ] External tables (MySQL, ES, Hive, Iceberg)
 - [ ] Materialized views
-- [ ] Schema change tracking
-- [ ] Tablet/replica management
-- [ ] More edge case tests
+- [ ] Schema changes
+- [ ] Tablet management
+- [ ] Serialization tests
 
 ## Sprint 2-3
-- [ ] SQL parser (sqlparser-rs or custom ANTLR)
-- [ ] AST nodes, expression analysis
-- [ ] Type coercion, validation
-- [ ] Metadata persistence (journal/checkpoint)
+- [ ] SQL parser (sqlparser-rs)
+- [ ] AST, expression analysis
+- [ ] Type coercion
+- [ ] Metadata persist (journal/checkpoint)
 - [ ] BE/FE node tracking
 
-## Sprint 4-8
-- [ ] Nereids optimizer (pattern matching, rules, cost)
-- [ ] Query planner (plan nodes, distribution)
-- [ ] Statistics collection
-
-## Sprint 9+
+## Sprint 4+
+- [ ] Nereids optimizer
+- [ ] Query planner
 - [ ] Services (HTTP/RPC/MySQL)
-- [ ] Data loading (stream/broker/routine)
-- [ ] Transactions (2PC)
-- [ ] Performance tuning
-
-Ref: rust_fe_migration_todos.md (full roadmap)
+- [ ] Data loading
+- [ ] Transactions

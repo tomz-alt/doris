@@ -1,45 +1,41 @@
-# Tools & Commands
+# Tools
 
-## Build & Test
+## Test & Build
 ```bash
-cargo test                    # All tests (52)
-cargo test -p fe-catalog      # Catalog tests only
-cargo test --quiet            # Less output
-cargo bench                   # Benchmarks
+cargo test                  # All (67 tests)
+cargo test -p fe-catalog    # Catalog only (63)
+cargo test edge_case        # Edge cases (15)
+cargo bench                 # Benchmarks
 ```
 
-## Code Quality
+## Quality
 ```bash
-cargo fmt                     # Format
-cargo clippy -- -D warnings   # Lint strict
-cargo check                   # Fast check
+cargo fmt                   # Format
+cargo clippy -- -D warnings # Lint
+cargo check                 # Fast check
 ```
 
-## Java FE Reference (Read-Only)
+## Java Reference (Read-Only)
 ```bash
-# Find Java implementations
-find fe/fe-core/src -name "Database.java"
-grep -r "registerTable" fe/fe-core/src/test
+# Find implementations
+find fe/fe-core/src -name "*.java" | grep -i catalog
 
-# Run Java tests to verify behavior
-cd fe/fe-core
-mvn test -Dtest=DatabaseTest
-mvn test -Dtest=ColumnTest
+# Run Java tests
+cd fe/fe-core && mvn test -Dtest=DatabaseTest
 
-# View test results
+# View results
 less target/surefire-reports/*.txt
 ```
 
 ## Analysis
 ```bash
-cargo tree                    # Dependencies
-cargo bloat --release        # Binary size
-cargo expand                  # Macro expansion
+cargo tree                  # Deps
+cargo bloat --release       # Size
+cargo expand                # Macros
 ```
 
 ## Performance
 ```bash
-cargo flamegraph             # CPU profile
-hyperfine 'cargo run'        # Benchmark
-valgrind --tool=massif       # Memory profile
+cargo flamegraph            # Profile
+hyperfine 'cargo run'       # Benchmark
 ```
