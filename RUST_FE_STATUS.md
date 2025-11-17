@@ -17,7 +17,7 @@
 - `todo.md` (24 lines)
 - `tools.md` (42 lines)
 
-### 4. Test Suite (106 tests, 100% passing ✓)
+### 4. Test Suite (117 tests, 100% passing ✓)
 
 **Unit Tests (4)** - fe-common:
 - Size parsing/formatting, timestamps
@@ -32,17 +32,24 @@
 - table_tests (9): Keys, storage
 - edge_case_tests (15): Quotas, boundaries, concurrency
 - validation_tests (15): Constraints, API contracts, invariants
-- **type_tests (15): Type equality, complex types**
-- **serialization_tests (13): JSON serialization, deserialization**
+- type_tests (15): Type equality, complex types
+- serialization_tests (13): JSON serialization, deserialization
 
-**Based on**: DatabaseTest.java, ColumnTest.java, Replica.java, CreateTableTest.java, ColumnTypeTest.java, MaterializedIndexTest.java
+**SQL Parser Tests (11)** - fe-analysis:
+- DDL parsing (CREATE TABLE, DROP TABLE)
+- DML parsing (SELECT, INSERT, UPDATE, DELETE)
+- **TPC-H lineitem table parsing ✓**
+- **TPC-H Q1 query parsing (aggregations, GROUP BY, ORDER BY) ✓**
+
+**Based on**: DatabaseTest.java, ColumnTest.java, Replica.java, CreateTableTest.java, ColumnTypeTest.java, MaterializedIndexTest.java, TPC-H schema
 
 ## Stats
 - Java files: 4,654
 - Modules: 48
 - Rust crates: 21
-- Tests: 106/106 ✓
+- Tests: 117/117 ✓
 - Coverage: ~92%
+- **SQL Parser: TPC-H DDL + Q1 ✓**
 
 ## Next
 External tables, MVs, serialization, SQL parser

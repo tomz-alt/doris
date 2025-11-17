@@ -8,3 +8,4 @@ authors.workspace = true
 [dependencies]
 fe-common = { path = "../fe-common" }
 serde.workspace = true
+sqlparser = "0.49"

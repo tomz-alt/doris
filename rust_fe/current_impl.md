@@ -23,6 +23,19 @@
 - edge_case_tests (15), validation_tests (15)
 - type_tests (15), serialization_tests (13)
 
+## fe-analysis (SQL Parser) - 11 tests ✓
+**Files**: parser.rs, ast.rs, analyzer.rs
+
+- **Parser**: Uses sqlparser-rs (0.49)
+- **DDL**: CREATE/DROP TABLE/DATABASE
+- **DML**: SELECT/INSERT/UPDATE/DELETE
+- **TPC-H**: Parses lineitem table, Q1 query
+- **Analyzer**: Duplicate column detection
+
+**Tests**:
+- parser_tests (9): Simple SELECT, CREATE TABLE, TPC-H lineitem, TPC-H Q1, INSERT/UPDATE/DELETE
+- analyzer_tests (2): Valid CREATE TABLE, duplicate columns
+
 ## fe-main (Entry) - 0 tests
 CLI, config, logging, signals
 
