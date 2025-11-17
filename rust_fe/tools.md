@@ -1,58 +1,45 @@
-# Useful Tools & Commands
+# Tools & Commands
 
 ## Build & Test
 ```bash
-cargo build                    # Debug build
-cargo build --release          # Release build
-cargo test                     # Run all tests
-cargo test -p fe-catalog       # Test specific crate
-cargo bench                    # Run benchmarks
+cargo test                    # All tests (52)
+cargo test -p fe-catalog      # Catalog tests only
+cargo test --quiet            # Less output
+cargo bench                   # Benchmarks
 ```
 
 ## Code Quality
 ```bash
-cargo fmt                      # Format code
-cargo clippy                   # Lint code
-cargo clippy -- -D warnings    # Lint with errors
-cargo check                    # Fast compilation check
+cargo fmt                     # Format
+cargo clippy -- -D warnings   # Lint strict
+cargo check                   # Fast check
+```
+
+## Java FE Reference (Read-Only)
+```bash
+# Find Java implementations
+find fe/fe-core/src -name "Database.java"
+grep -r "registerTable" fe/fe-core/src/test
+
+# Run Java tests to verify behavior
+cd fe/fe-core
+mvn test -Dtest=DatabaseTest
+mvn test -Dtest=ColumnTest
+
+# View test results
+less target/surefire-reports/*.txt
 ```
 
 ## Analysis
 ```bash
-cargo tree                     # Dependency tree
-cargo bloat --release         # Binary size analysis
-cargo expand                   # Macro expansion
+cargo tree                    # Dependencies
+cargo bloat --release        # Binary size
+cargo expand                  # Macro expansion
 ```
 
-## Java FE Reference
+## Performance
 ```bash
-# Find Java implementations
-find fe/fe-core/src -name "Catalog.java"
-find fe/fe-core/src -name "Database.java"
-
-# Search for specific behavior
-grep -r "createDatabase" fe/fe-core/src
-grep -r "transaction" fe/fe-core/src
-
-# Count lines/files per module
-find fe/fe-core/src/main/java/org/apache/doris/catalog -name "*.java" | wc -l
-```
-
-## Testing Java FE (Read-only)
-```bash
-# Run Java FE tests to understand behavior
-cd fe/fe-core
-mvn test -Dtest=CatalogTest
-mvn test -Dtest=DatabaseTest
-
-# View test output
-less target/surefire-reports/*.txt
-```
-
-## Performance Tools
-```bash
-cargo flamegraph             # CPU profiling
-cargo instruments            # macOS profiling
-valgrind --tool=massif       # Memory profiling
-hyperfine 'cargo run'        # Benchmarking
+cargo flamegraph             # CPU profile
+hyperfine 'cargo run'        # Benchmark
+valgrind --tool=massif       # Memory profile
 ```
