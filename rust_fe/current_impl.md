@@ -6,7 +6,7 @@
 - Types: IDs (9), enums (TableType, KeysType, DataType, etc.)
 - Utils: timestamps, size parsing/formatting
 
-## fe-catalog (Metadata) - 78 tests ✓
+## fe-catalog (Metadata) - 102 tests ✓
 **Files**: catalog.rs, database.rs, table.rs, column.rs, partition.rs, index.rs, replica.rs
 
 - **Catalog**: Root manager (create/drop DB/table)
@@ -18,15 +18,10 @@
 - **Replica**: state machine, version tracking, health
 
 **Tests**:
-- catalog_tests (7): CRUD, concurrent
-- column_tests (6): Types, aggregates
-- partition_tests (5): Versions
-- replica_tests (4): State, health
-- database_extended (6): Register, ordering
-- column_extended (11): All types/aggs
-- table_tests (9): Keys, storage
-- edge_case_tests (15): Quotas, boundaries, concurrency
-- validation_tests (15): Constraints, invariants, API contracts
+- catalog_tests (7), column_tests (6), partition_tests (5), replica_tests (4)
+- database_extended (6), column_extended (11), table_tests (9)
+- edge_case_tests (15), validation_tests (15)
+- type_tests (15), serialization_tests (13)
 
 ## fe-main (Entry) - 0 tests
 CLI, config, logging, signals

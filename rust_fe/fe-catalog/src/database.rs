@@ -6,7 +6,6 @@
 use fe_common::{DbId, TableId, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use parking_lot::RwLock;
 use dashmap::DashMap;
 
 /// Database metadata

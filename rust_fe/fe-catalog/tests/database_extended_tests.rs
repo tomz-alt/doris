@@ -3,9 +3,8 @@
 
 //! Extended Database tests - matching Java FE DatabaseTest.java behavior
 
-use fe_catalog::{Catalog, Column, OlapTable, Database};
-use fe_common::{DataType, KeysType, ColumnId, TableType};
-use std::sync::Arc;
+use fe_catalog::{Catalog, Column, OlapTable};
+use fe_common::{DataType, KeysType};
 
 #[test]
 fn test_database_register_table_duplicate() {

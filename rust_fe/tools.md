@@ -2,9 +2,10 @@
 
 ## Test & Build
 ```bash
-cargo test                  # All (82 tests)
-cargo test -p fe-catalog    # Catalog only (78)
-cargo test validation       # Validation tests (15)
+cargo test                  # All (106 tests)
+cargo test -p fe-catalog    # Catalog only (102)
+cargo test type_tests       # Type tests (15)
+cargo test serialization    # Serialization (13)
 cargo bench                 # Benchmarks
 ```
 

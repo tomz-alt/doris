@@ -3,7 +3,7 @@
 
 //! Comprehensive edge case tests for catalog components
 
-use fe_catalog::{Catalog, Database, OlapTable, Column, Partition, Replica};
+use fe_catalog::{Catalog, OlapTable, Column, Partition, Replica};
 use fe_common::{DataType, KeysType, ReplicaState, StorageMedium};
 use std::sync::Arc;
 use std::thread;
@@ -12,7 +12,7 @@ use std::thread;
 fn test_database_quota_defaults() {
     // Java: Default quotas are -1 (unlimited)
     let catalog = Catalog::new();
-    let db_id = catalog.create_database("test".to_string(), "default".to_string()).unwrap();
+    catalog.create_database("test".to_string(), "default".to_string()).unwrap();
     let db = catalog.get_database("test").unwrap();
     let db_guard = db.read();
 

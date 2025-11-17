@@ -5,7 +5,7 @@
 //! These tests verify behavior parity with Java FE
 
 use fe_catalog::{Catalog, Column, OlapTable};
-use fe_common::{DataType, KeysType, ColumnId};
+use fe_common::{DataType, KeysType};
 
 #[test]
 fn test_create_drop_database() {

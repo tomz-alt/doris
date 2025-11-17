@@ -5,7 +5,7 @@
 
 use fe_common::{DbId, TableId, Result};
 use crate::database::Database;
-use crate::table::{Table, OlapTable};
+use crate::table::OlapTable;
 use std::sync::Arc;
 use parking_lot::RwLock;
 use dashmap::DashMap;
@@ -24,7 +24,8 @@ pub struct Catalog {
     /// Next database ID
     next_db_id: Arc<RwLock<DbId>>,
 
-    /// Next table ID
+    /// Next table ID (reserved for future auto-ID allocation)
+    #[allow(dead_code)]
     next_table_id: Arc<RwLock<TableId>>,
 }
 
@@ -67,7 +68,8 @@ impl Catalog {
         result
     }
 
-    /// Allocate a new table ID
+    /// Allocate a new table ID (reserved for future use)
+    #[allow(dead_code)]
     fn next_table_id(&self) -> TableId {
         let mut id = self.next_table_id.write();
         let result = *id;

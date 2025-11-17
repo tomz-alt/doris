@@ -3,8 +3,8 @@
 
 //! Partition definition
 
-use fe_common::{PartitionId, TabletId, Result};
-use fe_common::types::{StorageMedium, PartitionType};
+use fe_common::{PartitionId, TabletId};
+use fe_common::types::StorageMedium;
 use serde::{Deserialize, Serialize};
 use dashmap::DashMap;
 

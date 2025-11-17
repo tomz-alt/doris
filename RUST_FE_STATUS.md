@@ -17,12 +17,12 @@
 - `todo.md` (24 lines)
 - `tools.md` (42 lines)
 
-### 4. Test Suite (82 tests, 100% passing ✓)
+### 4. Test Suite (106 tests, 100% passing ✓)
 
 **Unit Tests (4)** - fe-common:
 - Size parsing/formatting, timestamps
 
-**Integration Tests (78)** - fe-catalog:
+**Integration Tests (102)** - fe-catalog:
 - catalog_tests (7): CRUD, concurrent
 - column_tests (6): Types, aggregates
 - partition_tests (5): Versions, tablets
@@ -31,16 +31,18 @@
 - column_extended (11): All types/aggs
 - table_tests (9): Keys, storage
 - edge_case_tests (15): Quotas, boundaries, concurrency
-- **validation_tests (15): Constraints, API contracts, invariants**
+- validation_tests (15): Constraints, API contracts, invariants
+- **type_tests (15): Type equality, complex types**
+- **serialization_tests (13): JSON serialization, deserialization**
 
-**Based on**: DatabaseTest.java, ColumnTest.java, Replica.java, CreateTableTest.java
+**Based on**: DatabaseTest.java, ColumnTest.java, Replica.java, CreateTableTest.java, ColumnTypeTest.java, MaterializedIndexTest.java
 
 ## Stats
 - Java files: 4,654
 - Modules: 48
 - Rust crates: 21
-- Tests: 82/82 ✓
-- Coverage: ~90%
+- Tests: 106/106 ✓
+- Coverage: ~92%
 
 ## Next
 External tables, MVs, serialization, SQL parser

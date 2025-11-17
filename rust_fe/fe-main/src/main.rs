@@ -7,7 +7,7 @@ use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::signal;
-use tracing::{info, error};
+use tracing::info;
 use fe_catalog::Catalog;
 
 #[derive(Parser, Debug)]
@@ -50,7 +50,7 @@ async fn main() -> anyhow::Result<()> {
     config.validate()?;
 
     // Initialize catalog
-    let catalog = Arc::new(Catalog::new());
+    let _catalog = Arc::new(Catalog::new());
     info!("Catalog initialized");
 
     // TODO: Start various services
