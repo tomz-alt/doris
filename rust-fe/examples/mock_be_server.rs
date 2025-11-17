@@ -16,7 +16,12 @@ use uuid::Uuid;
 
 // Import the generated protobuf code
 mod pb {
+    // Core Doris BE service definitions.
     tonic::include_proto!("doris");
+    // When using the real Doris internal_service.proto (feature=real_be_proto),
+    // also include storage-format types referenced from the main protos.
+    #[cfg(feature = "real_be_proto")]
+    tonic::include_proto!("segment_v2");
 }
 
 use pb::p_backend_service_server::{PBackendService, PBackendServiceServer};

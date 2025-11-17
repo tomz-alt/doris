@@ -191,9 +191,40 @@ impl MysqlConnection {
     }
 
     async fn handle_query(&mut self, query: String) -> Result<()> {
-        info!("Query: {}", query.trim());
+        let raw = query.trim();
+        info!("Query: {}", raw);
 
-        let query_trimmed = query.trim().to_lowercase();
+        let mut query_trimmed = raw.to_lowercase();
+
+        // Handle simple multi-statement patterns like:
+        //   USE tpch; SELECT * FROM lineitem LIMIT 3;
+        //
+        // MySQL clients often send this as a single COM_QUERY when
+        // CLIENT_MULTI_STATEMENTS is negotiated. For now we support a
+        // leading USE statement followed by a single query by splitting
+        // at the first ';' and processing both parts sequentially.
+        if query_trimmed.starts_with("use ") && query_trimmed.contains(';') {
+            let mut parts = raw.splitn(2, ';');
+            let use_part = parts.next().unwrap_or("").trim();
+            let rest = parts.next().unwrap_or("").trim();
+
+            // Extract database name from the USE part only.
+            let db_lower = use_part.to_lowercase();
+            if let Some(after_use) = db_lower.strip_prefix("use ") {
+                let db_name = after_use.trim();
+                self.current_db = Some(db_name.to_string());
+                self.session.database = Some(db_name.to_string());
+                info!("Changed database to: {}", db_name);
+                self.send_ok().await?;
+            }
+
+            // If there's a remaining statement, handle it as a separate query.
+            if !rest.is_empty() {
+                return Box::pin(self.handle_query(rest.to_string())).await;
+            }
+
+            return Ok(());
+        }
 
         // Handle MySQL client probe queries - just send OK
         if query_trimmed.contains("$$") {
@@ -227,20 +258,28 @@ impl MysqlConnection {
         // Update session context from current database
         self.session.database = self.current_db.clone();
 
+        info!("🔍 [DEBUG] Starting query execution for: {}", query);
+        info!("🔍 [DEBUG] Session database: {:?}", self.session.database);
+
         match self
             .query_executor
             .execute_sql(&mut self.session, &query, &self.be_client_pool)
             .await
         {
             Ok(result) => {
+                info!("🔍 [DEBUG] Query execution completed successfully");
+                info!("🔍 [DEBUG] Result: {} rows, {} columns, is_dml: {}",
+                      result.rows.len(), result.columns.len(), result.is_dml);
                 self.send_query_result(result).await?;
+                info!("🔍 [DEBUG] Query result sent successfully");
             }
             Err(e) => {
-                error!("Query execution failed: {}", e);
+                error!("🔍 [DEBUG] Query execution failed: {}", e);
                 self.send_error(1064, format!("Query failed: {}", e)).await?;
             }
         }
 
+        info!("🔍 [DEBUG] handle_query() completed successfully");
         Ok(())
     }
 

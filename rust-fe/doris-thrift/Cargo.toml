@@ -1,0 +1,8 @@
+[package]
+name = "doris_thrift"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+thrift = "0.17.0"
+

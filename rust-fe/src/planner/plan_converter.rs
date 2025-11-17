@@ -19,6 +19,9 @@ use uuid::Uuid;
 use super::plan_fragment::*;
 use crate::error::{DorisError, Result};
 
+#[cfg(all(not(skip_proto), feature = "real_be_proto"))]
+use crate::catalog::be_table::BEScanExec;
+
 pub struct PlanConverter {
     query_id: Uuid,
     next_fragment_id: u32,
@@ -205,10 +208,9 @@ impl PlanConverter {
                 offset: offset_count,
             })
         } else {
-            // Just a limit without sort
-            Ok(PlanNode::TopN {
+            // Just a limit without sort - create a Limit node
+            Ok(PlanNode::Limit {
                 child: Box::new(child),
-                order_by: vec![],
                 limit: limit_count,
                 offset: offset_count,
             })
@@ -238,13 +240,31 @@ impl PlanConverter {
     fn convert_table_scan(&mut self, plan: Arc<dyn ExecutionPlan>) -> Result<PlanNode> {
         debug!("Converting table scan: {}", plan.name());
 
-        // Extract table name from plan name
-        let plan_name = plan.name();
-        let table_name = if plan_name.contains("CsvExec") {
-            // Extract table name from "CsvExec: file_groups={...}, projection=[...]"
-            "lineitem".to_string() // Default for now
-        } else {
-            "unknown_table".to_string()
+        // Extract table name from plan
+        let table_name = {
+            #[cfg(all(not(skip_proto), feature = "real_be_proto"))]
+            {
+                if let Some(be_scan) = plan.as_any().downcast_ref::<BEScanExec>() {
+                    // Extract from BEScanExec - use just table name, not database.table
+                    be_scan.table_name().to_string()
+                } else {
+                    let plan_name = plan.name();
+                    if plan_name.contains("CsvExec") {
+                        "lineitem".to_string()
+                    } else {
+                        "unknown_table".to_string()
+                    }
+                }
+            }
+            #[cfg(not(all(not(skip_proto), feature = "real_be_proto")))]
+            {
+                let plan_name = plan.name();
+                if plan_name.contains("CsvExec") {
+                    "lineitem".to_string()
+                } else {
+                    "unknown_table".to_string()
+                }
+            }
         };
 
         // Get column names from schema

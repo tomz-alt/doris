@@ -145,8 +145,8 @@ impl Database {
 impl Database {
     /// Create TPC-H database with all required tables
     pub fn create_tpch_schema() -> Self {
-        let mut db = Database::new("tpch".to_string());
-        db.comment = Some("TPC-H Benchmark Database".to_string());
+        let mut db = Database::new("tpch_sf1".to_string());
+        db.comment = Some("TPC-H Benchmark Database (SF1)".to_string());
 
         // Create NATION table
         db.add_table(
@@ -253,9 +253,9 @@ impl Database {
         db.add_table(
             Table::new("lineitem".to_string())
                 .with_columns(vec![
-                    ColumnDef::new("l_orderkey".to_string(), DataType::Int).not_null(),
-                    ColumnDef::new("l_partkey".to_string(), DataType::Int).not_null(),
-                    ColumnDef::new("l_suppkey".to_string(), DataType::Int).not_null(),
+                    ColumnDef::new("l_orderkey".to_string(), DataType::BigInt).not_null(),
+                    ColumnDef::new("l_partkey".to_string(), DataType::BigInt).not_null(),
+                    ColumnDef::new("l_suppkey".to_string(), DataType::BigInt).not_null(),
                     ColumnDef::new("l_linenumber".to_string(), DataType::Int).not_null(),
                     ColumnDef::new("l_quantity".to_string(), DataType::Decimal { precision: 15, scale: 2 }).not_null(),
                     ColumnDef::new("l_extendedprice".to_string(), DataType::Decimal { precision: 15, scale: 2 }).not_null(),

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use datafusion::arrow::datatypes::DataType as ArrowDataType;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DataType {
@@ -116,6 +117,69 @@ impl DataType {
                     None
                 }
             }
+        }
+    }
+
+    /// Convert from Arrow/DataFusion DataType to Doris metadata DataType
+    /// This ensures proper type mapping when registering BE-backed tables
+    pub fn from_arrow_type(arrow_type: &ArrowDataType) -> Option<Self> {
+        match arrow_type {
+            // Integer types - CRITICAL: Int64 -> BigInt, Int32 -> Int
+            ArrowDataType::Int8 => Some(DataType::TinyInt),
+            ArrowDataType::Int16 => Some(DataType::SmallInt),
+            ArrowDataType::Int32 => Some(DataType::Int),
+            ArrowDataType::Int64 => Some(DataType::BigInt),
+
+            // Unsigned integers (map to next larger signed type)
+            ArrowDataType::UInt8 => Some(DataType::SmallInt),
+            ArrowDataType::UInt16 => Some(DataType::Int),
+            ArrowDataType::UInt32 => Some(DataType::BigInt),
+            ArrowDataType::UInt64 => Some(DataType::BigInt), // May overflow, but best effort
+
+            // Floating point
+            ArrowDataType::Float32 => Some(DataType::Float),
+            ArrowDataType::Float64 => Some(DataType::Double),
+
+            // Decimal types
+            ArrowDataType::Decimal128(precision, scale) => {
+                Some(DataType::Decimal {
+                    precision: (*precision as u8).min(38),
+                    scale: (*scale as u8).min(38),
+                })
+            }
+            ArrowDataType::Decimal256(precision, scale) => {
+                Some(DataType::Decimal {
+                    precision: (*precision as u8).min(38),
+                    scale: (*scale as u8).min(38),
+                })
+            }
+
+            // String types
+            ArrowDataType::Utf8 => Some(DataType::String),
+            ArrowDataType::LargeUtf8 => Some(DataType::Text),
+
+            // Date/Time types
+            ArrowDataType::Date32 => Some(DataType::Date),
+            ArrowDataType::Date64 => Some(DataType::DateTime),
+            ArrowDataType::Timestamp(_, _) => Some(DataType::Timestamp),
+            ArrowDataType::Time32(_) => Some(DataType::DateTime),
+            ArrowDataType::Time64(_) => Some(DataType::DateTime),
+
+            // Boolean
+            ArrowDataType::Boolean => Some(DataType::Boolean),
+
+            // Binary types
+            ArrowDataType::Binary => Some(DataType::Binary),
+            ArrowDataType::LargeBinary => Some(DataType::Binary),
+            ArrowDataType::FixedSizeBinary(_) => Some(DataType::Binary),
+
+            // Complex types
+            ArrowDataType::List(field) | ArrowDataType::LargeList(field) => {
+                Self::from_arrow_type(field.data_type()).map(|inner| DataType::Array(Box::new(inner)))
+            }
+
+            // Unsupported types - return None for now
+            _ => None,
         }
     }
 }

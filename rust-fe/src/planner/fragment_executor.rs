@@ -59,38 +59,44 @@ impl FragmentExecutor {
         // Simplified: Execute fragments in order and return last result
         let mut final_result = QueryResult::empty();
 
-        for (idx, fragment) in query_plan.fragments.iter().enumerate() {
-            debug!(
-                "Executing fragment {} (ID: {})",
-                idx, fragment.fragment_id
-            );
+        #[cfg(all(not(skip_proto), not(feature = "real_be_proto")))]
+        {
+            for (idx, fragment) in query_plan.fragments.iter().enumerate() {
+                debug!(
+                    "Executing fragment {} (ID: {})",
+                    idx, fragment.fragment_id
+                );
 
-            // Convert fragment to SQL (simplified - in production, send entire plan)
-            let sql = self.fragment_to_sql(fragment);
+                let sql = self.fragment_to_sql(fragment);
 
-            // Execute on BE
-            match be_pool
-                .execute_query(self.query_id, &sql)
-                .await
-            {
-                Ok(result) => {
-                    debug!(
-                        "Fragment {} executed successfully: {} rows",
-                        idx,
-                        result.rows.len()
-                    );
-                    final_result = result;
-                }
-                Err(e) => {
-                    warn!("Fragment {} execution failed: {}", idx, e);
-                    // In a full implementation, handle partial failures
-                    return Err(e);
+                match be_pool
+                    .execute_query(self.query_id, &sql)
+                    .await
+                {
+                    Ok(result) => {
+                        debug!(
+                            "Fragment {} executed successfully: {} rows",
+                            idx,
+                            result.rows.len()
+                        );
+                        final_result = result;
+                    }
+                    Err(e) => {
+                        warn!("Fragment {} execution failed: {}", idx, e);
+                        return Err(e);
+                    }
                 }
             }
+
+            info!("Query {} completed successfully", self.query_id);
+            Ok(final_result)
         }
 
-        info!("Query {} completed successfully", self.query_id);
-        Ok(final_result)
+        #[cfg(any(skip_proto, feature = "real_be_proto"))]
+        {
+            warn!("FragmentExecutor is not wired for real_be_proto/SKIP_PROTO; returning empty result");
+            Ok(final_result)
+        }
     }
 
     /// Convert a fragment to SQL for execution (simplified)

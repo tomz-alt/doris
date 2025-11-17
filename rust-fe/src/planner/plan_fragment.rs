@@ -84,6 +84,13 @@ pub enum PlanNode {
     Union {
         children: Vec<PlanNode>,
     },
+
+    /// Limit (without sort)
+    Limit {
+        child: Box<PlanNode>,
+        limit: usize,
+        offset: usize,
+    },
 }
 
 /// Expression types

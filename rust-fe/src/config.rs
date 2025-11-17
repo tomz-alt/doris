@@ -21,6 +21,8 @@ pub struct BackendNode {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            // Bind MySQL on localhost by default; callers that need a
+            // public address can override via env or config file.
             mysql_port: 9030,
             http_port: 8030,
             query_queue_size: 1024,
@@ -102,5 +104,15 @@ impl Config {
         }
 
         Ok(config)
+    }
+}
+
+impl Config {
+    /// Return the hostname that external clients (including BE) should
+    /// use to reach this FE's MySQL listener. For now this is always
+    /// localhost; in deployments with a different advertised address
+    /// this can be extended to consult additional config.
+    pub fn mysql_host(&self) -> String {
+        "127.0.0.1".to_string()
     }
 }

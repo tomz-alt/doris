@@ -1,7 +1,7 @@
 mod executor;
 mod queue;
 
-pub use executor::QueryExecutor;
+pub use executor::{QueryExecutor, ParsedInsert};
 pub use queue::{QueryQueue, QueuedQuery};
 
 use crate::mysql::packet::{ColumnDefinition, ResultRow};

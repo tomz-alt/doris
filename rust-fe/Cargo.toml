@@ -6,6 +6,9 @@ edition = "2021"
 [features]
 default = ["opensrv"]
 opensrv = ["opensrv-mysql"]
+# Use real Doris BE internal_service.proto and fragment-based execution.
+# When disabled, the PoC SQL-based backend_service.proto is used.
+real_be_proto = []
 
 [dependencies]
 # Async runtime
@@ -31,6 +34,13 @@ hyper = "1.0"
 # gRPC for BE communication
 tonic = "0.11"
 prost = "0.12"
+
+# Thrift binary encoding for fragment serialization
+thrift_codec = "0.3.2"
+# Official Apache Thrift runtime for Compact protocol compatibility
+thrift = "0.17.0"
+# Thrift compact protocol runtime (Apache-compatible) for experiments
+compact-thrift-runtime = { git = "https://github.com/jhorstmann/compact-thrift", package = "compact-thrift-runtime" }
 
 # DataFusion for query planning and execution
 datafusion = "43.0"
@@ -65,6 +75,10 @@ uuid = { version = "1.6", features = ["v4", "serde"] }
 lazy_static = "1.4"
 chrono = "0.4"
 toml = "0.9.8"
+bytemuck = "1.16"
+
+[dependencies.doris_thrift]
+path = "doris-thrift"
 
 [build-dependencies]
 prost-build = "0.12"

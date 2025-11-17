@@ -106,8 +106,8 @@ fn validate_table_reference(full_name: &str) -> Result<()> {
 
     let (db_name, table_name) = match parts.len() {
         1 => {
-            // Just table name, assume current database (tpch for now)
-            ("tpch", parts[0])
+            // Just table name, assume current database (tpch_sf1 for now)
+            ("tpch_sf1", parts[0])
         }
         2 => {
             // db.table

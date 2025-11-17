@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
     // Register BE-backed TPC-H tables (quick prototype)
     // This allows Rust FE to "see" TPC-H tables stored in BE
     info!("Registering BE-backed TPC-H tables (hardcoded schemas)...");
-    match query_executor.register_tpch_be_tables(be_client_pool.clone(), "tpch").await {
+    match query_executor.register_tpch_be_tables(be_client_pool.clone(), "tpch_sf1").await {
         Ok(_) => info!("✓ BE-backed TPC-H tables registered successfully"),
         Err(e) => error!("Failed to register BE-backed tables: {}", e),
     }
@@ -101,7 +101,7 @@ async fn main() -> Result<()> {
     info!("Query engine: DataFusion (Arrow-based)");
     info!("========================================");
     info!("Connect with: mysql -h 127.0.0.1 -P {} -u root", config.mysql_port);
-    info!("Then run: USE tpch; SHOW TABLES; SELECT * FROM lineitem LIMIT 10;");
+    info!("Then run: USE tpch_sf1; SHOW TABLES; SELECT * FROM lineitem LIMIT 10;");
     info!("========================================");
 
     // Wait for both servers

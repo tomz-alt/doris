@@ -1,0 +1,9 @@
+{
+  "tables": {
+    "tpch_sf1.lineitem": {
+      "tablet_ids": [1763227464383, 1763227464385, 1763227464387],
+      "version": 3,
+      "schema_hash": "1232661058"
+    }
+  }
+}

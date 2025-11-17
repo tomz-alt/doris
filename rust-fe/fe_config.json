@@ -1,0 +1,13 @@
+{
+  "mysql_port": 9031,
+  "http_port": 8031,
+  "query_queue_size": 1024,
+  "max_concurrent_queries": 100,
+  "backend_nodes": [
+    {
+      "host": "172.20.80.3",
+      "port": 9060,
+      "grpc_port": 8060
+    }
+  ]
+}

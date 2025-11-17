@@ -309,6 +309,15 @@ impl FragmentSplitter {
                 })
             }
 
+            PlanNode::Limit { child, limit, offset } => {
+                let processed_child = self.analyze_and_split(*child)?;
+                Ok(PlanNode::Limit {
+                    child: Box::new(processed_child),
+                    limit,
+                    offset,
+                })
+            }
+
             // Leaf nodes and simple nodes pass through
             PlanNode::OlapScan { .. } => Ok(node),
             PlanNode::Exchange { .. } => Ok(node),
@@ -401,6 +410,16 @@ impl FragmentSplitter {
                 self.create_fragment(new_node, fragments)
             }
 
+            PlanNode::Limit { child, limit, offset } => {
+                let child_tree = self.build_child_tree(*child, fragments)?;
+                let new_node = PlanNode::Limit {
+                    child: Box::new(child_tree),
+                    limit,
+                    offset,
+                };
+                self.create_fragment(new_node, fragments)
+            }
+
             PlanNode::HashJoin { left, right, join_type, join_predicates } => {
                 let left_tree = self.build_child_tree(*left, fragments)?;
                 let right_tree = self.build_child_tree(*right, fragments)?;
@@ -481,6 +500,15 @@ impl FragmentSplitter {
                     child: Box::new(processed_child),
                     order_by,
                     limit,
+                })
+            }
+
+            PlanNode::Limit { child, limit, offset } => {
+                let processed_child = self.build_child_tree(*child, fragments)?;
+                Ok(PlanNode::Limit {
+                    child: Box::new(processed_child),
+                    limit,
+                    offset,
                 })
             }
 

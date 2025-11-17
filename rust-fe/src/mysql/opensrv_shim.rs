@@ -125,12 +125,12 @@ where
             info!("opensrv: changing database to '{}'", db);
             self.session.database = Some(db.to_string());
 
-            return results.completed(OkResponse::default()).map_err(Into::into);
+            return results.completed(OkResponse::default()).await.map_err(Into::into);
         }
 
         // SET statements – accept without touching core for now.
         if sql_lower.starts_with("set ") {
-            return results.completed(OkResponse::default()).map_err(Into::into);
+            return results.completed(OkResponse::default()).await.map_err(Into::into);
         }
 
         // SELECT DATABASE() – return current database name.
@@ -191,7 +191,7 @@ where
             Err(e) => {
                 error!("opensrv query execution failed: {}", e);
                 let (kind, msg) = map_doris_error(&e);
-                results.error(kind, &msg).await.map_err(Into::into)
+                results.error(kind, msg.as_bytes()).await.map_err(Into::into)
             }
         }
     }

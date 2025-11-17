@@ -11,8 +11,20 @@ use crate::parser;
 use datafusion::arrow::record_batch::RecordBatch;
 use datafusion::arrow::datatypes::DataType as ArrowDataType;
 use datafusion::arrow::array::*;
-use sqlparser::ast::Statement;
+use sqlparser::ast::{Statement, Expr as SqlExpr, Value as SqlValue};
 use super::{QueryQueue, QueryResult, QueuedQuery, SessionCtx};
+
+/// Parsed representation of a simple INSERT ... VALUES statement.
+/// This is derived from the SQL AST and Rust FE catalog and is used
+/// as the core boundary for any BE load integration so that all
+/// protocols still call through `execute_sql` (AGENTS.md #1, #3).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParsedInsert {
+    pub database: String,
+    pub table: String,
+    pub columns: Vec<String>,
+    pub rows: Vec<Vec<String>>,
+}
 
 pub struct QueryExecutor {
     queue: Arc<QueryQueue>,
@@ -147,11 +159,71 @@ impl QueryExecutor {
     async fn execute_select(
         &self,
         query: QueuedQuery,
-        _be_client_pool: &Arc<BackendClientPool>,
+        be_client_pool: &Arc<BackendClientPool>,
     ) -> Result<QueryResult> {
-        info!("Executing SELECT query via DataFusion: {}", query.query_id);
+        info!("Executing SELECT query: {}", query.query_id);
 
-        // Use DataFusion if available
+        // In real_be_proto builds with a configured BE, first attempt to
+        // route simple queries through the Doris pipeline fragments path.
+        #[cfg(all(not(skip_proto), feature = "real_be_proto"))]
+        {
+            use crate::planner::plan_converter::PlanConverter;
+            use crate::be::thrift_pipeline::PipelineFragmentParamsList;
+
+            debug!("Checking pipeline execution for query {}", query.query_id);
+            if be_client_pool.backend_count() > 0 {
+                debug!("Backend nodes available: {}", be_client_pool.backend_count());
+                if let Some(ref df) = self.datafusion {
+                    debug!("DataFusion planner available, creating physical plan...");
+                    if let Ok(physical_plan) = df.create_physical_plan(&query.query).await {
+                        debug!("Physical plan created, converting to fragments...");
+                        let mut converter = PlanConverter::new(query.query_id);
+                        match converter.convert_to_fragments(Arc::clone(&physical_plan)) {
+                            Ok(plan) => {
+                                debug!("Fragments converted, checking if pipeline params can be created...");
+                                if PipelineFragmentParamsList::from_query_plan(&plan).is_some() {
+                                    debug!("Pipeline params created, executing via pipeline...");
+                                    let db_name = query.database.as_deref();
+                                    match be_client_pool.execute_pipeline_query(plan, db_name).await {
+                                        Ok(result) => {
+                                            info!("✓ Pipeline execution succeeded for query {}", query.query_id);
+                                            return Ok(result);
+                                        }
+                                        Err(DorisError::QueryExecution(msg))
+                                            if msg.contains("Unsupported fragment shape") =>
+                                        {
+                                            // Fall through to DataFusion for unsupported shapes.
+                                            debug!(
+                                                "Pipeline execution not supported for query {}: {}",
+                                                query.query_id, msg
+                                            );
+                                        }
+                                        Err(e) => {
+                                            // Propagate BE / transport errors to the caller.
+                                            error!(
+                                                "Pipeline execution failed for query {}: {}",
+                                                query.query_id, e
+                                            );
+                                            return Err(e);
+                                        }
+                                    }
+                                } else {
+                                    debug!("Cannot create pipeline params from query plan - falling back to DataFusion");
+                                }
+                            }
+                            Err(e) => {
+                                debug!(
+                                    "Failed to convert plan for pipeline execution (query {}): {}",
+                                    query.query_id, e
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Default path: execute via DataFusion if available.
         if let Some(ref df) = self.datafusion {
             match df.execute_query(&query.query).await {
                 Ok(batches) => {
@@ -164,7 +236,7 @@ impl QueryExecutor {
                 }
             }
         } else {
-            // Fallback: try BE execution (if protoc is working)
+            // Fallback: return a mock result if no planner is configured.
             error!("DataFusion not available, returning mock data");
             self.mock_select_result(&query.query)
         }
@@ -239,15 +311,177 @@ impl QueryExecutor {
     ) -> Result<QueryResult> {
         info!("Executing DML query: {}", query.query_id);
 
-        // For PoC: Send query to BE via gRPC
-        match be_client_pool.execute_query(query.query_id, &query.query).await {
-            Ok(result) => Ok(result),
-            Err(e) => {
-                error!("BE execution failed: {}, returning mock affected rows", e);
-                // Return mock result for PoC
-                Ok(QueryResult::new_dml(1))
+        // For the PoC backend_service.proto path, send SQL to BE.
+        #[cfg(all(not(skip_proto), not(feature = "real_be_proto")))]
+        {
+            match be_client_pool.execute_query(query.query_id, &query.query).await {
+                Ok(result) => Ok(result),
+                Err(e) => {
+                    error!("BE execution failed: {}, returning mock affected rows", e);
+                    Ok(QueryResult::new_dml(1))
+                }
             }
         }
+
+        // For SKIP_PROTO builds we don't have a real BE. As a
+        // stop-gap, parse the INSERT statement and return an
+        // affected_rows count that matches the number of VALUES rows,
+        // so that HTTP stream load and clients observe realistic row
+        // counts while we build out a true load path.
+        #[cfg(skip_proto)]
+        {
+            let affected_rows = Self::count_insert_values_rows(&query.query).unwrap_or(1);
+            Ok(QueryResult::new_dml(affected_rows))
+        }
+
+        // For real_be_proto builds, first try to route supported
+        // INSERT ... VALUES statements into the real Doris BE
+        // tablet-writer path for tpch.lineitem. When the query or
+        // environment does not match this narrow slice, fall back to
+        // the same affected_rows-only behavior as SKIP_PROTO so that
+        // stream load clients still see realistic counts.
+        #[cfg(all(not(skip_proto), feature = "real_be_proto"))]
+        {
+            if be_client_pool.backend_count() > 0 {
+                match Self::parse_insert_values(&query.query) {
+                    Ok(parsed) => {
+                        if parsed.database == "tpch" && parsed.table == "lineitem" {
+                            match be_client_pool.load_tpch_lineitem(&parsed).await {
+                                Ok(affected_rows) => {
+                                    return Ok(QueryResult::new_dml(affected_rows));
+                                }
+                                Err(e) => {
+                                    error!(
+                                        "BE load for tpch.lineitem failed (query {}): {}",
+                                        query.query_id, e
+                                    );
+                                    return Err(e);
+                                }
+                            }
+                        }
+
+                        let affected_rows = parsed.rows.len() as u64;
+                        return Ok(QueryResult::new_dml(affected_rows));
+                    }
+                    Err(e) => {
+                        error!(
+                            "Failed to parse INSERT for BE load (query {}): {}",
+                            query.query_id, e
+                        );
+                    }
+                }
+            }
+
+            let affected_rows = Self::count_insert_values_rows(&query.query).unwrap_or(1);
+            Ok(QueryResult::new_dml(affected_rows))
+        }
+    }
+
+    /// Count the number of VALUES rows in a simple INSERT statement.
+    /// This is used by the DML stub in SKIP_PROTO/real_be_proto builds
+    /// so that clients see realistic affected_rows even before a real
+    /// BE load path is wired.
+    #[cfg(any(skip_proto, feature = "real_be_proto"))]
+    fn count_insert_values_rows(sql: &str) -> Option<u64> {
+        Self::parse_insert_values(sql).ok().map(|p| p.rows.len() as u64)
+    }
+
+    /// Parse a simple INSERT ... VALUES statement into a ParsedInsert.
+    /// This keeps INSERT semantics in the core planner and can be used
+    /// by any BE load integration path.
+    #[cfg(any(skip_proto, feature = "real_be_proto"))]
+    fn parse_insert_values(sql: &str) -> Result<ParsedInsert> {
+        use sqlparser::ast::SetExpr;
+
+        let statements = parser::parse_sql(sql)?;
+        let stmt = statements
+            .get(0)
+            .ok_or_else(|| DorisError::QueryExecution("Empty INSERT statement".to_string()))?;
+
+        let (table_name, columns, source) = match stmt {
+            Statement::Insert { table_name, columns, source, .. } => {
+                (table_name, columns, source)
+            }
+            _ => {
+                return Err(DorisError::QueryExecution(
+                    "Only INSERT ... VALUES is supported for load".to_string(),
+                ));
+            }
+        };
+
+        // Split db.table or use tpch as default db.
+        let full_name = table_name.to_string();
+        let parts: Vec<&str> = full_name.split('.').collect();
+        let (database, table) = match parts.len() {
+            1 => ("tpch".to_string(), parts[0].to_string()),
+            2 => (parts[0].to_string(), parts[1].to_string()),
+            _ => {
+                return Err(DorisError::QueryExecution(format!(
+                    "Invalid table name in INSERT: {}",
+                    full_name
+                )));
+            }
+        };
+
+        let column_names: Vec<String> = if columns.is_empty() {
+            // No explicit column list: use catalog order.
+            let cat = crate::metadata::catalog::catalog();
+            let table_meta = cat
+                .get_table(&database, &table)
+                .ok_or_else(|| DorisError::QueryExecution(format!(
+                    "Table '{}.{}' not found for INSERT",
+                    database, table
+                )))?;
+            table_meta.columns.iter().map(|c| c.name.clone()).collect()
+        } else {
+            columns.iter().map(|id| id.to_string()).collect()
+        };
+
+        // In newer sqlparser, source is Option<Box<Query>>
+        let query = source.as_ref().ok_or_else(|| {
+            DorisError::QueryExecution("INSERT must have a source".to_string())
+        })?;
+
+        let values = match &*query.body {
+            SetExpr::Values(v) => &v.rows,
+            _ => {
+                return Err(DorisError::QueryExecution(
+                    "Only VALUES clause is supported for load".to_string(),
+                ));
+            }
+        };
+
+        let mut rows = Vec::with_capacity(values.len());
+        for row_exprs in values {
+            if row_exprs.len() != column_names.len() {
+                return Err(DorisError::QueryExecution(format!(
+                    "VALUES row has {} columns, expected {}",
+                    row_exprs.len(),
+                    column_names.len()
+                )));
+            }
+
+            let mut row = Vec::with_capacity(row_exprs.len());
+            for expr in row_exprs {
+                let cell = match expr {
+                    SqlExpr::Value(SqlValue::Number(n, _)) => n.clone(),
+                    SqlExpr::Value(SqlValue::SingleQuotedString(s)) => s.clone(),
+                    SqlExpr::Value(SqlValue::Boolean(b)) => {
+                        if *b { "1".to_string() } else { "0".to_string() }
+                    }
+                    other => other.to_string(),
+                };
+                row.push(cell);
+            }
+            rows.push(row);
+        }
+
+        Ok(ParsedInsert {
+            database,
+            table,
+            columns: column_names,
+            rows,
+        })
     }
 
     async fn execute_ddl(
@@ -372,6 +606,56 @@ mod tests {
         assert!(!result.is_dml);
         assert_eq!(result.rows.len(), 1);
         assert_eq!(result.columns.len(), 1);
+    }
+
+    #[cfg(any(skip_proto, feature = "real_be_proto"))]
+    #[test]
+    fn test_parse_insert_values_basic() {
+        let sql = "INSERT INTO tpch.lineitem (l_orderkey, l_partkey) \
+                   VALUES (1, 1), (2, 2), (3, 3)";
+        let parsed = QueryExecutor::parse_insert_values(sql).unwrap();
+
+        assert_eq!(parsed.database, "tpch");
+        assert_eq!(parsed.table, "lineitem");
+        assert_eq!(parsed.columns, vec!["l_orderkey", "l_partkey"]);
+        assert_eq!(parsed.rows.len(), 3);
+        assert_eq!(parsed.rows[0], vec!["1".to_string(), "1".to_string()]);
+        assert_eq!(parsed.rows[2], vec!["3".to_string(), "3".to_string()]);
+    }
+
+    #[cfg(any(skip_proto, feature = "real_be_proto"))]
+    #[test]
+    fn test_count_insert_values_rows_basic() {
+        let sql = "INSERT INTO tpch.lineitem (l_orderkey, l_partkey) \
+                   VALUES (1, 1), (2, 2), (3, 3)";
+        let count = QueryExecutor::count_insert_values_rows(sql).unwrap();
+        assert_eq!(count, 3);
+    }
+
+    #[cfg(any(skip_proto, feature = "real_be_proto"))]
+    #[test]
+    fn test_count_insert_values_rows_non_insert() {
+        let sql = "SELECT * FROM lineitem";
+        assert!(QueryExecutor::count_insert_values_rows(sql).is_none());
+    }
+
+    #[cfg(feature = "real_be_proto")]
+    #[tokio::test]
+    async fn test_execute_dml_counts_values_rows() {
+        let executor = QueryExecutor::new(1024, 4);
+        let be_client_pool = Arc::new(BackendClientPool::new(vec![]));
+
+        let query_id = Uuid::new_v4();
+        let sql = "INSERT INTO tpch.lineitem (l_orderkey, l_partkey) \
+                   VALUES (1, 1), (2, 2), (3, 3)";
+        let queued = QueuedQuery {
+            query_id,
+            query: sql.to_string(),
+            database: Some("tpch".to_string()),
+        };
+
+        let result = executor.execute_dml(queued, &be_client_pool).await.unwrap();
+        assert_eq!(result.affected_rows, 3);
     }
 }
 

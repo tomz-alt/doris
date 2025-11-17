@@ -18,7 +18,11 @@
 
 syntax="proto2";
 
-package doris.segment_v2;
+// NOTE: The original Doris proto uses package "doris.segment_v2". For the Rust
+// FE we simplify this to "segment_v2" so that prost/tonic can generate a
+// matching Rust module for references like "segment_v2.CompressionTypePB" in
+// data.proto. This does not affect the on-wire format.
+package segment_v2;
 
 // page position info
 message PagePointerPB {

@@ -4,11 +4,53 @@
 use datafusion::arrow::datatypes::{DataType, Field, Schema, TimeUnit};
 use datafusion::prelude::SessionContext;
 use std::sync::Arc;
-use tracing::info;
+use tracing::{info, warn};
 
 use super::be_table::BETableProvider;
 use crate::be::BackendClientPool;
 use crate::error::{DorisError, Result};
+use crate::metadata::{catalog, schema::{ColumnDef, Table}, types::DataType as MetaDataType};
+
+/// Helper function to register a table in the metadata catalog from Arrow schema
+/// This ensures the Thrift encoder gets correct type mappings
+fn register_in_metadata_catalog(database: &str, table_name: &str, arrow_schema: &Schema) -> Result<()> {
+    // Create metadata table from Arrow schema
+    let mut meta_table = Table::new(table_name.to_string());
+
+    for field in arrow_schema.fields() {
+        // Convert Arrow type to metadata type
+        let meta_type = match MetaDataType::from_arrow_type(field.data_type()) {
+            Some(t) => t,
+            None => {
+                warn!("Unsupported Arrow type for column '{}': {:?}, using String as fallback",
+                      field.name(), field.data_type());
+                MetaDataType::String
+            }
+        };
+
+        let mut col = ColumnDef::new(field.name().clone(), meta_type);
+        if !field.is_nullable() {
+            col = col.not_null();
+        }
+        meta_table = meta_table.add_column(col);
+    }
+
+    // Get or create database in catalog
+    let cat = catalog::catalog();
+    if !cat.database_exists(database) {
+        cat.add_database(crate::metadata::schema::Database::new(database.to_string()));
+        info!("Created database '{}' in metadata catalog", database);
+    }
+
+    // Add table to catalog
+    cat.add_table(database, meta_table)
+        .map_err(|e| DorisError::QueryExecution(format!("Failed to register table in metadata catalog: {}", e)))?;
+
+    info!("Registered table '{}.{}' in metadata catalog with {} columns",
+          database, table_name, arrow_schema.fields().len());
+
+    Ok(())
+}
 
 /// Register all 8 TPC-H tables with hardcoded schemas
 pub async fn register_tpch_tables(
@@ -58,8 +100,13 @@ async fn register_lineitem(
         Field::new("l_comment", DataType::Utf8, false),
     ]);
 
+    let schema_ref = Arc::new(schema.clone());
+
+    // Register in metadata catalog FIRST
+    register_in_metadata_catalog(database, "lineitem", &schema)?;
+
     let table = Arc::new(BETableProvider::new(
-        Arc::new(schema),
+        schema_ref,
         database.to_string(),
         "lineitem".to_string(),
         be_client_pool,
