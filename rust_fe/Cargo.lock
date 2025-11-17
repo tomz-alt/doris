@@ -502,7 +502,10 @@ dependencies = [
 name = "fe-qe"
 version = "0.1.0"
 dependencies = [
+ "fe-analysis",
+ "fe-catalog",
  "fe-common",
+ "parking_lot",
  "serde",
 ]
 

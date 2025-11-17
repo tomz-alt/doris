@@ -2,10 +2,11 @@
 
 ## Test & Build
 ```bash
-cargo test                  # All (117 tests)
+cargo test                  # All (121 tests)
 cargo test -p fe-catalog    # Catalog only (102)
 cargo test -p fe-analysis   # SQL parser (11)
-cargo test tpch             # TPC-H tests (2)
+cargo test -p fe-qe         # Query executor (4)
+cargo test tpch             # TPC-H tests (3)
 cargo bench                 # Benchmarks
 ```
 

@@ -17,7 +17,7 @@
 - `todo.md` (24 lines)
 - `tools.md` (42 lines)
 
-### 4. Test Suite (117 tests, 100% passing ✓)
+### 4. Test Suite (121 tests, 100% passing ✓)
 
 **Unit Tests (4)** - fe-common:
 - Size parsing/formatting, timestamps
@@ -41,15 +41,22 @@
 - **TPC-H lineitem table parsing ✓**
 - **TPC-H Q1 query parsing (aggregations, GROUP BY, ORDER BY) ✓**
 
+**Query Executor Tests (4)** - fe-qe:
+- CREATE TABLE execution (simple table ✓)
+- **TPC-H lineitem table creation (16 columns, all types) ✓**
+- Data type parsing (INT, VARCHAR, DECIMAL, CHAR, DATE)
+- DROP TABLE execution
+
 **Based on**: DatabaseTest.java, ColumnTest.java, Replica.java, CreateTableTest.java, ColumnTypeTest.java, MaterializedIndexTest.java, TPC-H schema
 
 ## Stats
 - Java files: 4,654
 - Modules: 48
 - Rust crates: 21
-- Tests: 117/117 ✓
+- Tests: 121/121 ✓
 - Coverage: ~92%
 - **SQL Parser: TPC-H DDL + Q1 ✓**
+- **Query Executor: CREATE/DROP TABLE ✓**
 
 ## Next
 External tables, MVs, serialization, SQL parser

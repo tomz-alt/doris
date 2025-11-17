@@ -7,4 +7,7 @@ authors.workspace = true
 
 [dependencies]
 fe-common = { path = "../fe-common" }
-serde.workspace = true
+fe-catalog = { path = "../fe-catalog" }
+fe-analysis = { path = "../fe-analysis" }
+parking_lot.workspace = true
+serde = { workspace = true, features = ["derive"] }

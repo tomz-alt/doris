@@ -36,6 +36,17 @@
 - parser_tests (9): Simple SELECT, CREATE TABLE, TPC-H lineitem, TPC-H Q1, INSERT/UPDATE/DELETE
 - analyzer_tests (2): Valid CREATE TABLE, duplicate columns
 
+## fe-qe (Query Executor) - 4 tests ✓
+**Files**: executor.rs, result.rs
+
+- **Executor**: Executes parsed SQL statements
+- **DDL**: CREATE TABLE (TPC-H lineitem ✓), DROP TABLE/DATABASE
+- **Type Parsing**: INT, VARCHAR, DECIMAL, CHAR, DATE
+- **Results**: QueryResult, ResultSet, Row, Value
+
+**Tests**:
+- executor_tests (4): CREATE TABLE, TPC-H lineitem (16 cols), data types, DROP TABLE
+
 ## fe-main (Entry) - 0 tests
 CLI, config, logging, signals
 
