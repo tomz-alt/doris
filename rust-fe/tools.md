@@ -2,6 +2,32 @@
 
 **Last Updated**: 2025-11-17
 
+## 🎯 TPC-H & TPC-DS Benchmarks (NEW!)
+
+**Full benchmark suite (5 rounds):**
+```bash
+cd /home/user/doris/rust-fe
+./scripts/run_full_benchmark.sh -r 5
+# Results in: ./benchmark_results/summary.html
+```
+
+**TPC-H only (22 queries):**
+```bash
+./scripts/benchmark_tpch.sh -r 5 --output-html tpch_results.html
+```
+
+**TPC-DS only (99 queries):**
+```bash
+./scripts/benchmark_tpcds.sh -r 5 --output-html tpcds_results.html
+```
+
+**Quick test (3 rounds, TPC-H only):**
+```bash
+./scripts/run_full_benchmark.sh -r 3 --tpch-only
+```
+
+See: `BENCHMARK_QUICKSTART.md` and `BENCHMARK_GUIDE.md` for full details.
+
 ## 🚨 Critical: Process Management
 
 ```bash
