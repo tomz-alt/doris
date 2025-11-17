@@ -2,9 +2,9 @@
 
 ## Test & Build
 ```bash
-cargo test                  # All (67 tests)
-cargo test -p fe-catalog    # Catalog only (63)
-cargo test edge_case        # Edge cases (15)
+cargo test                  # All (82 tests)
+cargo test -p fe-catalog    # Catalog only (78)
+cargo test validation       # Validation tests (15)
 cargo bench                 # Benchmarks
 ```
 
@@ -20,7 +20,7 @@ cargo check                 # Fast check
 # Find implementations
 find fe/fe-core/src -name "*.java" | grep -i catalog
 
-# Run Java tests
+# Run Java tests to verify behaviors
 cd fe/fe-core && mvn test -Dtest=DatabaseTest
 
 # View results
