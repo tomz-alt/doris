@@ -13,20 +13,33 @@
 - [x] BE integration test plan documented
 - [x] Additional comparison tests (duplicate errors, TPC-H Q2/Q3/Q6, complex expressions)
 
-## Now - C++ BE Integration (Blocked by protoc)
+## Now - C++ BE Integration (**BLOCKED** by protoc installation)
 - [ ] **C++ BE Integration** (see BE_INTEGRATION_TEST_PLAN.md)
   - [x] Document gRPC/Protobuf requirements
   - [x] Create fe-backend-client crate
   - [x] Create MockBackend for testing without protoc (6 tests ✓)
   - [x] Document integration test scenarios
-  - [ ] ⚠️ **BLOCKED**: Install protoc (apt-get fails in sandbox)
-  - [ ] Generate Rust bindings from protobuf
-  - [ ] Implement exec_plan_fragment RPC (gRPC)
-  - [ ] Implement fetch_data RPC (gRPC)
-  - [ ] Test with real C++ BE
-  - [ ] Verify 100% identical results vs Java FE
+  - [ ] ⚠️ **BLOCKED**: Install protoc
+    - apt-get fails (403 Forbidden on package repos)
+    - wget/curl from GitHub fails (403 Forbidden on proxy)
+    - Need manual protoc installation or environment with network access
+    - Workaround: Use MockBackend for development
+  - [ ] Generate Rust bindings from protobuf (needs protoc)
+  - [ ] Implement exec_plan_fragment RPC (gRPC) (needs protobuf bindings)
+  - [ ] Implement fetch_data RPC (gRPC) (needs protobuf bindings)
+  - [ ] Test with real C++ BE (needs protobuf bindings)
+  - [ ] Verify 100% identical results vs Java FE (needs C++ BE)
 - [ ] Tablet metadata from BE
 - [ ] Partition routing
+
+## Alternative: Continue Without C++ BE
+Since C++ BE integration is blocked by protoc installation, we can:
+- [ ] Add more comparison tests (expand from 34 to 50+)
+- [ ] Implement SHOW commands for MySQL compatibility
+- [ ] Add more TPC-H query parsing tests (Q1-Q22)
+- [ ] Improve error messages to match Java FE exactly
+- [ ] Performance benchmarks on parsing/planning
+- [ ] Documentation for deployment without C++ BE
 
 ## Next - Full Query Execution
 - [ ] Expression evaluation (arithmetic, comparison)
