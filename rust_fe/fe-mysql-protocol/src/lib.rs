@@ -11,8 +11,8 @@
 
 pub mod constants;
 pub mod packet;
+pub mod handshake;
 
 // TODO: Implement these modules
 // pub mod codec;
 // pub mod server;
-// pub mod auth;
