@@ -6,6 +6,7 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
+byteorder = "1.5"
 bytes.workspace = true
 fe-common = { path = "../fe-common" }
 mysql_async = "0.36.1"

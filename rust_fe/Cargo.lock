@@ -464,6 +464,7 @@ dependencies = [
 name = "fe-mysql-protocol"
 version = "0.1.0"
 dependencies = [
+ "byteorder",
  "bytes",
  "fe-common",
  "mysql_async",

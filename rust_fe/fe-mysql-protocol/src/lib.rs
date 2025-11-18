@@ -10,9 +10,9 @@
 //! - Result set encoding
 
 pub mod constants;
+pub mod packet;
 
 // TODO: Implement these modules
-// pub mod packet;
 // pub mod codec;
 // pub mod server;
 // pub mod auth;
