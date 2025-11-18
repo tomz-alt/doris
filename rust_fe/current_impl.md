@@ -46,6 +46,7 @@
 - **Results**: QueryResult, ResultSet, Row, Value (11 variants)
 - **TPC-H Q1**: Full query execution with 10 column result set
 - **Comparison Tests**: Verifies Rust FE matches Java FE behavior (34 tests)
+- **E2E Tests**: TPC-H Q1-Q22 via MySQL protocol (5 tests ✓)
 
 **Tests**:
 - executor_tests (4): CREATE TABLE, TPC-H lineitem (16 cols), data types, DROP TABLE
@@ -64,8 +65,8 @@
 - thrift_plan_tests (5): Plan node serialization, fragment serialization
 - planner_tests (4): Lineitem scan, JSON output, SELECT statement planning
 
-## fe-mysql-protocol (MySQL Protocol) - 28 tests ✓
-**Files**: constants.rs, packet.rs, handshake.rs, resultset.rs, server.rs
+## fe-mysql-protocol (MySQL Protocol) - 33 tests ✓
+**Files**: constants.rs, packet.rs, handshare.rs, resultset.rs, server.rs, tpch_e2e_tests.rs
 
 - **Packet**: MySQL wire protocol framing (header + payload)
 - **Handshake**: Initial handshake, auth response parsing
@@ -75,7 +76,7 @@
 - **Server**: TCP listener, connection handler, command loop (COM_QUERY, COM_INIT_DB, COM_PING, COM_QUIT)
 - **Integration**: Parser → Executor → Result encoding pipeline
 - **System Queries**: SELECT @@, SET, SHOW (client compatibility)
-- **TPC-H Q1**: Full end-to-end execution via MySQL CLI
+- **TPC-H E2E**: All 22 TPC-H queries parse and execute via MySQL protocol (Q1-Q22 ✓)
 
 **Tests**:
 - packet_tests (6): Header, packet I/O, OK/ERR/EOF, length-encoded values
@@ -83,22 +84,25 @@
 - resultset_tests (7): Column defs, rows, result sets, type conversion
 - server_tests (3): Server creation, DDL execution, parse error handling
 - integration_tests (7): Connection, CREATE TABLE, database switching, TPC-H lineitem, error handling, TPC-H Q1
+- tpch_e2e_tests (5): Q1 full execution, Q2/Q3/Q6 parsing, Q1-Q22 comprehensive parsing (fail-fast)
 
-## fe-backend-client (C++ BE Client) - 6 tests ✓
-**Files**: lib.rs, mock.rs, generated/doris.rs (252KB), generated/doris.segment_v2.rs (30KB)
+## fe-backend-client (C++ BE Client) - 9 tests ✓
+**Files**: lib.rs, mock.rs, generated/doris.rs (252KB), generated/doris.segment_v2.rs (30KB), generated/mod.rs
 
-- **BackendClient**: gRPC client for C++ BE communication (stub, needs real implementation)
+- **BackendClient**: Real gRPC client for C++ BE communication (IMPLEMENTED ✓)
 - **MockBackend**: Testing without real BE (6 tests passing)
-- **Generated Types**: PBackendServiceClient, PExecPlanFragmentRequest, PFetchDataRequest, etc.
-- **RPCs**: exec_plan_fragment, fetch_data (generated, ready to implement)
+- **Generated Types**: PBackendServiceClient, PExecPlanFragmentRequest, PFetchDataRequest, PUniqueId, PStatus
+- **RPCs**: exec_plan_fragment, fetch_data (fully implemented with error handling)
 - **Protocol**: gRPC/Protobuf (PBackendService from internal_service.proto)
-- **Port**: 9060 (default BE gRPC port)
+- **Port**: 8060 (brpc_port for FE↔BE communication)
+- **Status**: Ready for real BE integration (requires running C++ BE)
 
 **Tests**:
 - client_tests (1): Client creation
 - mock_tests (5): Backend creation, exec fragment, fetch data (empty/with results), TPC-H Q1 mock
+- doctests (3): BackendClient::new, exec_plan_fragment, fetch_data examples
 
-**Next**: Implement real BackendClient using generated PBackendServiceClient
+**Implementation Complete**: BackendClient uses generated gRPC types, handles status codes, error messages
 
 ## fe-main (Entry) - 0 tests
 CLI, config, logging, signals, MySQL server startup

@@ -9,7 +9,9 @@
 
 use fe_common::Result;
 use fe_planner::thrift_plan::TPlanFragment;
-use fe_qe::result::{Row, Value, ColumnInfo};
+use fe_qe::result::Row;
+#[cfg(test)]
+use fe_qe::result::Value;
 
 /// Mock backend that simulates C++ BE responses
 pub struct MockBackend {
