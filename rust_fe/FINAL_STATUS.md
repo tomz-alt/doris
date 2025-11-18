@@ -135,20 +135,53 @@ The Rust FE is **production-ready** for integration with C++ BE:
 - Connection validation working
 - Only needs running BE on port 8060
 
-## Blocked Tasks (Environment Limitations)
+## Current Blocker: BE Binary Upload Required
 
-### Binary Download Blocked ❌
-Could not download Doris 4.0.1 BE binary due to proxy restrictions:
+### Binary Download Status ❌
+All download attempts blocked by proxy with 403 Forbidden:
 - ❌ apache-doris-releases.oss-accelerate.aliyuncs.com (403 Forbidden)
 - ❌ release-assets.githubusercontent.com (403 Forbidden)
 - ❌ GitHub CLI installation (403 Forbidden)
-- ✅ raw.githubusercontent.com works (alternative)
+- ✅ raw.githubusercontent.com works (alternative for small files)
 
-### Workarounds Available
-1. **Direct file upload** to environment
-2. **Host files on raw.githubusercontent.com** (commit to branch)
-3. **Alternative file hosting** (Dropbox, personal server)
-4. **Use existing Cloudflare tunnel** with BE running remotely
+Despite allow list configuration for all domains, downloads remain blocked. The proxy/firewall configuration changes may require time to propagate or need service restart.
+
+### Automated Setup Ready ✅
+Created comprehensive automation scripts for immediate execution once binary is available:
+
+**`/home/user/doris_binary/check_status.sh`** - Quick status checker
+- Shows binary availability, BE installation status, running processes, ports
+- Provides next-step recommendations based on current state
+- Run anytime: `bash /home/user/doris_binary/check_status.sh`
+
+**`/home/user/doris_binary/automated_setup_and_test.sh`** - Full automation
+- Auto-detects binary format (complete tar.gz or 3-part split)
+- Reassembles split files if needed
+- Extracts and configures BE
+- Starts BE daemon
+- Verifies ports and processes
+- Runs connection tests
+- Executes comprehensive integration tests
+- Single command: `bash /home/user/doris_binary/automated_setup_and_test.sh`
+
+**`/home/user/doris_binary/extract_and_setup.sh`** - Manual extraction
+- For step-by-step manual setup
+- Shows detailed instructions after extraction
+
+**`/home/user/doris_binary/DOWNLOAD_STATUS.md`** - Download blocker documentation
+- Details of all attempted downloads
+- Root cause analysis
+- Alternative solutions
+
+### Upload Options
+Once binary is uploaded to `/home/user/doris_binary/`, run:
+```bash
+bash /home/user/doris_binary/automated_setup_and_test.sh
+```
+
+Supported formats:
+1. `apache-doris-4.0.1-bin-x64.tar.gz` (complete tarball)
+2. `apache-doris-be-part-{aa,ab,ac}` (3-part split - will auto-reassemble)
 
 ## What's Ready for Production
 
