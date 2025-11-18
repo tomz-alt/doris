@@ -6,6 +6,7 @@
 use fe_common::{DbId, TableId, Result};
 use crate::database::Database;
 use crate::table::OlapTable;
+use crate::datastore::DataStore;
 use std::sync::Arc;
 use parking_lot::RwLock;
 use dashmap::DashMap;
@@ -27,6 +28,9 @@ pub struct Catalog {
     /// Next table ID (reserved for future auto-ID allocation)
     #[allow(dead_code)]
     next_table_id: Arc<RwLock<TableId>>,
+
+    /// In-memory data storage (for testing before BE integration)
+    datastore: DataStore,
 }
 
 impl Catalog {
@@ -37,12 +41,18 @@ impl Catalog {
             tables: DashMap::new(),
             next_db_id: Arc::new(RwLock::new(1)),
             next_table_id: Arc::new(RwLock::new(1)),
+            datastore: DataStore::new(),
         };
 
         // Create system databases
         catalog.create_system_databases();
 
         catalog
+    }
+
+    /// Get the datastore for data operations
+    pub fn datastore(&self) -> &DataStore {
+        &self.datastore
     }
 
     /// Create system databases (information_schema, etc.)
