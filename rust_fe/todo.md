@@ -14,21 +14,22 @@
 - [x] Additional comparison tests (duplicate errors, TPC-H Q2/Q3/Q6, complex expressions)
 
 ## Now - C++ BE Integration (**BLOCKED** by protoc installation)
-- [ ] **C++ BE Integration** (see BE_INTEGRATION_TEST_PLAN.md)
+- [ ] **C++ BE Integration** (see BE_INTEGRATION_TEST_PLAN.md & TESTING_WITH_REAL_BE.md)
   - [x] Document gRPC/Protobuf requirements
   - [x] Create fe-backend-client crate
   - [x] Create MockBackend for testing without protoc (6 tests ✓)
   - [x] Document integration test scenarios
+  - [x] Document real BE testing workflow (TESTING_WITH_REAL_BE.md)
   - [ ] ⚠️ **BLOCKED**: Install protoc
     - apt-get fails (403 Forbidden on package repos)
-    - wget/curl from GitHub fails (403 Forbidden on proxy)
-    - Need manual protoc installation or environment with network access
-    - Workaround: Use MockBackend for development
+    - curl/wget from GitHub fails (403 Forbidden on proxy)
+    - All network downloads blocked
+    - **Solution**: Need manual protoc binary upload or pre-generated bindings
   - [ ] Generate Rust bindings from protobuf (needs protoc)
   - [ ] Implement exec_plan_fragment RPC (gRPC) (needs protobuf bindings)
   - [ ] Implement fetch_data RPC (gRPC) (needs protobuf bindings)
-  - [ ] Test with real C++ BE (needs protobuf bindings)
-  - [ ] Verify 100% identical results vs Java FE (needs C++ BE)
+  - [ ] Test with real C++ BE (needs protobuf bindings + running BE)
+  - [ ] Verify 100% identical results vs Java FE (needs full setup)
 - [ ] Tablet metadata from BE
 - [ ] Partition routing
 
