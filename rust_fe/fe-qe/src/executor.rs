@@ -8,9 +8,8 @@
 use fe_common::{Result, DorisError, DataType};
 use fe_catalog::{Catalog, OlapTable, Column};
 use fe_analysis::ast::*;
-use crate::result::{QueryResult, ResultSet, Row};
+use crate::result::{QueryResult, ResultSet};
 use std::sync::Arc;
-use parking_lot::RwLock;
 
 pub struct QueryExecutor {
     catalog: Arc<Catalog>,

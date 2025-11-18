@@ -9,11 +9,10 @@
 //! - Command processing (COM_QUERY, COM_INIT_DB, etc.)
 //! - Result set encoding
 
-pub mod packet;
-pub mod codec;
-pub mod server;
-pub mod auth;
 pub mod constants;
 
-pub use server::MysqlServer;
-pub use packet::{MysqlPacket, HandshakePacket, AuthPacket, OkPacket, ErrPacket};
+// TODO: Implement these modules
+// pub mod packet;
+// pub mod codec;
+// pub mod server;
+// pub mod auth;

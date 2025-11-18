@@ -47,6 +47,24 @@
 **Tests**:
 - executor_tests (4): CREATE TABLE, TPC-H lineitem (16 cols), data types, DROP TABLE
 
+## fe-planner (Query Planner) - 9 tests ✓
+**Files**: planner.rs, thrift_plan.rs
+
+- **QueryPlanner**: Converts AST to execution plans
+- **Thrift Structures**: TPlanNode, TPlanFragment, TOlapScanNode
+- **Plan Types**: OLAP scan, aggregation, sort (35 node types)
+- **Serialization**: JSON output for comparison with Java FE
+
+**Tests**:
+- thrift_plan_tests (5): Plan node serialization, fragment serialization
+- planner_tests (4): Lineitem scan, JSON output, SELECT statement planning
+
+## fe-mysql-protocol (MySQL Protocol) - 0 tests
+**Files**: constants.rs
+
+- **Constants**: Protocol version, capabilities, commands, column types
+- **TODO**: packet, codec, server, auth modules
+
 ## fe-main (Entry) - 0 tests
 CLI, config, logging, signals
 
