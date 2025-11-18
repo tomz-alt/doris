@@ -12,7 +12,7 @@
 pub mod constants;
 pub mod packet;
 pub mod handshake;
+pub mod resultset;
 
 // TODO: Implement these modules
-// pub mod codec;
 // pub mod server;

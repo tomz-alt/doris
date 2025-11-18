@@ -167,7 +167,7 @@ impl Packet {
 }
 
 /// Write length-encoded integer (MySQL protocol)
-fn write_lenenc_int(buf: &mut Vec<u8>, value: u64) {
+pub fn write_lenenc_int(buf: &mut Vec<u8>, value: u64) {
     if value < 251 {
         buf.push(value as u8);
     } else if value < 0x10000 {
