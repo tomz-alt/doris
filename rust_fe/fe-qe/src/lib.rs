@@ -11,5 +11,8 @@ pub mod result;
 #[cfg(test)]
 mod select_tests;
 
+#[cfg(test)]
+mod comparison_tests;
+
 pub use executor::QueryExecutor;
 pub use result::{QueryResult, ResultSet, Row};

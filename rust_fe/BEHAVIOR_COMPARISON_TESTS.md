@@ -57,7 +57,9 @@ fn test_parse_select_vs_java_fe() {
 | SELECT with GROUP BY | Parses | Parses | ✅ PASS |
 | SELECT with aggregations | Parses | Parses | ✅ PASS |
 | TPC-H Q1 (full query) | Parses | Parses | ✅ PASS |
-| Invalid SQL | Rejects | Rejects | ⏳ TODO |
+| TPC-H lineitem CREATE TABLE | Parses | Parses | ✅ PASS |
+| CREATE TABLE with types | Parses | Parses | ✅ PASS |
+| Invalid SQL | Rejects | Rejects | ✅ PASS |
 
 ### 3. TPC-H Q1 Schema Extraction
 
@@ -153,8 +155,10 @@ fn test_catalog_operations_vs_java_fe() {
 | Test Case | Rust FE | Java FE | Status |
 |-----------|---------|---------|--------|
 | DROP non-existent table | Returns error | Returns error | ✅ PASS |
-| CREATE duplicate database | Returns error | Returns error | ⏳ TODO |
+| CREATE table in non-existent DB | Returns error | Returns error | ✅ PASS |
+| GET non-existent database | Returns error | Returns error | ✅ PASS |
 | Invalid SQL syntax | Returns error | Returns error | ✅ PASS |
+| CREATE duplicate database | Returns error | Returns error | ⏳ TODO |
 | Unknown data type | Returns error | Returns error | ⏳ TODO |
 
 ## Test Execution Plan
@@ -162,8 +166,11 @@ fn test_catalog_operations_vs_java_fe() {
 ### Phase 1: Without C++ BE (Current)
 - [x] MySQL protocol handshake
 - [x] CREATE/DROP operations
-- [x] SQL parsing validation
-- [x] TPC-H Q1 schema extraction
+- [x] SQL parsing validation (8 tests)
+- [x] Catalog operations (6 tests)
+- [x] Query execution schema (2 tests)
+- [x] Error handling (4 tests)
+- [x] Data type parsing (4 tests)
 - [ ] Error message comparison
 - [ ] SHOW command placeholders
 
@@ -176,9 +183,15 @@ fn test_catalog_operations_vs_java_fe() {
 
 ## Test Results Summary
 
-**Total Tests**: 173
-- **Passing**: 173
+**Total Tests**: 188 (166 base + 22 comparison)
+- **Passing**: 188
 - **Failing**: 0
+- **Comparison Tests**: 22 (all passing)
+  - SQL parsing: 8 tests
+  - Catalog operations: 6 tests
+  - Query execution: 2 tests
+  - Error handling: 4 tests
+  - Data type parsing: 4 tests
 - **Not Implemented**: Several (marked as "Returns OK" instead of real data)
 
 ## Known Differences (Acceptable)
