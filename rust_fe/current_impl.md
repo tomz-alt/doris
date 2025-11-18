@@ -36,21 +36,21 @@
 - parser_tests (9): Simple SELECT, CREATE TABLE, TPC-H lineitem, TPC-H Q1, INSERT/UPDATE/DELETE
 - analyzer_tests (2): Valid CREATE TABLE, duplicate columns
 
-## fe-qe (Query Executor) - 28 tests ✓
+## fe-qe (Query Executor) - 40 tests ✓
 **Files**: executor.rs, result.rs, select_tests.rs, comparison_tests.rs
 
 - **Executor**: Executes parsed SQL statements
 - **DDL**: CREATE TABLE (TPC-H lineitem ✓), DROP TABLE/DATABASE, USE
 - **SELECT**: Column projection, aliases, aggregations (schema-only, no data)
-- **Type Parsing**: INT, VARCHAR, DECIMAL, CHAR, DATE, DATETIME
+- **Type Parsing**: INT, VARCHAR, DECIMAL, CHAR, DATE, DATETIME, BOOLEAN, FLOAT, DOUBLE
 - **Results**: QueryResult, ResultSet, Row, Value (11 variants)
 - **TPC-H Q1**: Full query execution with 10 column result set
-- **Comparison Tests**: Verifies Rust FE matches Java FE behavior (22 tests)
+- **Comparison Tests**: Verifies Rust FE matches Java FE behavior (34 tests)
 
 **Tests**:
 - executor_tests (4): CREATE TABLE, TPC-H lineitem (16 cols), data types, DROP TABLE
 - select_tests (2): Simple SELECT, TPC-H Q1 (10 columns with aliases)
-- comparison_tests (22): SQL parsing (8), catalog ops (6), query exec (2), errors (4), types (4)
+- comparison_tests (34): SQL parsing (8), catalog ops (6), query exec (2), errors (4), types (6), duplicates (2), TPC-H (3), expressions (5)
 
 ## fe-planner (Query Planner) - 9 tests ✓
 **Files**: planner.rs, thrift_plan.rs

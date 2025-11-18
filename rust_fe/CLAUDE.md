@@ -12,7 +12,7 @@ Migrating 4,654 Java files (48 modules) to Rust for performance/memory.
 🚧 Phase 6: gRPC client to C++ BE (exec queries with real data)
 
 ## Principles
-1. **Exact Java parity** - 188 tests verify behaviors (22 comparison tests)
+1. **Exact Java parity** - 200 tests verify behaviors (34 comparison tests)
 2. **No Java mods** - Read-only reference
 3. **Test-driven** - Write tests first
 4. **Incremental** - Module by module

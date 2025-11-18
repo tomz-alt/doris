@@ -183,15 +183,18 @@ fn test_catalog_operations_vs_java_fe() {
 
 ## Test Results Summary
 
-**Total Tests**: 188 (166 base + 22 comparison)
-- **Passing**: 188
+**Total Tests**: 200 (166 base + 34 comparison)
+- **Passing**: 200
 - **Failing**: 0
-- **Comparison Tests**: 22 (all passing)
-  - SQL parsing: 8 tests
-  - Catalog operations: 6 tests
-  - Query execution: 2 tests
-  - Error handling: 4 tests
-  - Data type parsing: 4 tests
+- **Comparison Tests**: 34 (all passing)
+  - SQL parsing: 8 tests (SELECT, JOIN, GROUP BY, CREATE TABLE, invalid SQL)
+  - Catalog operations: 6 tests (CREATE/DROP DB/table, TPC-H lineitem structure)
+  - Query execution: 2 tests (SELECT schema, TPC-H Q1 schema extraction)
+  - Error handling: 4 tests (non-existent tables/databases, invalid SQL)
+  - Data type parsing: 6 tests (INT, DECIMAL, VARCHAR, DATE, BOOLEAN, FLOAT/DOUBLE)
+  - Duplicate errors: 2 tests (duplicate database, duplicate table)
+  - TPC-H queries: 3 tests (Q2, Q3, Q6 parsing)
+  - Complex expressions: 5 tests (CASE, IN, BETWEEN, subquery, arithmetic)
 - **Not Implemented**: Several (marked as "Returns OK" instead of real data)
 
 ## Known Differences (Acceptable)

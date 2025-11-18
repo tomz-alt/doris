@@ -1,5 +1,22 @@
 # Rust FE ↔ C++ BE Communication Guide
 
+## Prerequisites
+
+**IMPORTANT**: Protobuf compiler (protoc) is required for production use:
+
+```bash
+# Debian/Ubuntu
+sudo apt-get install protobuf-compiler
+
+# macOS
+brew install protobuf
+
+# Verify installation
+protoc --version  # Should be 3.x or later
+```
+
+**For Development**: MockBackend allows testing without protoc (see fe-backend-client/src/mock.rs)
+
 ## Architecture Overview
 
 Doris uses **gRPC with Protobuf** for Frontend-Backend communication.

@@ -463,4 +463,201 @@ mod data_type_parsing {
 
         assert!(result.is_ok(), "Should parse datetime types like Java FE");
     }
+
+    #[test]
+    fn test_boolean_type() {
+        // Java FE: Supports BOOLEAN
+        let sql = "CREATE TABLE test (flag BOOLEAN)";
+        let result = DorisParser::parse_one(sql);
+
+        assert!(result.is_ok(), "Should parse BOOLEAN like Java FE");
+    }
+
+    #[test]
+    fn test_float_types() {
+        // Java FE: Supports FLOAT, DOUBLE
+        let sql = "CREATE TABLE test (a FLOAT, b DOUBLE)";
+        let result = DorisParser::parse_one(sql);
+
+        assert!(result.is_ok(), "Should parse float types like Java FE");
+    }
+}
+
+/// Test duplicate resource error handling matches Java FE
+mod duplicate_errors {
+    use super::*;
+
+    #[test]
+    fn test_duplicate_database_error() {
+        // Java FE: Returns error when creating duplicate database
+        let catalog = Arc::new(Catalog::new());
+
+        // Create database first time
+        let result1 = catalog.create_database("test_db".to_string(), "default_cluster".to_string());
+        assert!(result1.is_ok(), "First database creation should succeed");
+
+        // Try to create same database again
+        let result2 = catalog.create_database("test_db".to_string(), "default_cluster".to_string());
+
+        // Java FE behavior: Should return "Database already exists" error
+        assert!(result2.is_err(), "Should return error for duplicate database like Java FE");
+        let err_msg = result2.unwrap_err().to_string();
+        assert!(err_msg.contains("already exists") || err_msg.contains("duplicate"),
+                "Error message should indicate duplicate: {}", err_msg);
+    }
+
+    #[test]
+    fn test_duplicate_table_error() {
+        // Java FE: Returns error when creating duplicate table
+        let catalog = Arc::new(Catalog::new());
+        catalog.create_database("test_db".to_string(), "default_cluster".to_string()).unwrap();
+
+        let columns = vec![Column::new(1, "id".to_string(), DataType::Int)];
+
+        // Create table first time
+        let table1 = OlapTable::new(1, "users".to_string(), 1, KeysType::DupKeys, columns.clone());
+        let result1 = catalog.create_table("test_db", table1);
+        assert!(result1.is_ok(), "First table creation should succeed");
+
+        // Try to create same table again
+        let table2 = OlapTable::new(2, "users".to_string(), 1, KeysType::DupKeys, columns);
+        let result2 = catalog.create_table("test_db", table2);
+
+        // Java FE behavior: Should return "Table already exists" error
+        assert!(result2.is_err(), "Should return error for duplicate table like Java FE");
+        let err_msg = result2.unwrap_err().to_string();
+        assert!(err_msg.contains("already exists") || err_msg.contains("duplicate"),
+                "Error message should indicate duplicate: {}", err_msg);
+    }
+}
+
+/// Test more TPC-H query parsing
+mod tpch_queries {
+    use super::*;
+
+    #[test]
+    fn test_tpch_q2_parsing() {
+        // Java FE: Successfully parses TPC-H Q2 (complex subquery with joins)
+        let sql = r#"
+            SELECT s_acctbal, s_name, n_name, p_partkey, p_mfgr, s_address, s_phone, s_comment
+            FROM part, supplier, partsupp, nation, region
+            WHERE p_partkey = ps_partkey
+                AND s_suppkey = ps_suppkey
+                AND p_size = 15
+                AND p_type like '%BRASS'
+                AND s_nationkey = n_nationkey
+                AND n_regionkey = r_regionkey
+                AND r_name = 'EUROPE'
+            ORDER BY s_acctbal DESC, n_name, s_name, p_partkey
+            LIMIT 100
+        "#;
+
+        let result = DorisParser::parse_one(sql);
+        assert!(result.is_ok(), "Should parse TPC-H Q2 like Java FE");
+    }
+
+    #[test]
+    fn test_tpch_q3_parsing() {
+        // Java FE: Successfully parses TPC-H Q3 (aggregation with multiple joins)
+        let sql = r#"
+            SELECT l_orderkey, sum(l_extendedprice * (1 - l_discount)) as revenue, o_orderdate, o_shippriority
+            FROM customer, orders, lineitem
+            WHERE c_mktsegment = 'BUILDING'
+                AND c_custkey = o_custkey
+                AND l_orderkey = o_orderkey
+                AND o_orderdate < date '1995-03-15'
+                AND l_shipdate > date '1995-03-15'
+            GROUP BY l_orderkey, o_orderdate, o_shippriority
+            ORDER BY revenue DESC, o_orderdate
+            LIMIT 10
+        "#;
+
+        let result = DorisParser::parse_one(sql);
+        assert!(result.is_ok(), "Should parse TPC-H Q3 like Java FE");
+    }
+
+    #[test]
+    fn test_tpch_q6_parsing() {
+        // Java FE: Successfully parses TPC-H Q6 (simple aggregation with filters)
+        let sql = r#"
+            SELECT sum(l_extendedprice * l_discount) as revenue
+            FROM lineitem
+            WHERE l_shipdate >= date '1994-01-01'
+                AND l_shipdate < date '1995-01-01'
+                AND l_discount between 0.05 and 0.07
+                AND l_quantity < 24
+        "#;
+
+        let result = DorisParser::parse_one(sql);
+        assert!(result.is_ok(), "Should parse TPC-H Q6 like Java FE");
+    }
+}
+
+/// Test complex SQL expressions match Java FE
+mod complex_expressions {
+    use super::*;
+
+    #[test]
+    fn test_case_expression() {
+        // Java FE: Supports CASE WHEN expressions
+        let sql = r#"
+            SELECT
+                CASE
+                    WHEN status = 'active' THEN 1
+                    WHEN status = 'inactive' THEN 0
+                    ELSE -1
+                END as status_code
+            FROM users
+        "#;
+
+        let result = DorisParser::parse_one(sql);
+        assert!(result.is_ok(), "Should parse CASE expressions like Java FE");
+    }
+
+    #[test]
+    fn test_in_expression() {
+        // Java FE: Supports IN clause
+        let sql = "SELECT * FROM users WHERE status IN ('active', 'pending', 'verified')";
+        let result = DorisParser::parse_one(sql);
+
+        assert!(result.is_ok(), "Should parse IN expressions like Java FE");
+    }
+
+    #[test]
+    fn test_between_expression() {
+        // Java FE: Supports BETWEEN clause
+        let sql = "SELECT * FROM orders WHERE price BETWEEN 100 AND 500";
+        let result = DorisParser::parse_one(sql);
+
+        assert!(result.is_ok(), "Should parse BETWEEN expressions like Java FE");
+    }
+
+    #[test]
+    fn test_subquery() {
+        // Java FE: Supports subqueries in WHERE clause
+        let sql = r#"
+            SELECT * FROM orders
+            WHERE customer_id IN (
+                SELECT id FROM customers WHERE country = 'USA'
+            )
+        "#;
+
+        let result = DorisParser::parse_one(sql);
+        assert!(result.is_ok(), "Should parse subqueries like Java FE");
+    }
+
+    #[test]
+    fn test_arithmetic_expressions() {
+        // Java FE: Supports complex arithmetic in SELECT
+        let sql = r#"
+            SELECT
+                price * quantity as total,
+                price * quantity * (1 - discount) as discounted_total,
+                (price + tax) * quantity as total_with_tax
+            FROM items
+        "#;
+
+        let result = DorisParser::parse_one(sql);
+        assert!(result.is_ok(), "Should parse arithmetic expressions like Java FE");
+    }
 }
