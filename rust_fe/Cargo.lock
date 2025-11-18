@@ -466,7 +466,10 @@ version = "0.1.0"
 dependencies = [
  "byteorder",
  "bytes",
+ "fe-analysis",
+ "fe-catalog",
  "fe-common",
+ "fe-qe",
  "mysql_async",
  "mysql_common",
  "rand",

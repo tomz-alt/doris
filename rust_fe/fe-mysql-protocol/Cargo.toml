@@ -9,6 +9,9 @@ authors.workspace = true
 byteorder = "1.5"
 bytes.workspace = true
 fe-common = { path = "../fe-common" }
+fe-catalog = { path = "../fe-catalog" }
+fe-analysis = { path = "../fe-analysis" }
+fe-qe = { path = "../fe-qe" }
 mysql_async = "0.36.1"
 mysql_common = "0.35.5"
 rand = "0.9.2"

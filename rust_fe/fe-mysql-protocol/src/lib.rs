@@ -13,6 +13,6 @@ pub mod constants;
 pub mod packet;
 pub mod handshake;
 pub mod resultset;
+pub mod server;
 
-// TODO: Implement these modules
-// pub mod server;
+pub use server::MysqlServer;
