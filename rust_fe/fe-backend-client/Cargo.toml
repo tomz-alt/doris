@@ -1,0 +1,26 @@
+[package]
+name = "fe-backend-client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+fe-common = { path = "../fe-common" }
+fe-planner = { path = "../fe-planner" }
+fe-qe = { path = "../fe-qe" }
+
+# gRPC/Protobuf
+tonic = "0.10"
+prost = "0.12"
+prost-types = "0.12"
+
+# Async runtime
+tokio = { workspace = true, features = ["full"] }
+
+# Error handling
+anyhow.workspace = true
+
+[build-dependencies]
+tonic-build = "0.10"
+prost-build = "0.12"

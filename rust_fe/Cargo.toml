@@ -22,7 +22,7 @@ members = [
     "fe-ha",
     "fe-metric",
     "fe-job",
-    "fe-main",
+    "fe-main", "fe-backend-client",
 ]
 
 [workspace.package]
