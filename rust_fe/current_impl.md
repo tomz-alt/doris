@@ -36,16 +36,19 @@
 - parser_tests (9): Simple SELECT, CREATE TABLE, TPC-H lineitem, TPC-H Q1, INSERT/UPDATE/DELETE
 - analyzer_tests (2): Valid CREATE TABLE, duplicate columns
 
-## fe-qe (Query Executor) - 4 tests ✓
-**Files**: executor.rs, result.rs
+## fe-qe (Query Executor) - 8 tests ✓
+**Files**: executor.rs, result.rs, select_tests.rs
 
 - **Executor**: Executes parsed SQL statements
-- **DDL**: CREATE TABLE (TPC-H lineitem ✓), DROP TABLE/DATABASE
-- **Type Parsing**: INT, VARCHAR, DECIMAL, CHAR, DATE
-- **Results**: QueryResult, ResultSet, Row, Value
+- **DDL**: CREATE TABLE (TPC-H lineitem ✓), DROP TABLE/DATABASE, USE
+- **SELECT**: Column projection, aliases, aggregations (schema-only, no data)
+- **Type Parsing**: INT, VARCHAR, DECIMAL, CHAR, DATE, DATETIME
+- **Results**: QueryResult, ResultSet, Row, Value (11 variants)
+- **TPC-H Q1**: Full query execution with 10 column result set
 
 **Tests**:
 - executor_tests (4): CREATE TABLE, TPC-H lineitem (16 cols), data types, DROP TABLE
+- select_tests (2): Simple SELECT, TPC-H Q1 (10 columns with aliases)
 
 ## fe-planner (Query Planner) - 9 tests ✓
 **Files**: planner.rs, thrift_plan.rs
@@ -59,7 +62,7 @@
 - thrift_plan_tests (5): Plan node serialization, fragment serialization
 - planner_tests (4): Lineitem scan, JSON output, SELECT statement planning
 
-## fe-mysql-protocol (MySQL Protocol) - 27 tests ✓
+## fe-mysql-protocol (MySQL Protocol) - 28 tests ✓
 **Files**: constants.rs, packet.rs, handshake.rs, resultset.rs, server.rs
 
 - **Packet**: MySQL wire protocol framing (header + payload)
@@ -70,13 +73,14 @@
 - **Server**: TCP listener, connection handler, command loop (COM_QUERY, COM_INIT_DB, COM_PING, COM_QUIT)
 - **Integration**: Parser → Executor → Result encoding pipeline
 - **System Queries**: SELECT @@, SET, SHOW (client compatibility)
+- **TPC-H Q1**: Full end-to-end execution via MySQL CLI
 
 **Tests**:
 - packet_tests (6): Header, packet I/O, OK/ERR/EOF, length-encoded values
 - handshake_tests (5): Initial handshake, auth data, password verification
 - resultset_tests (7): Column defs, rows, result sets, type conversion
 - server_tests (3): Server creation, DDL execution, parse error handling
-- integration_tests (6): mysql_async client connection, CREATE TABLE, database switching, TPC-H lineitem, error handling
+- integration_tests (7): Connection, CREATE TABLE, database switching, TPC-H lineitem, error handling, TPC-H Q1
 
 ## fe-main (Entry) - 0 tests
 CLI, config, logging, signals
