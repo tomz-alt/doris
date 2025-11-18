@@ -17,6 +17,9 @@ pub use mock::MockBackend;
 #[allow(warnings)]
 pub mod generated;
 
+// PBlock parser for decoding BE result data
+pub mod pblock_parser;
+
 use generated::doris::{
     p_backend_service_client::PBackendServiceClient,
     PExecPlanFragmentRequest, PExecPlanFragmentResult,
@@ -172,11 +175,25 @@ impl BackendClient {
             ));
         }
 
-        // Decode result set
-        // TODO: Parse row batches from response.row_batch
-        let rows = vec![]; // Placeholder
+        // Decode result set from row_batch
+        if let Some(row_batch_bytes) = response.row_batch {
+            // Parse PBlock from bytes
+            let pblock = pblock_parser::parse_pblock(&row_batch_bytes)?;
 
-        Ok(rows)
+            // Log column information for debugging
+            let column_names = pblock_parser::get_column_names(&pblock);
+            eprintln!("📊 PBlock columns: {:?}", column_names);
+
+            // Convert PBlock to rows
+            let rows = pblock_parser::pblock_to_rows(&pblock)?;
+
+            eprintln!("📦 Fetched {} rows from BE", rows.len());
+
+            Ok(rows)
+        } else {
+            // Empty result set
+            Ok(vec![])
+        }
     }
 
     /// Get backend address
