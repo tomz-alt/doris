@@ -85,17 +85,16 @@ impl BackendClient {
     /// ```
     pub async fn exec_plan_fragment(
         &mut self,
-        _fragment: &fe_planner::thrift_plan::TPlanFragment,
+        fragment: &fe_planner::thrift_plan::TPlanFragment,
         query_id: [u8; 16],
     ) -> Result<[u8; 16]> {
         // Serialize fragment to Thrift bytes
-        // TODO: Implement proper Thrift serialization
-        let fragment_bytes = vec![]; // Placeholder
+        let fragment_bytes = fe_planner::serialize_plan_fragment(fragment)?;
 
         // Create gRPC request
         let request = tonic::Request::new(PExecPlanFragmentRequest {
             request: Some(fragment_bytes),
-            compact: Some(false),
+            compact: Some(true), // Using TCompactProtocol
             version: Some(2), // PFragmentRequestVersion::VERSION_2
         });
 

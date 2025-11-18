@@ -7,5 +7,7 @@
 
 pub mod planner;
 pub mod thrift_plan;
+pub mod thrift_serialize;
 
 pub use planner::QueryPlanner;
+pub use thrift_serialize::serialize_plan_fragment;
