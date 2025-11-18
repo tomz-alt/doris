@@ -15,7 +15,11 @@ brew install protobuf
 protoc --version  # Should be 3.x or later
 ```
 
-**For Development**: MockBackend allows testing without protoc (see fe-backend-client/src/mock.rs)
+**⚠️ INSTALLATION BLOCKED**: See [PROTOC_INSTALLATION.md](PROTOC_INSTALLATION.md) for details and workarounds:
+- Manual installation with privileged access
+- Pre-generated bindings (recommended for CI/CD)
+- Docker container with protoc
+- MockBackend for development (current - 200 tests passing)
 
 ## Architecture Overview
 
