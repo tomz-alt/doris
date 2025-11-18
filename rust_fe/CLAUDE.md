@@ -9,7 +9,8 @@ Migrating 4,654 Java files (48 modules) to Rust for performance/memory.
 ✅ Phase 3: SQL parser (TPC-H Q1 ✓)
 ✅ Phase 4: Query executor (DDL ✓, SELECT schema ✓)
 ✅ Phase 5: MySQL protocol server (handshake, auth, results)
-🚧 Phase 6: gRPC client to C++ BE (exec queries with real data)
+✅ Phase 6a: gRPC/Protobuf bindings generated (252KB)
+🚧 Phase 6b: Implement real BackendClient (use generated types)
 
 ## Principles
 1. **Exact Java parity** - 200 tests verify behaviors (34 comparison tests)

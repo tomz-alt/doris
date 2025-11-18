@@ -13,22 +13,19 @@
 - [x] BE integration test plan documented
 - [x] Additional comparison tests (duplicate errors, TPC-H Q2/Q3/Q6, complex expressions)
 
-## Now - C++ BE Integration (**BLOCKED** by protoc installation)
+## Now - C++ BE Integration (**UNBLOCKED** - protoc installed!)
 - [ ] **C++ BE Integration** (see BE_INTEGRATION_TEST_PLAN.md & TESTING_WITH_REAL_BE.md)
   - [x] Document gRPC/Protobuf requirements
   - [x] Create fe-backend-client crate
   - [x] Create MockBackend for testing without protoc (6 tests ✓)
   - [x] Document integration test scenarios
   - [x] Document real BE testing workflow (TESTING_WITH_REAL_BE.md)
-  - [ ] ⚠️ **BLOCKED**: Install protoc
-    - apt-get fails (403 Forbidden on package repos)
-    - curl/wget from GitHub fails (403 Forbidden on proxy)
-    - All network downloads blocked
-    - **Solution**: Need manual protoc binary upload or pre-generated bindings
-  - [ ] Generate Rust bindings from protobuf (needs protoc)
-  - [ ] Implement exec_plan_fragment RPC (gRPC) (needs protobuf bindings)
-  - [ ] Implement fetch_data RPC (gRPC) (needs protobuf bindings)
-  - [ ] Test with real C++ BE (needs protobuf bindings + running BE)
+  - [x] ✅ **UNBLOCKED**: Install protoc v30.2 (binary provided by user!)
+  - [x] Generate Rust bindings from protobuf (252KB doris.rs + 30KB segment_v2.rs)
+  - [ ] Implement real BackendClient using generated gRPC types
+  - [ ] Implement exec_plan_fragment RPC (gRPC)
+  - [ ] Implement fetch_data RPC (gRPC)
+  - [ ] Test with real C++ BE (needs running BE on port 9060)
   - [ ] Verify 100% identical results vs Java FE (needs full setup)
 - [ ] Tablet metadata from BE
 - [ ] Partition routing

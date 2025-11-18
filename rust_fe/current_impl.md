@@ -85,11 +85,12 @@
 - integration_tests (7): Connection, CREATE TABLE, database switching, TPC-H lineitem, error handling, TPC-H Q1
 
 ## fe-backend-client (C++ BE Client) - 6 tests ✓
-**Files**: lib.rs, mock.rs
+**Files**: lib.rs, mock.rs, generated/doris.rs (252KB), generated/doris.segment_v2.rs (30KB)
 
-- **BackendClient**: gRPC client for C++ BE communication (stub)
-- **MockBackend**: Testing without protoc/real BE
-- **RPCs**: exec_plan_fragment, fetch_data (TODO: implement with gRPC)
+- **BackendClient**: gRPC client for C++ BE communication (stub, needs real implementation)
+- **MockBackend**: Testing without real BE (6 tests passing)
+- **Generated Types**: PBackendServiceClient, PExecPlanFragmentRequest, PFetchDataRequest, etc.
+- **RPCs**: exec_plan_fragment, fetch_data (generated, ready to implement)
 - **Protocol**: gRPC/Protobuf (PBackendService from internal_service.proto)
 - **Port**: 9060 (default BE gRPC port)
 
@@ -97,7 +98,7 @@
 - client_tests (1): Client creation
 - mock_tests (5): Backend creation, exec fragment, fetch data (empty/with results), TPC-H Q1 mock
 
-**Next**: Install protoc → generate bindings → implement real gRPC calls
+**Next**: Implement real BackendClient using generated PBackendServiceClient
 
 ## fe-main (Entry) - 0 tests
 CLI, config, logging, signals, MySQL server startup
