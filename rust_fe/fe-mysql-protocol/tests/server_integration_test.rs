@@ -182,3 +182,80 @@ async fn test_invalid_sql() {
     drop(conn);
     pool.disconnect().await.expect("Failed to disconnect");
 }
+#[tokio::test]
+async fn test_tpch_q1_query() {
+    let port = 19036;
+    let catalog = start_test_server(port).await;
+
+    let url = format!("mysql://root@127.0.0.1:{}/tpch", port);
+    let pool = mysql_async::Pool::new(url.as_str());
+
+    let mut conn = pool.get_conn().await.expect("Failed to connect");
+
+    // Create TPC-H lineitem table
+    let create_sql = r#"
+        CREATE TABLE tpch.lineitem (
+            l_orderkey INT,
+            l_partkey INT,
+            l_suppkey INT,
+            l_linenumber INT,
+            l_quantity DECIMAL(15,2),
+            l_extendedprice DECIMAL(15,2),
+            l_discount DECIMAL(15,2),
+            l_tax DECIMAL(15,2),
+            l_returnflag CHAR(1),
+            l_linestatus CHAR(1),
+            l_shipdate DATE,
+            l_commitdate DATE,
+            l_receiptdate DATE,
+            l_shipinstruct CHAR(25),
+            l_shipmode CHAR(10),
+            l_comment VARCHAR(44)
+        )
+    "#;
+
+    conn.query_drop(create_sql)
+        .await
+        .expect("Failed to create lineitem table");
+
+    // Execute TPC-H Q1 - full query
+    let q1_sql = r#"
+        SELECT
+            l_returnflag,
+            l_linestatus,
+            sum(l_quantity) as sum_qty,
+            sum(l_extendedprice) as sum_base_price,
+            sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
+            sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
+            avg(l_quantity) as avg_qty,
+            avg(l_extendedprice) as avg_price,
+            avg(l_discount) as avg_disc,
+            count(*) as count_order
+        FROM
+            lineitem
+        WHERE
+            l_shipdate <= date '1998-12-01' - interval '90' day
+        GROUP BY
+            l_returnflag,
+            l_linestatus
+        ORDER BY
+            l_returnflag,
+            l_linestatus
+    "#;
+
+    // Execute query - should return proper column structure
+    let result: Vec<mysql_async::Row> = conn.query(q1_sql)
+        .await
+        .expect("Failed to execute TPC-H Q1");
+
+    // Should return 0 rows (no data) but proper column structure
+    assert_eq!(result.len(), 0, "Should return 0 rows (no data loaded)");
+
+    // Verify table exists
+    let table_arc = catalog.get_table_by_name("tpch", "lineitem").expect("Table not found");
+    let table = table_arc.read();
+    assert_eq!(table.columns.len(), 16);
+
+    drop(conn);
+    pool.disconnect().await.expect("Failed to disconnect");
+}

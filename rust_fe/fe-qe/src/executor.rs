@@ -101,11 +101,61 @@ impl QueryExecutor {
         Ok(QueryResult::ok(format!("Database changed to {}", stmt.database_name)))
     }
 
-    fn execute_select(&self, _stmt: &SelectStatement) -> Result<QueryResult> {
-        // For now, return empty result set
-        // TODO: Implement full query execution
+    fn execute_select(&self, stmt: &SelectStatement) -> Result<QueryResult> {
+        // Parse the SQL query to extract table and columns
+        // For now, we return proper column structure but no data
+        use sqlparser::parser::Parser;
+        use sqlparser::dialect::GenericDialect;
+
+        let dialect = GenericDialect {};
+        let ast = Parser::parse_sql(&dialect, &stmt.query)
+            .map_err(|e| DorisError::AnalysisError(format!("Failed to parse query: {}", e)))?;
+
+        if ast.is_empty() {
+            return Err(DorisError::AnalysisError("Empty query".to_string()));
+        }
+
+        let query = match &ast[0] {
+            sqlparser::ast::Statement::Query(q) => q,
+            _ => return Err(DorisError::AnalysisError("Not a SELECT query".to_string())),
+        };
+
+        // Extract columns from SELECT list
+        let select = match query.body.as_ref() {
+            sqlparser::ast::SetExpr::Select(s) => s,
+            _ => return Err(DorisError::AnalysisError("Unsupported query type".to_string())),
+        };
+
+        let mut columns = Vec::new();
+
+        for item in &select.projection {
+            match item {
+                sqlparser::ast::SelectItem::UnnamedExpr(expr) => {
+                    columns.push(crate::result::ColumnInfo {
+                        name: format!("{}", expr),
+                        data_type: "VARCHAR".to_string(), // Default type
+                    });
+                }
+                sqlparser::ast::SelectItem::ExprWithAlias { expr, alias } => {
+                    columns.push(crate::result::ColumnInfo {
+                        name: alias.to_string(),
+                        data_type: "VARCHAR".to_string(),
+                    });
+                }
+                sqlparser::ast::SelectItem::Wildcard(_) => {
+                    // For *, we would need to fetch table schema
+                    // For now, just add a placeholder
+                    columns.push(crate::result::ColumnInfo {
+                        name: "*".to_string(),
+                        data_type: "VARCHAR".to_string(),
+                    });
+                }
+                _ => {}
+            }
+        }
+
         Ok(QueryResult::ResultSet(ResultSet {
-            columns: vec![],
+            columns,
             rows: vec![],
         }))
     }

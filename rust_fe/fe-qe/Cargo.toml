@@ -11,3 +11,4 @@ fe-catalog = { path = "../fe-catalog" }
 fe-analysis = { path = "../fe-analysis" }
 parking_lot.workspace = true
 serde = { workspace = true, features = ["derive"] }
+sqlparser = "0.49"

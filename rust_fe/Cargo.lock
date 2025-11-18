@@ -518,6 +518,7 @@ dependencies = [
  "fe-common",
  "parking_lot",
  "serde",
+ "sqlparser",
 ]
 
 [[package]]

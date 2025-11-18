@@ -8,5 +8,8 @@
 pub mod executor;
 pub mod result;
 
+#[cfg(test)]
+mod select_tests;
+
 pub use executor::QueryExecutor;
 pub use result::{QueryResult, ResultSet, Row};
