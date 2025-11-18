@@ -82,8 +82,23 @@
 - server_tests (3): Server creation, DDL execution, parse error handling
 - integration_tests (7): Connection, CREATE TABLE, database switching, TPC-H lineitem, error handling, TPC-H Q1
 
+## fe-backend-client (C++ BE Client) - 6 tests ✓
+**Files**: lib.rs, mock.rs
+
+- **BackendClient**: gRPC client for C++ BE communication (stub)
+- **MockBackend**: Testing without protoc/real BE
+- **RPCs**: exec_plan_fragment, fetch_data (TODO: implement with gRPC)
+- **Protocol**: gRPC/Protobuf (PBackendService from internal_service.proto)
+- **Port**: 9060 (default BE gRPC port)
+
+**Tests**:
+- client_tests (1): Client creation
+- mock_tests (5): Backend creation, exec fragment, fetch data (empty/with results), TPC-H Q1 mock
+
+**Next**: Install protoc → generate bindings → implement real gRPC calls
+
 ## fe-main (Entry) - 0 tests
-CLI, config, logging, signals
+CLI, config, logging, signals, MySQL server startup
 
 ## Design
 - DashMap #[serde(skip)]

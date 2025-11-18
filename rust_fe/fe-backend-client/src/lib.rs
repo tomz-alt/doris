@@ -8,6 +8,10 @@
 
 use fe_common::Result;
 
+// Mock backend for testing without protoc
+pub mod mock;
+pub use mock::MockBackend;
+
 // Generated protobuf code will go here
 // pub mod generated;
 // use generated::internal_service::*;
