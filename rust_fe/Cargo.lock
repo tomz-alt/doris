@@ -864,6 +864,7 @@ dependencies = [
  "fe-analysis",
  "fe-catalog",
  "fe-common",
+ "log",
  "parking_lot",
  "serde",
  "sqlparser",
