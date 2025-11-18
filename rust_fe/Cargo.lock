@@ -444,6 +444,7 @@ dependencies = [
  "clap",
  "fe-catalog",
  "fe-common",
+ "fe-mysql-protocol",
  "signal-hook",
  "signal-hook-tokio",
  "tokio",

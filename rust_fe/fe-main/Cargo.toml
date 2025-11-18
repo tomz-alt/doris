@@ -13,6 +13,7 @@ path = "src/main.rs"
 # Workspace crates
 fe-common = { path = "../fe-common" }
 fe-catalog = { path = "../fe-catalog" }
+fe-mysql-protocol = { path = "../fe-mysql-protocol" }
 
 # External dependencies
 tokio.workspace = true

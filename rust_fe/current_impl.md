@@ -59,19 +59,22 @@
 - thrift_plan_tests (5): Plan node serialization, fragment serialization
 - planner_tests (4): Lineitem scan, JSON output, SELECT statement planning
 
-## fe-mysql-protocol (MySQL Protocol) - 18 tests ✓
-**Files**: constants.rs, packet.rs, handshake.rs, resultset.rs
+## fe-mysql-protocol (MySQL Protocol) - 21 tests ✓
+**Files**: constants.rs, packet.rs, handshake.rs, resultset.rs, server.rs
 
 - **Packet**: MySQL wire protocol framing (header + payload)
 - **Handshake**: Initial handshake, auth response parsing
 - **Auth**: mysql_native_password verification
 - **ResultSet**: Column definitions, row data, EOF/OK packets
 - **Type Conversion**: Doris → MySQL type mapping
+- **Server**: TCP listener, connection handler, command loop (COM_QUERY, COM_INIT_DB, COM_PING, COM_QUIT)
+- **Integration**: Parser → Executor → Result encoding pipeline
 
 **Tests**:
 - packet_tests (6): Header, packet I/O, OK/ERR/EOF, length-encoded values
 - handshake_tests (5): Initial handshake, auth data, password verification
 - resultset_tests (7): Column defs, rows, result sets, type conversion
+- server_tests (3): Server creation, DDL execution, parse error handling
 
 ## fe-main (Entry) - 0 tests
 CLI, config, logging, signals

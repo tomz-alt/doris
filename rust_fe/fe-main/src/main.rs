@@ -9,6 +9,7 @@ use std::sync::Arc;
 use tokio::signal;
 use tracing::info;
 use fe_catalog::Catalog;
+use fe_mysql_protocol::MysqlServer;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -50,13 +51,22 @@ async fn main() -> anyhow::Result<()> {
     config.validate()?;
 
     // Initialize catalog
-    let _catalog = Arc::new(Catalog::new());
+    let catalog = Arc::new(Catalog::new());
     info!("Catalog initialized");
 
-    // TODO: Start various services
+    // Start MySQL protocol server
+    let mysql_server = MysqlServer::new(catalog.clone(), config.query_port);
+    info!("Starting MySQL protocol server on port {}", config.query_port);
+
+    tokio::spawn(async move {
+        if let Err(e) = mysql_server.start().await {
+            tracing::error!("MySQL server error: {:?}", e);
+        }
+    });
+
+    // TODO: Start other services
     // - HTTP server
     // - RPC server
-    // - MySQL protocol server
     // - Metadata synchronization
     // - Background threads (replica checker, tablet scheduler, etc.)
 
