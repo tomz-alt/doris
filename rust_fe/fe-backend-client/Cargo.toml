@@ -21,6 +21,11 @@ tokio = { workspace = true, features = ["full"] }
 # Error handling
 anyhow.workspace = true
 
+# PBlock parsing
+byteorder = "1.5"
+snap = "1.1"
+log = "0.4"
+
 [dev-dependencies]
 mysql.workspace = true
 

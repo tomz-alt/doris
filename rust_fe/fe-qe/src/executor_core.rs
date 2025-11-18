@@ -93,7 +93,7 @@ impl SqlExecutor {
             Ok(mut statements) => {
                 if statements.is_empty() {
                     self.metrics.parse_errors += 1;
-                    return Err(DorisError::ParseError("Empty SQL statement".to_string()));
+                    return Err(DorisError::QueryError("Empty SQL statement".to_string()));
                 }
                 if statements.len() > 1 {
                     log::warn!("Multiple statements detected, executing first only");
@@ -103,7 +103,7 @@ impl SqlExecutor {
             Err(e) => {
                 self.metrics.parse_errors += 1;
                 log::error!("Parse error: {}", e);
-                Err(DorisError::ParseError(format!("Parse error: {}", e)))
+                Err(DorisError::QueryError(format!("Parse error: {}", e)))
             }
         }
     }
@@ -111,19 +111,13 @@ impl SqlExecutor {
     /// Execute statement
     ///
     /// CLAUDE.md Principle #4: Transport details hidden in QueryExecutor
-    fn execute_statement(&mut self, ast: &Statement) -> Result<QueryResult> {
-        use crate::executor::QueryExecutor;
-
-        let executor = QueryExecutor::new(Arc::clone(&self.catalog));
-
-        match executor.execute(ast) {
-            Ok(result) => Ok(result),
-            Err(e) => {
-                self.metrics.exec_errors += 1;
-                log::error!("Execution error: {}", e);
-                Err(e)
-            }
-        }
+    fn execute_statement(&mut self, _ast: &Statement) -> Result<QueryResult> {
+        // TODO: Proper statement type conversion
+        // QueryExecutor expects fe_analysis::Statement
+        // We have sqlparser::ast::Statement
+        log::warn!("SQL execution through executor_core not yet fully wired");
+        self.metrics.exec_errors += 1;
+        Err(DorisError::NotSupported("SQL execution not fully implemented yet".to_string()))
     }
 
     /// Get execution metrics (CLAUDE.md Principle #3: Observability)
