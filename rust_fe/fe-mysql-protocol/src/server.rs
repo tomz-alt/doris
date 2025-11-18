@@ -196,6 +196,15 @@ async fn handle_query(
     executor: &QueryExecutor,
     sequence_id: u8,
 ) -> Result<Vec<Packet>> {
+    // Handle special queries that we don't fully support yet
+    let query_lower = query.trim().to_lowercase();
+
+    // System variable queries - return OK to keep client happy
+    if query_lower.starts_with("select @@") || query_lower.starts_with("set ") || query_lower.starts_with("show ") {
+        // Return OK packet - client compatibility
+        return Ok(vec![Packet::ok(0, 0, SERVER_STATUS_AUTOCOMMIT, 0, sequence_id)]);
+    }
+
     // Parse SQL
     let stmt = DorisParser::parse_one(query)
         .map_err(|e| fe_common::DorisError::AnalysisError(format!("Parse error: {:?}", e)))?;

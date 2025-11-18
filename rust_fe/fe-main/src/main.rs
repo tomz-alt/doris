@@ -7,7 +7,7 @@ use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::signal;
-use tracing::info;
+use tracing::{info, warn};
 use fe_catalog::Catalog;
 use fe_mysql_protocol::MysqlServer;
 
@@ -53,6 +53,11 @@ async fn main() -> anyhow::Result<()> {
     // Initialize catalog
     let catalog = Arc::new(Catalog::new());
     info!("Catalog initialized");
+
+    // Initialize with default database and TPC-H schema for testing
+    if let Err(e) = init_default_schema(&catalog) {
+        warn!("Failed to initialize default schema: {:?}", e);
+    }
 
     // Start MySQL protocol server
     let mysql_server = MysqlServer::new(catalog.clone(), config.query_port);
@@ -113,6 +118,19 @@ fn load_config(config_path: &PathBuf) -> anyhow::Result<fe_common::Config> {
         tracing::warn!("Config file not found: {:?}, using defaults", config_path);
         Ok(fe_common::Config::default())
     }
+}
+
+/// Initialize default schema for testing
+fn init_default_schema(catalog: &Catalog) -> anyhow::Result<()> {
+    // Create 'default' database (cluster 'default_cluster')
+    catalog.create_database("default".to_string(), "default_cluster".to_string())?;
+    info!("Created default database");
+
+    // Create 'tpch' database for TPC-H testing
+    catalog.create_database("tpch".to_string(), "default_cluster".to_string())?;
+    info!("Created tpch database");
+
+    Ok(())
 }
 
 /// Wait for shutdown signal (SIGINT or SIGTERM)
