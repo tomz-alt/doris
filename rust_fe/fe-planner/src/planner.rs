@@ -5,7 +5,7 @@
 //!
 //! Converts AST to execution plans that can be sent to BE via Thrift.
 
-use fe_common::{Result, DorisError};
+use fe_common::{Result, DorisError, DataType};
 use fe_catalog::{Catalog, OlapTable};
 use fe_analysis::ast::*;
 use crate::thrift_plan::*;
@@ -62,16 +62,18 @@ impl QueryPlanner {
     /// Create OLAP scan node for a table
     fn create_olap_scan_node(&self, table: &OlapTable) -> Result<TPlanNode> {
         // Get key columns (for TPC-H lineitem, it's the DUPLICATE KEY columns)
-        let key_column_names: Vec<String> = table.columns.iter()
+        let key_columns: Vec<&fe_catalog::Column> = table.columns.iter()
             .filter(|col| col.is_key)
-            .map(|col| col.name.clone())
             .collect();
 
         // If no explicit keys, use first column
-        let key_names = if key_column_names.is_empty() {
-            vec![table.columns[0].name.clone()]
+        let (key_names, key_types) = if key_columns.is_empty() {
+            let col = &table.columns[0];
+            (vec![col.name.clone()], vec![datatype_to_tprimitive(&col.data_type)])
         } else {
-            key_column_names
+            let names = key_columns.iter().map(|col| col.name.clone()).collect();
+            let types = key_columns.iter().map(|col| datatype_to_tprimitive(&col.data_type)).collect();
+            (names, types)
         };
 
         Ok(TPlanNode {
@@ -81,12 +83,43 @@ impl QueryPlanner {
             limit: -1,
             row_tuples: vec![0],
             nullable_tuples: vec![false],
+            compact_data: true,
             olap_scan_node: Some(TOlapScanNode {
                 tuple_id: 0,
                 key_column_name: key_names,
+                key_column_type: key_types,
                 is_preaggregation: true,
+                table_name: Some(table.name.clone()),
             }),
         })
+    }
+}
+
+/// Convert Doris DataType to Thrift TPrimitiveType
+fn datatype_to_tprimitive(dt: &DataType) -> TPrimitiveType {
+    match dt {
+        DataType::Boolean => TPrimitiveType::Boolean,
+        DataType::TinyInt => TPrimitiveType::TinyInt,
+        DataType::SmallInt => TPrimitiveType::SmallInt,
+        DataType::Int => TPrimitiveType::Int,
+        DataType::BigInt => TPrimitiveType::BigInt,
+        DataType::LargeInt => TPrimitiveType::LargeInt,
+        DataType::Float => TPrimitiveType::Float,
+        DataType::Double => TPrimitiveType::Double,
+        DataType::Decimal { .. } => TPrimitiveType::DecimalV2,
+        DataType::Date => TPrimitiveType::Date,
+        DataType::DateTime => TPrimitiveType::DateTime,
+        DataType::Char { .. } => TPrimitiveType::Char,
+        DataType::Varchar { .. } => TPrimitiveType::Varchar,
+        DataType::String => TPrimitiveType::String,
+        DataType::Hll => TPrimitiveType::Hll,
+        DataType::Bitmap => TPrimitiveType::Bitmap,
+        DataType::Quantile => TPrimitiveType::QuantileState,
+        DataType::Array { .. } => TPrimitiveType::Array,
+        DataType::Map { .. } => TPrimitiveType::Map,
+        DataType::Struct { .. } => TPrimitiveType::Struct,
+        DataType::Json => TPrimitiveType::JsonB,
+        DataType::Binary => TPrimitiveType::Binary,
     }
 }
 

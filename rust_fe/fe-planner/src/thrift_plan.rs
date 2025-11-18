@@ -8,6 +8,50 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Primitive types (from Types.thrift)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[repr(i32)]
+pub enum TPrimitiveType {
+    InvalidType = 0,
+    NullType = 1,
+    Boolean = 2,
+    TinyInt = 3,
+    SmallInt = 4,
+    Int = 5,
+    BigInt = 6,
+    Float = 7,
+    Double = 8,
+    Date = 9,
+    DateTime = 10,
+    Binary = 11,
+    DecimalDeprecated = 12,
+    Char = 13,
+    LargeInt = 14,
+    Varchar = 15,
+    Hll = 16,
+    DecimalV2 = 17,
+    Bitmap = 19,
+    Array = 20,
+    Map = 21,
+    Struct = 22,
+    String = 23,
+    All = 24,
+    QuantileState = 25,
+    DateV2 = 26,
+    DateTimeV2 = 27,
+    TimeV2 = 28,
+    Decimal32 = 29,
+    Decimal64 = 30,
+    Decimal128I = 31,
+    Decimal256 = 32,
+    JsonB = 33,
+    Variant = 34,
+    AggState = 35,
+    LambdaFunction = 36,
+    Ipv4 = 37,
+    Ipv6 = 38,
+}
+
 /// Plan node types (from PlanNodes.thrift)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(i32)]
@@ -83,7 +127,10 @@ pub struct TPaloScanRange {
 pub struct TOlapScanNode {
     pub tuple_id: TTupleId,
     pub key_column_name: Vec<String>,
+    pub key_column_type: Vec<TPrimitiveType>,
     pub is_preaggregation: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub table_name: Option<String>,
 }
 
 /// Plan node (from PlanNodes.thrift)
@@ -95,6 +142,7 @@ pub struct TPlanNode {
     pub limit: i64,
     pub row_tuples: Vec<TTupleId>,
     pub nullable_tuples: Vec<bool>,
+    pub compact_data: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub olap_scan_node: Option<TOlapScanNode>,
 }
@@ -136,10 +184,13 @@ mod tests {
             limit: -1,
             row_tuples: vec![0],
             nullable_tuples: vec![false],
+            compact_data: true,
             olap_scan_node: Some(TOlapScanNode {
                 tuple_id: 0,
                 key_column_name: vec!["l_orderkey".to_string(), "l_partkey".to_string()],
+                key_column_type: vec![TPrimitiveType::Int, TPrimitiveType::Int],
                 is_preaggregation: true,
+                table_name: Some("lineitem".to_string()),
             }),
         };
 
@@ -164,10 +215,13 @@ mod tests {
                         limit: -1,
                         row_tuples: vec![0],
                         nullable_tuples: vec![false],
+                        compact_data: true,
                         olap_scan_node: Some(TOlapScanNode {
                             tuple_id: 0,
                             key_column_name: vec!["l_orderkey".to_string()],
+                            key_column_type: vec![TPrimitiveType::Int],
                             is_preaggregation: true,
+                            table_name: Some("lineitem".to_string()),
                         }),
                     }
                 ],
