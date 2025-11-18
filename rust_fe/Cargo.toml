@@ -52,6 +52,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 # Database & SQL
 sqlparser = "0.43"
+mysql = "25.0"
 
 # gRPC/RPC
 tonic = "0.11"

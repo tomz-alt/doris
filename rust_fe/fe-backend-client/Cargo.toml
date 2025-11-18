@@ -21,6 +21,9 @@ tokio = { workspace = true, features = ["full"] }
 # Error handling
 anyhow.workspace = true
 
+[dev-dependencies]
+mysql.workspace = true
+
 [build-dependencies]
 tonic-build = "0.10"
 prost-build = "0.12"
