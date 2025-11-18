@@ -20,6 +20,7 @@ pub mod index;
 pub mod replica;
 pub mod catalog;
 pub mod datastore;
+pub mod tpch_loader;
 
 pub use database::Database;
 pub use table::{Table, OlapTable};
@@ -29,3 +30,4 @@ pub use index::Index;
 pub use replica::Replica;
 pub use catalog::Catalog;
 pub use datastore::DataStore;
+pub use tpch_loader::load_tpch_schema;

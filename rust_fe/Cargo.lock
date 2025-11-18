@@ -687,7 +687,7 @@ version = "0.1.0"
 dependencies = [
  "fe-common",
  "serde",
- "sqlparser",
+ "sqlparser 0.49.0",
 ]
 
 [[package]]
@@ -696,6 +696,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "byteorder",
+ "fe-catalog",
  "fe-common",
  "fe-planner",
  "fe-qe",
@@ -705,6 +706,7 @@ dependencies = [
  "prost-build",
  "prost-types",
  "snap",
+ "sqlparser 0.43.1",
  "tokio",
  "tonic",
  "tonic-build",
@@ -870,7 +872,7 @@ dependencies = [
  "log",
  "parking_lot",
  "serde",
- "sqlparser",
+ "sqlparser 0.49.0",
 ]
 
 [[package]]
@@ -2608,6 +2610,15 @@ checksum = "17129e116933cf371d018bb80ae557e889637989d8638274fb25622827b03881"
 dependencies = [
  "libc",
  "windows-sys 0.60.2",
+]
+
+[[package]]
+name = "sqlparser"
+version = "0.43.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f95c4bae5aba7cd30bd506f7140026ade63cff5afd778af8854026f9606bf5d4"
+dependencies = [
+ "log",
 ]
 
 [[package]]

@@ -9,6 +9,7 @@ authors.workspace = true
 fe-common = { path = "../fe-common" }
 fe-planner = { path = "../fe-planner" }
 fe-qe = { path = "../fe-qe" }
+fe-catalog = { path = "../fe-catalog" }
 
 # gRPC/Protobuf
 tonic = "0.10"
@@ -28,6 +29,7 @@ log = "0.4"
 
 [dev-dependencies]
 mysql.workspace = true
+sqlparser.workspace = true
 
 [build-dependencies]
 tonic-build = "0.10"
