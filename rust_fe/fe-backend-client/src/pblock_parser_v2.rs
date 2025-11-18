@@ -106,43 +106,50 @@ fn parse_columnar_data(data: &[u8], column_metas: &[PColumnMeta], be_exec_versio
 ///
 /// Dispatches to type-specific decoders based on column type
 fn parse_column(cursor: &mut Cursor<&[u8]>, meta: &PColumnMeta, be_exec_version: i32) -> Result<Vec<Value>> {
-    use crate::generated::doris::PGenericType;
+    use crate::generated::doris::p_generic_type::TypeId;
 
-    let col_type = meta.r#type();
+    // Get type ID from meta (it's stored as an i32 enum value)
+    let type_id_raw = meta.r#type
+        .ok_or_else(|| DorisError::InternalError("Column meta has no type".to_string()))?;
+
+    let type_id = TypeId::try_from(type_id_raw)
+        .map_err(|_| DorisError::InternalError(format!("Unknown type ID: {}", type_id_raw)))?;
+
     let column_name = meta.name.clone().unwrap_or_else(|| "unknown".to_string());
 
-    log::debug!("Parsing column '{}' with type {:?}", column_name, col_type);
+    log::debug!("Parsing column '{}' with type {:?}", column_name, type_id);
 
     // For modern BE versions, use const-aware format
     let use_const_serde = be_exec_version >= 4; // USE_CONST_SERDE threshold
 
-    match col_type {
-        PGenericType::Int8 => decode_number_column::<i8>(cursor, use_const_serde),
-        PGenericType::Int16 => decode_number_column::<i16>(cursor, use_const_serde),
-        PGenericType::Int32 => decode_number_column::<i32>(cursor, use_const_serde),
-        PGenericType::Int64 => decode_number_column::<i64>(cursor, use_const_serde),
-        PGenericType::Uint8 => decode_number_column::<u8>(cursor, use_const_serde),
-        PGenericType::Uint16 => decode_number_column::<u16>(cursor, use_const_serde),
-        PGenericType::Uint32 => decode_number_column::<u32>(cursor, use_const_serde),
-        PGenericType::Uint64 => decode_number_column::<u64>(cursor, use_const_serde),
-        PGenericType::Float => decode_number_column::<f32>(cursor, use_const_serde),
-        PGenericType::Double => decode_number_column::<f64>(cursor, use_const_serde),
-        PGenericType::Date | PGenericType::Datetime | PGenericType::Datev2 | PGenericType::Datetimev2 => {
+    match type_id {
+        TypeId::Int8 => decode_number_column::<i8>(cursor, use_const_serde),
+        TypeId::Int16 => decode_number_column::<i16>(cursor, use_const_serde),
+        TypeId::Int32 => decode_number_column::<i32>(cursor, use_const_serde),
+        TypeId::Int64 => decode_number_column::<i64>(cursor, use_const_serde),
+        TypeId::Uint8 => decode_number_column::<u8>(cursor, use_const_serde),
+        TypeId::Uint16 => decode_number_column::<u16>(cursor, use_const_serde),
+        TypeId::Uint32 => decode_number_column::<u32>(cursor, use_const_serde),
+        TypeId::Uint64 => decode_number_column::<u64>(cursor, use_const_serde),
+        TypeId::Float => decode_number_column::<f32>(cursor, use_const_serde),
+        TypeId::Double => decode_number_column::<f64>(cursor, use_const_serde),
+        TypeId::Date | TypeId::Datetime | TypeId::Datev2 | TypeId::Datetimev2 => {
             // Date types are stored as i64 internally
-            decode_date_column(cursor, use_const_serde, col_type)
+            decode_date_column(cursor, use_const_serde, type_id_raw)
         }
-        PGenericType::String | PGenericType::Varchar | PGenericType::Char => {
+        TypeId::String | TypeId::Bytes | TypeId::Varbinary => {
+            // String and binary types
             decode_string_column(cursor, use_const_serde)
         }
-        PGenericType::Decimal32 | PGenericType::Decimal64 | PGenericType::Decimal128 | PGenericType::Decimal256 => {
+        TypeId::Decimal32 | TypeId::Decimal64 | TypeId::Decimal128 | TypeId::Decimal128i | TypeId::Decimal256 => {
             // For now, decode as string representation
             // TODO: Proper decimal handling
             decode_string_column(cursor, use_const_serde)
         }
         _ => {
-            log::warn!("Unsupported column type {:?} for '{}', returning placeholder", col_type, column_name);
+            log::warn!("Unsupported column type {:?} for '{}', returning placeholder", type_id, column_name);
             // Return single placeholder value
-            Ok(vec![Value::String(format!("TODO: type {:?}", col_type))])
+            Ok(vec![Value::String(format!("TODO: type {:?}", type_id))])
         }
     }
 }
@@ -176,7 +183,7 @@ impl ColumnHeader {
 /// From DataTypeNumberBase::deserialize() in data_type_number_base.cpp:187-209
 fn decode_number_column<T>(cursor: &mut Cursor<&[u8]>, use_const_serde: bool) -> Result<Vec<Value>>
 where
-    T: Copy + FromBytes + Into<Value>,
+    T: Copy + FromBytes,
 {
     if use_const_serde {
         let header = ColumnHeader::read(cursor)?;
@@ -185,7 +192,7 @@ where
         let mut values = Vec::with_capacity(header.row_num);
         for _ in 0..header.real_need_copy_num {
             let val = T::read_from(cursor)?;
-            values.push(val.into());
+            values.push(val.to_value());
         }
 
         // Expand const column if needed
@@ -203,7 +210,7 @@ where
         let mut values = Vec::with_capacity(row_count);
         for _ in 0..row_count {
             let val = T::read_from(cursor)?;
-            values.push(val.into());
+            values.push(val.to_value());
         }
 
         Ok(values)
@@ -307,11 +314,15 @@ fn decode_string_column(cursor: &mut Cursor<&[u8]>, use_const_serde: bool) -> Re
 /// Helper trait for reading primitive types
 trait FromBytes: Sized {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> Result<Self>;
+    fn to_value(self) -> Value;
 }
 
 impl FromBytes for i8 {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> Result<Self> {
         Ok(cursor.read_i8()?)
+    }
+    fn to_value(self) -> Value {
+        Value::Int(self as i32)
     }
 }
 
@@ -319,11 +330,17 @@ impl FromBytes for i16 {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> Result<Self> {
         Ok(cursor.read_i16::<LittleEndian>()?)
     }
+    fn to_value(self) -> Value {
+        Value::Int(self as i32)
+    }
 }
 
 impl FromBytes for i32 {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> Result<Self> {
         Ok(cursor.read_i32::<LittleEndian>()?)
+    }
+    fn to_value(self) -> Value {
+        Value::Int(self)
     }
 }
 
@@ -331,11 +348,17 @@ impl FromBytes for i64 {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> Result<Self> {
         Ok(cursor.read_i64::<LittleEndian>()?)
     }
+    fn to_value(self) -> Value {
+        Value::BigInt(self)
+    }
 }
 
 impl FromBytes for u8 {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> Result<Self> {
         Ok(cursor.read_u8()?)
+    }
+    fn to_value(self) -> Value {
+        Value::Int(self as i32)
     }
 }
 
@@ -343,11 +366,17 @@ impl FromBytes for u16 {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> Result<Self> {
         Ok(cursor.read_u16::<LittleEndian>()?)
     }
+    fn to_value(self) -> Value {
+        Value::Int(self as i32)
+    }
 }
 
 impl FromBytes for u32 {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> Result<Self> {
         Ok(cursor.read_u32::<LittleEndian>()?)
+    }
+    fn to_value(self) -> Value {
+        Value::BigInt(self as i64)
     }
 }
 
@@ -355,11 +384,17 @@ impl FromBytes for u64 {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> Result<Self> {
         Ok(cursor.read_u64::<LittleEndian>()?)
     }
+    fn to_value(self) -> Value {
+        Value::BigInt(self as i64)
+    }
 }
 
 impl FromBytes for f32 {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> Result<Self> {
         Ok(cursor.read_f32::<LittleEndian>()?)
+    }
+    fn to_value(self) -> Value {
+        Value::String(self.to_string())
     }
 }
 
@@ -367,66 +402,8 @@ impl FromBytes for f64 {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> Result<Self> {
         Ok(cursor.read_f64::<LittleEndian>()?)
     }
-}
-
-/// Convert primitives to Value
-impl From<i8> for Value {
-    fn from(v: i8) -> Self {
-        Value::Int(v as i32)
-    }
-}
-
-impl From<i16> for Value {
-    fn from(v: i16) -> Self {
-        Value::Int(v as i32)
-    }
-}
-
-impl From<i32> for Value {
-    fn from(v: i32) -> Self {
-        Value::Int(v)
-    }
-}
-
-impl From<i64> for Value {
-    fn from(v: i64) -> Self {
-        Value::BigInt(v)
-    }
-}
-
-impl From<u8> for Value {
-    fn from(v: u8) -> Self {
-        Value::Int(v as i32)
-    }
-}
-
-impl From<u16> for Value {
-    fn from(v: u16) -> Self {
-        Value::Int(v as i32)
-    }
-}
-
-impl From<u32> for Value {
-    fn from(v: u32) -> Self {
-        Value::BigInt(v as i64)
-    }
-}
-
-impl From<u64> for Value {
-    fn from(v: u64) -> Self {
-        Value::BigInt(v as i64)
-    }
-}
-
-impl From<f32> for Value {
-    fn from(v: f32) -> Self {
-        Value::String(v.to_string())
-    }
-}
-
-impl From<f64> for Value {
-    fn from(v: f64) -> Self {
-        Value::String(v.to_string())
+    fn to_value(self) -> Value {
+        Value::String(self.to_string())
     }
 }
 
@@ -477,7 +454,7 @@ pub fn get_column_names(block: &PBlock) -> Vec<String> {
 }
 
 /// Get number of rows in PBlock (requires parsing)
-pub fn get_row_count(block: &PBlock) -> Option<usize> {
+pub fn get_row_count(_block: &PBlock) -> Option<usize> {
     // Would need to parse first column header
     // For now, return None - will be determined during parsing
     None

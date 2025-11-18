@@ -18,7 +18,8 @@ pub use mock::MockBackend;
 pub mod generated;
 
 // PBlock parser for decoding BE result data
-pub mod pblock_parser;
+pub mod pblock_parser_v2;
+pub use pblock_parser_v2 as pblock_parser;
 
 use generated::doris::{
     p_backend_service_client::PBackendServiceClient,
