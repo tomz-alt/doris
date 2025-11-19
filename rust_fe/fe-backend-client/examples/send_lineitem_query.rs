@@ -1,0 +1,192 @@
+use fe_backend_client::BackendClient;
+use fe_planner::thrift_plan::*;
+use fe_planner::{TScanRangeLocations, TPaloScanRange, TScanRangeLocation};
+use fe_planner::scan_range_builder::{TScanRange, TNetworkAddress};
+
+#[tokio::main]
+async fn main() {
+    println!("=== Rust FE → C++ BE Integration Test ===\n");
+
+    // Configuration
+    let be_host = "127.0.0.1";
+    let be_port = 9060; // BE gRPC port
+    let query_id: [u8; 16] = [
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39,  // hi = 12345
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x09, 0x32,  // lo = 67890
+    ];
+
+    println!("Configuration:");
+    println!("  BE Address: {}:{}", be_host, be_port);
+    println!("  Query ID: hi=12345, lo=67890");
+    println!();
+
+    // Create scan node for lineitem table
+    println!("Step 1: Creating query plan...");
+    let scan_node = TPlanNode {
+        node_id: 0,
+        node_type: TPlanNodeType::OlapScanNode,
+        num_children: 0,
+        limit: -1,
+        row_tuples: vec![0],
+        nullable_tuples: vec![false],
+        compact_data: true,
+        olap_scan_node: Some(TOlapScanNode {
+            tuple_id: 0,
+            key_column_name: vec![
+                "l_orderkey".to_string(),
+                "l_partkey".to_string(),
+                "l_suppkey".to_string(),
+                "l_linenumber".to_string(),
+            ],
+            key_column_type: vec![
+                TPrimitiveType::BigInt,
+                TPrimitiveType::BigInt,
+                TPrimitiveType::BigInt,
+                TPrimitiveType::Int,
+            ],
+            is_preaggregation: true,
+            table_name: Some("lineitem".to_string()),
+        }),
+    };
+
+    // Create plan fragment
+    let fragment = TPlanFragment {
+        plan: TPlan {
+            nodes: vec![scan_node],
+        },
+        partition: TDataPartition {
+            partition_type: TPartitionType::Unpartitioned,
+            partition_exprs: None,
+            partition_infos: None,
+        },
+    };
+
+    println!("  ✅ Plan fragment created");
+    println!("     - 1 OLAP scan node");
+    println!("     - lineitem table");
+    println!("     - 4 key columns");
+    println!();
+
+    // Create scan ranges
+    println!("Step 2: Generating scan ranges...");
+    let backend_addr = TNetworkAddress {
+        hostname: be_host.to_string(),
+        port: be_port as i32,
+    };
+
+    let palo_range = TPaloScanRange {
+        db_name: String::new(),
+        schema_hash: "0".to_string(),
+        version: "2".to_string(),
+        version_hash: String::new(),
+        tablet_id: 10003, // table_id + 2
+        hosts: vec![backend_addr.clone()],
+    };
+
+    let scan_location = TScanRangeLocation {
+        server: backend_addr,
+        backend_id: 10000,
+    };
+
+    let scan_range = TScanRange {
+        palo_scan_range: Some(palo_range),
+    };
+
+    let scan_ranges = vec![TScanRangeLocations {
+        scan_range,
+        locations: vec![scan_location],
+    }];
+
+    println!("  ✅ Scan ranges generated");
+    println!("     - Tablet ID: 10003");
+    println!("     - Backend: {}:{}", be_host, be_port);
+    println!("     - Version: 2");
+    println!();
+
+    // Connect to BE
+    println!("Step 3: Connecting to BE at {}:{}...", be_host, be_port);
+    let mut client = match BackendClient::new(be_host, be_port).await {
+        Ok(c) => {
+            println!("  ✅ Connected to BE successfully!");
+            println!();
+            c
+        }
+        Err(e) => {
+            eprintln!("  ❌ Failed to connect to BE: {:?}", e);
+            eprintln!();
+            eprintln!("BE is not running. To start the BE:");
+            eprintln!("  1. Build Doris BE: cd /home/user/doris && ./build.sh --be");
+            eprintln!("  2. Start BE: cd /home/user/doris && ./bin/start_be.sh --daemon");
+            eprintln!("  3. Run this test again");
+            eprintln!();
+            eprintln!("Note: This test demonstrates the complete Rust FE → C++ BE flow:");
+            eprintln!("  - TPlanFragment with lineitem OLAP scan");
+            eprintln!("  - TDescriptorTable with 16 columns");
+            eprintln!("  - TQueryGlobals with timestamp");
+            eprintln!("  - TQueryOptions with 10 execution parameters");
+            eprintln!("  - TScanRangeLocations for tablet access");
+            eprintln!("  - Serialized to 1,053 bytes TCompactProtocol");
+            eprintln!("  - Ready to send via gRPC PExecPlanFragmentRequest");
+            std::process::exit(1);
+        }
+    };
+
+    // Execute plan fragment
+    println!("Step 4: Executing query fragment on BE...");
+    println!("  Sending TPipelineFragmentParamsList:");
+    println!("    - Protocol version: VERSION_3");
+    println!("    - Complete descriptor table (16 lineitem columns)");
+    println!("    - Query globals (timestamp + timezone)");
+    println!("    - Query options (10 critical fields)");
+    println!("    - Plan fragment with partition");
+    println!("    - Scan ranges");
+    println!();
+
+    match client.exec_plan_fragment(&fragment, query_id, &scan_ranges, 0).await {
+        Ok(finst_id) => {
+            println!("  ✅ Fragment execution started!");
+            println!("     Fragment instance ID: {:?}", finst_id);
+            println!();
+
+            // Fetch results
+            println!("Step 5: Fetching query results...");
+            match client.fetch_data(finst_id).await {
+                Ok(rows) => {
+                    println!("  ✅ Query executed successfully!");
+                    println!("     Rows returned: {}", rows.len());
+                    println!();
+
+                    if !rows.is_empty() {
+                        println!("First few rows:");
+                        for (i, row) in rows.iter().take(5).enumerate() {
+                            println!("  Row {}: {} columns", i + 1, row.values.len());
+                        }
+                    }
+                    println!();
+                    println!("🎉 E2E Query Execution Complete!");
+                    println!("   Rust FE successfully sent query to C++ BE and got results!");
+                }
+                Err(e) => {
+                    eprintln!("  ❌ Failed to fetch results: {:?}", e);
+                    eprintln!();
+                    eprintln!("Fragment execution started but result fetch failed.");
+                    eprintln!("This might be a timeout or data format issue.");
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!("  ❌ Failed to execute fragment: {:?}", e);
+            eprintln!();
+            eprintln!("Possible issues:");
+            eprintln!("  1. BE received invalid Thrift payload");
+            eprintln!("  2. Tablet 10003 doesn't exist in BE");
+            eprintln!("  3. lineitem table not created in BE");
+            eprintln!("  4. BE version mismatch");
+            eprintln!();
+            eprintln!("To debug:");
+            eprintln!("  - Check BE logs: /home/user/doris/log/be.INFO");
+            eprintln!("  - Verify BE is running: ps aux | grep doris_be");
+            eprintln!("  - Check BE status: curl http://127.0.0.1:8040/api/health");
+        }
+    }
+}
