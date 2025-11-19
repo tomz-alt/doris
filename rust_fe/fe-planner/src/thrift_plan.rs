@@ -714,6 +714,8 @@ impl TDescriptorTable {
 
     /// Build complete TDescriptorTable for TPC-H lineitem table (all 16 columns)
     /// Reference: Exact schema from fe-catalog/src/tpch_loader.rs
+    /// IMPORTANT: Java FE auto-converts DecimalV2 → DecimalV3 when enable_decimal_conversion=true (default)
+    /// Decimal(15,2) maps to DECIMAL64 (precision 15 in range 9 < p <= 18)
     pub fn for_lineitem_table(tuple_id: i32, table_id: i64) -> Self {
         // Complete schema with all 16 columns - column_pos MUST match actual table positions
         // Format: (name, type, is_key, actual_column_pos)
@@ -722,10 +724,10 @@ impl TDescriptorTable {
             ("l_partkey", TPrimitiveType::BigInt, false, 1),      // Catalog: BigInt (col_pos=1)
             ("l_suppkey", TPrimitiveType::BigInt, false, 2),      // Catalog: BigInt (col_pos=2)
             ("l_linenumber", TPrimitiveType::Int, false, 3),      // Catalog: Int (col_pos=3)
-            ("l_quantity", TPrimitiveType::DecimalV2, false, 4),  // Catalog: Decimal{15,2} (col_pos=4)
-            ("l_extendedprice", TPrimitiveType::DecimalV2, false, 5), // Catalog: Decimal{15,2} (col_pos=5)
-            ("l_discount", TPrimitiveType::DecimalV2, false, 6),  // Catalog: Decimal{15,2} (col_pos=6)
-            ("l_tax", TPrimitiveType::DecimalV2, false, 7),       // Catalog: Decimal{15,2} (col_pos=7)
+            ("l_quantity", TPrimitiveType::Decimal64, false, 4),  // Catalog: Decimal{15,2} → DECIMAL64 (col_pos=4)
+            ("l_extendedprice", TPrimitiveType::Decimal64, false, 5), // Catalog: Decimal{15,2} → DECIMAL64 (col_pos=5)
+            ("l_discount", TPrimitiveType::Decimal64, false, 6),  // Catalog: Decimal{15,2} → DECIMAL64 (col_pos=6)
+            ("l_tax", TPrimitiveType::Decimal64, false, 7),       // Catalog: Decimal{15,2} → DECIMAL64 (col_pos=7)
             ("l_returnflag", TPrimitiveType::Char, false, 8),     // Catalog: Char{1} (col_pos=8)
             ("l_linestatus", TPrimitiveType::Char, false, 9),     // Catalog: Char{1} (col_pos=9)
             ("l_shipdate", TPrimitiveType::Date, false, 10),      // Catalog: Date (col_pos=10)
@@ -746,6 +748,12 @@ impl TDescriptorTable {
                         scalar_type: col_type,
                         len: None,
                         precision: Some(9),  // Decimal32 max precision is 9
+                        scale: Some(2),
+                    },
+                    TPrimitiveType::Decimal64 => TScalarType {
+                        scalar_type: col_type,
+                        len: None,
+                        precision: Some(15),  // lineitem decimals are Decimal(15,2)
                         scale: Some(2),
                     },
                     TPrimitiveType::DecimalV2 => TScalarType {
