@@ -853,6 +853,7 @@ dependencies = [
 name = "fe-planner"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "fe-analysis",
  "fe-catalog",
  "fe-common",

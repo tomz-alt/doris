@@ -233,6 +233,81 @@ pub struct TPipelineFragmentParams {
 
     /// Number of senders (optional)
     pub num_senders: Option<i32>,
+
+    /// Query globals (field 11)
+    /// Reference: Java FE Coordinator.java:3221 params.setQueryGlobals(queryGlobals)
+    pub query_globals: Option<TQueryGlobals>,
+
+    /// Query options (field 12)
+    /// Reference: Java FE Coordinator.java:3222 params.setQueryOptions(queryOptions)
+    pub query_options: Option<TQueryOptions>,
+}
+
+/// Query globals for pipeline execution
+/// Reference: PaloInternalService.thrift TQueryGlobals
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TQueryGlobals {
+    /// Current timestamp as string (format: yyyy-MM-dd HH:mm:ss)
+    pub now_string: String,
+
+    /// Timestamp in milliseconds (optional)
+    pub timestamp_ms: Option<i64>,
+
+    /// Timezone name (optional, e.g. "UTC", "Asia/Shanghai")
+    pub time_zone: Option<String>,
+
+    /// Load zero tolerance flag (optional, default false)
+    pub load_zero_tolerance: Option<bool>,
+
+    /// Nano seconds (optional)
+    pub nano_seconds: Option<i32>,
+}
+
+impl TQueryGlobals {
+    /// Create minimal query globals with current timestamp
+    pub fn minimal() -> Self {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap();
+        let timestamp_ms = now.as_millis() as i64;
+
+        // Format timestamp as yyyy-MM-dd HH:mm:ss
+        let now_string = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+        Self {
+            now_string,
+            timestamp_ms: Some(timestamp_ms),
+            time_zone: Some("UTC".to_string()),
+            load_zero_tolerance: Some(false),
+            nano_seconds: None,
+        }
+    }
+}
+
+/// Query options for pipeline execution (minimal version)
+/// Reference: PaloInternalService.thrift TQueryOptions
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TQueryOptions {
+    /// Batch size (optional, field 4)
+    pub batch_size: Option<i32>,
+
+    /// Memory limit in bytes (optional, field 12)
+    pub mem_limit: Option<i64>,
+
+    /// Query timeout in seconds (optional, field 14)
+    pub query_timeout: Option<i32>,
+}
+
+impl TQueryOptions {
+    /// Create minimal query options with reasonable defaults
+    pub fn minimal() -> Self {
+        Self {
+            batch_size: Some(4096),  // Default batch size
+            mem_limit: Some(2147483648),  // 2GB default
+            query_timeout: Some(3600),  // 1 hour timeout
+        }
+    }
 }
 
 /// Pipeline fragment parameters list (VERSION_3 top-level)
@@ -301,6 +376,8 @@ impl TPipelineFragmentParamsList {
             local_params,
             coord: None,
             num_senders: Some(1),
+            query_globals: Some(TQueryGlobals::minimal()),  // Add query globals
+            query_options: Some(TQueryOptions::minimal()),  // Add query options
         };
 
         TPipelineFragmentParamsList {

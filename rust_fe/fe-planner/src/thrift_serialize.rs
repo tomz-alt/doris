@@ -451,6 +451,30 @@ fn write_pipeline_fragment_params<P: TOutputProtocol>(
             .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
     }
 
+    // Field 11: query_globals (optional TQueryGlobals)
+    // Reference: Java FE Coordinator.java:3221 params.setQueryGlobals(queryGlobals)
+    if let Some(ref query_globals) = params.query_globals {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("query_globals", TType::Struct, 11))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        write_query_globals(protocol, query_globals)?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 12: query_options (optional TQueryOptions)
+    // Reference: Java FE Coordinator.java:3222 params.setQueryOptions(queryOptions)
+    if let Some(ref query_options) = params.query_options {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("query_options", TType::Struct, 12))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        write_query_options(protocol, query_options)?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
     // Field 23: fragment (optional TPlanFragment)
     protocol
         .write_field_begin(&TFieldIdentifier::new("fragment", TType::Struct, 23))
@@ -1334,6 +1358,148 @@ fn write_scalar_type<P: TOutputProtocol>(
             .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
         protocol
             .write_i32(scale)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    protocol
+        .write_field_stop()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_struct_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    Ok(())
+}
+
+/// Write TQueryGlobals structure
+/// Field IDs from PaloInternalService.thrift
+fn write_query_globals<P: TOutputProtocol>(
+    protocol: &mut P,
+    query_globals: &crate::thrift_plan::TQueryGlobals,
+) -> Result<()> {
+    protocol
+        .write_struct_begin(&TStructIdentifier::new("TQueryGlobals"))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 1: now_string (required string)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("now_string", TType::String, 1))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_string(&query_globals.now_string)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 2: timestamp_ms (optional i64)
+    if let Some(timestamp_ms) = query_globals.timestamp_ms {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("timestamp_ms", TType::I64, 2))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i64(timestamp_ms)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 3: time_zone (optional string)
+    if let Some(ref time_zone) = query_globals.time_zone {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("time_zone", TType::String, 3))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_string(time_zone)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 4: load_zero_tolerance (optional bool)
+    if let Some(load_zero_tolerance) = query_globals.load_zero_tolerance {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("load_zero_tolerance", TType::Bool, 4))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_bool(load_zero_tolerance)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 5: nano_seconds (optional i32)
+    if let Some(nano_seconds) = query_globals.nano_seconds {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("nano_seconds", TType::I32, 5))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(nano_seconds)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    protocol
+        .write_field_stop()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_struct_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    Ok(())
+}
+
+/// Write TQueryOptions structure (minimal version)
+/// Field IDs from PaloInternalService.thrift
+fn write_query_options<P: TOutputProtocol>(
+    protocol: &mut P,
+    query_options: &crate::thrift_plan::TQueryOptions,
+) -> Result<()> {
+    protocol
+        .write_struct_begin(&TStructIdentifier::new("TQueryOptions"))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 4: batch_size (optional i32)
+    if let Some(batch_size) = query_options.batch_size {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("batch_size", TType::I32, 4))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(batch_size)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 12: mem_limit (optional i64)
+    if let Some(mem_limit) = query_options.mem_limit {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("mem_limit", TType::I64, 12))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i64(mem_limit)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 14: query_timeout (optional i32)
+    if let Some(query_timeout) = query_options.query_timeout {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("query_timeout", TType::I32, 14))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(query_timeout)
             .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
         protocol
             .write_field_end()
