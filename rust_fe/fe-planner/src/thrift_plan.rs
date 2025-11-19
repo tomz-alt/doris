@@ -204,6 +204,20 @@ pub struct TPipelineInstanceParams {
     pub backend_num: Option<i32>,
 }
 
+/// Plan fragment destination - where to send results
+/// Reference: DataSinks.thrift TPlanFragmentDestination
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TPlanFragmentDestination {
+    /// Fragment instance ID
+    pub fragment_instance_id: TUniqueId,
+
+    /// Server address
+    pub server: crate::scan_range_builder::TNetworkAddress,
+
+    /// bRPC server address (optional)
+    pub brpc_server: Option<crate::scan_range_builder::TNetworkAddress>,
+}
+
 /// Pipeline fragment parameters (per backend)
 /// Reference: PaloInternalService.thrift TPipelineFragmentParams
 /// Java FE: Coordinator.java:3209
@@ -215,12 +229,20 @@ pub struct TPipelineFragmentParams {
     /// Query ID
     pub query_id: TUniqueId,
 
+    /// Fragment ID (field 3)
+    /// Reference: Java FE ThriftPlansBuilder.java:340 params.setFragmentId(fragment.getFragmentId().asInt())
+    pub fragment_id: Option<i32>,
+
     /// Number of senders per exchange node
     pub per_exch_num_senders: HashMap<i32, i32>,
 
     /// Descriptor table (field 5 in Thrift)
     /// Reference: Java FE Coordinator.java:3214 params.setDescTbl(descTable)
     pub desc_tbl: Option<TDescriptorTable>,
+
+    /// Destinations for data transfer (field 7) - REQUIRED!
+    /// Reference: Java FE ThriftPlansBuilder.java:349-357
+    pub destinations: Vec<TPlanFragmentDestination>,
 
     /// The plan fragment to execute
     pub fragment: TPlanFragment,
@@ -241,6 +263,22 @@ pub struct TPipelineFragmentParams {
     /// Query options (field 12)
     /// Reference: Java FE Coordinator.java:3222 params.setQueryOptions(queryOptions)
     pub query_options: Option<TQueryOptions>,
+
+    /// Number of fragments on this backend host (field 17)
+    /// Reference: Java FE ThriftPlansBuilder.java:343 params.setFragmentNumOnHost(workerProcessInstanceNum.count(worker))
+    pub fragment_num_on_host: Option<i32>,
+
+    /// Backend ID (field 18)
+    /// Reference: Java FE ThriftPlansBuilder.java:336 params.setBackendId(worker.id())
+    pub backend_id: Option<i64>,
+
+    /// Total number of instances (field 38)
+    /// Reference: Java FE ThriftPlansBuilder.java:360 params.setTotalInstances(instanceNumInThisFragment)
+    pub total_instances: Option<i32>,
+
+    /// Whether this is a Nereids-generated plan (field 40)
+    /// Reference: Java FE ThriftPlansBuilder.java:335 params.setIsNereids(true)
+    pub is_nereids: Option<bool>,
 }
 
 /// Query globals for pipeline execution
@@ -367,17 +405,24 @@ impl TPipelineFragmentParamsList {
         };
 
         // Build fragment params
+        // Reference: Java FE ThriftPlansBuilder.java:334-370
         let params = TPipelineFragmentParams {
-            protocol_version: 0,  // V1
+            protocol_version: 0,  // V1 (Java: PaloInternalServiceVersion.V1)
             query_id: unique_id,
+            fragment_id: Some(0),  // Fragment ID (Java: fragment.getFragmentId().asInt())
             per_exch_num_senders: HashMap::new(),
-            desc_tbl,  // Add descriptor table
+            desc_tbl,  // Descriptor table
+            destinations: Vec::new(),  // Empty destinations for single-fragment query (Java: nonMultiCastDestinations)
             fragment,
             local_params,
             coord: None,
             num_senders: Some(1),
-            query_globals: Some(TQueryGlobals::minimal()),  // Add query globals
-            query_options: Some(TQueryOptions::minimal()),  // Add query options
+            query_globals: Some(TQueryGlobals::minimal()),  // Query globals
+            query_options: Some(TQueryOptions::minimal()),  // Query options
+            fragment_num_on_host: Some(1),  // Number of fragments on this host
+            backend_id: Some(10001),  // Backend ID (hardcoded for now, should come from metadata)
+            total_instances: Some(1),  // Total number of instances (Java: instanceNumInThisFragment)
+            is_nereids: Some(true),  // Nereids-generated plan flag (Java always sets true)
         };
 
         TPipelineFragmentParamsList {

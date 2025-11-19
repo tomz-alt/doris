@@ -385,6 +385,20 @@ fn write_pipeline_fragment_params<P: TOutputProtocol>(
         .write_field_end()
         .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
 
+    // Field 3: fragment_id (optional i32)
+    // Reference: Java FE ThriftPlansBuilder.java:340 params.setFragmentId(fragment.getFragmentId().asInt())
+    if let Some(fragment_id) = params.fragment_id {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("fragment_id", TType::I32, 3))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(fragment_id)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
     // Field 4: per_exch_num_senders (map<i32, i32>)
     protocol
         .write_field_begin(&TFieldIdentifier::new(
@@ -426,6 +440,27 @@ fn write_pipeline_fragment_params<P: TOutputProtocol>(
             .write_field_end()
             .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
     }
+
+    // Field 7: destinations (list<TPlanFragmentDestination>) - REQUIRED!
+    // Reference: Java FE ThriftPlansBuilder.java:349-357 params.setDestinations(nonMultiCastDestinations)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("destinations", TType::List, 7))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_list_begin(&TListIdentifier::new(
+            TType::Struct,
+            params.destinations.len() as i32,
+        ))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    for dest in &params.destinations {
+        write_plan_fragment_destination(protocol, dest)?;
+    }
+    protocol
+        .write_list_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
 
     // Field 8: num_senders (optional i32) - MUST come before field 10+
     if let Some(num_senders) = params.num_senders {
@@ -475,6 +510,34 @@ fn write_pipeline_fragment_params<P: TOutputProtocol>(
             .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
     }
 
+    // Field 17: fragment_num_on_host (optional i32)
+    // Reference: Java FE ThriftPlansBuilder.java:343 params.setFragmentNumOnHost(workerProcessInstanceNum.count(worker))
+    if let Some(fragment_num_on_host) = params.fragment_num_on_host {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("fragment_num_on_host", TType::I32, 17))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(fragment_num_on_host)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 18: backend_id (optional i64)
+    // Reference: Java FE ThriftPlansBuilder.java:336 params.setBackendId(worker.id())
+    if let Some(backend_id) = params.backend_id {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("backend_id", TType::I64, 18))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i64(backend_id)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
     // Field 23: fragment (optional TPlanFragment)
     protocol
         .write_field_begin(&TFieldIdentifier::new("fragment", TType::Struct, 23))
@@ -503,6 +566,34 @@ fn write_pipeline_fragment_params<P: TOutputProtocol>(
     protocol
         .write_field_end()
         .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 38: total_instances (optional i32)
+    // Reference: Java FE ThriftPlansBuilder.java:360 params.setTotalInstances(instanceNumInThisFragment)
+    if let Some(total_instances) = params.total_instances {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("total_instances", TType::I32, 38))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(total_instances)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 40: is_nereids (optional bool)
+    // Reference: Java FE ThriftPlansBuilder.java:335 params.setIsNereids(true)
+    if let Some(is_nereids) = params.is_nereids {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("is_nereids", TType::Bool, 40))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_bool(is_nereids)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
 
     protocol
         .write_field_stop()
@@ -1501,6 +1592,55 @@ fn write_query_options<P: TOutputProtocol>(
         protocol
             .write_i32(query_timeout)
             .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    protocol
+        .write_field_stop()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_struct_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    Ok(())
+}
+
+/// Write TPlanFragmentDestination structure
+/// Reference: DataSinks.thrift TPlanFragmentDestination
+fn write_plan_fragment_destination<P: TOutputProtocol>(
+    protocol: &mut P,
+    dest: &crate::thrift_plan::TPlanFragmentDestination,
+) -> Result<()> {
+    protocol
+        .write_struct_begin(&TStructIdentifier::new("TPlanFragmentDestination"))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 1: fragment_instance_id (TUniqueId)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("fragment_instance_id", TType::Struct, 1))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    write_unique_id(protocol, &dest.fragment_instance_id)?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 2: server (TNetworkAddress)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("server", TType::Struct, 2))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    write_network_address(protocol, &dest.server)?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 3: brpc_server (optional TNetworkAddress)
+    if let Some(ref brpc_server) = dest.brpc_server {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("brpc_server", TType::Struct, 3))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        write_network_address(protocol, brpc_server)?;
         protocol
             .write_field_end()
             .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
