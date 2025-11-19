@@ -712,30 +712,18 @@ impl TDescriptorTable {
         }
     }
 
-    /// Build complete TDescriptorTable for TPC-H lineitem table
-    /// Reference: TPC-H lineitem schema with 16 columns
+    /// Build MINIMAL TDescriptorTable for TPC-H lineitem table (key columns only)
+    /// Reference: Simplified to avoid decimal type mismatches - testing with keys only
     pub fn for_lineitem_table(tuple_id: i32, table_id: i64) -> Self {
-        // Define lineitem columns with proper types
+        // SIMPLIFIED: Only key columns to isolate type issues
         let columns: Vec<(&str, TPrimitiveType, bool)> = vec![
             ("l_orderkey", TPrimitiveType::BigInt, true),      // Catalog: BigInt (key)
             ("l_partkey", TPrimitiveType::BigInt, false),      // Catalog: BigInt (non-key)
             ("l_suppkey", TPrimitiveType::BigInt, false),      // Catalog: BigInt (non-key)
             ("l_linenumber", TPrimitiveType::Int, false),      // Catalog: Int (non-key)
-            ("l_quantity", TPrimitiveType::DecimalV2, false),  // DECIMAL(15,2)
-            ("l_extendedprice", TPrimitiveType::DecimalV2, false), // DECIMAL(15,2)
-            ("l_discount", TPrimitiveType::DecimalV2, false),  // DECIMAL(15,2)
-            ("l_tax", TPrimitiveType::DecimalV2, false),       // DECIMAL(15,2)
-            ("l_returnflag", TPrimitiveType::Char, false),     // CHAR(1)
-            ("l_linestatus", TPrimitiveType::Char, false),     // CHAR(1)
-            ("l_shipdate", TPrimitiveType::Date, false),       // DATE (not DateV2)
-            ("l_commitdate", TPrimitiveType::Date, false),     // DATE (not DateV2)
-            ("l_receiptdate", TPrimitiveType::Date, false),    // DATE (not DateV2)
-            ("l_shipinstruct", TPrimitiveType::Char, false),   // CHAR(25)
-            ("l_shipmode", TPrimitiveType::Char, false),       // CHAR(10)
-            ("l_comment", TPrimitiveType::Varchar, false),     // VARCHAR(44)
         ];
 
-        // Build slot descriptors for all 16 columns
+        // Build slot descriptors for key columns only (4 columns)
         let slot_descriptors: Vec<TSlotDescriptor> = columns
             .iter()
             .enumerate()
