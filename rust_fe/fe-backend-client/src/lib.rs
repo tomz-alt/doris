@@ -208,28 +208,35 @@ impl BackendClient {
                 eprintln!("📦 First {} bytes: {:02x?}", preview_len, &row_batch_bytes[..preview_len]);
             }
 
-            // row_batch contains TFetchDataResult serialized with Thrift
-            // Try TBinaryProtocol (not TCompactProtocol)
+            // row_batch contains TResultBatch (NOT TFetchDataResult!)
+            // Serialized with TBinaryProtocol (Java FE uses TCustomProtocolFactory which is just TBinaryProtocol)
             use thrift::protocol::TBinaryInputProtocol;
             use thrift::transport::TBufferChannel;
-            use doris_thrift::palo_internal_service::TFetchDataResult;
+            use doris_thrift::data::TResultBatch;
             use thrift::protocol::TSerializable;
 
             let mut transport = TBufferChannel::with_capacity(row_batch_bytes.len(), 0);
             transport.set_readable_bytes(&row_batch_bytes);
             let mut protocol = TBinaryInputProtocol::new(transport, true); // strict mode
 
-            let fetch_result = TFetchDataResult::read_from_in_protocol(&mut protocol)
-                .map_err(|e| DorisError::InternalError(format!("Failed to decode TFetchDataResult with TBinaryProtocol: {}", e)))?;
+            let result_batch = TResultBatch::read_from_in_protocol(&mut protocol)
+                .map_err(|e| DorisError::InternalError(format!("Failed to decode TResultBatch: {}", e)))?;
 
-            eprintln!("📊 TFetchDataResult decoded:");
-            eprintln!("   eos: {:?}", fetch_result.eos);
-            eprintln!("   packet_num: {:?}", fetch_result.packet_num);
-            eprintln!("   result_batch.rows.len(): {}", fetch_result.result_batch.rows.len());
-            eprintln!("   result_batch.is_compressed: {}", fetch_result.result_batch.is_compressed);
+            eprintln!("📊 TResultBatch decoded successfully!");
+            eprintln!("   rows.len(): {}", result_batch.rows.len());
+            eprintln!("   is_compressed: {}", result_batch.is_compressed);
+            eprintln!("   packet_seq: {}", result_batch.packet_seq);
 
-            // For now, just return row count
-            let row_count = fetch_result.result_batch.rows.len();
+            // Log first row bytes for debugging
+            if !result_batch.rows.is_empty() {
+                eprintln!("   First row size: {} bytes", result_batch.rows[0].len());
+                if result_batch.rows[0].len() > 0 {
+                    let preview = result_batch.rows[0].len().min(32);
+                    eprintln!("   First row preview: {:02x?}", &result_batch.rows[0][..preview]);
+                }
+            }
+
+            let row_count = result_batch.rows.len();
             eprintln!("✅ Successfully fetched {} rows from BE!", row_count);
 
             // TODO: Parse individual MySQL protocol rows
