@@ -714,8 +714,9 @@ impl TDescriptorTable {
 
     /// Build complete TDescriptorTable for TPC-H lineitem table (all 16 columns)
     /// Reference: Exact schema from fe-catalog/src/tpch_loader.rs
-    /// IMPORTANT: Java FE auto-converts DecimalV2 → DecimalV3 when enable_decimal_conversion=true (default)
-    /// Decimal(15,2) maps to DECIMAL64 (precision 15 in range 9 < p <= 18)
+    /// IMPORTANT: Java FE auto-converts types:
+    ///   - DecimalV2 → Decimal V3 (enable_decimal_conversion=true)
+    ///   - DATE → DATEV2 (modern Doris uses V2 types)
     pub fn for_lineitem_table(tuple_id: i32, table_id: i64) -> Self {
         // Complete schema with all 16 columns - column_pos MUST match actual table positions
         // Format: (name, type, is_key, actual_column_pos)
@@ -724,15 +725,15 @@ impl TDescriptorTable {
             ("l_partkey", TPrimitiveType::BigInt, false, 1),      // Catalog: BigInt (col_pos=1)
             ("l_suppkey", TPrimitiveType::BigInt, false, 2),      // Catalog: BigInt (col_pos=2)
             ("l_linenumber", TPrimitiveType::Int, false, 3),      // Catalog: Int (col_pos=3)
-            ("l_quantity", TPrimitiveType::Decimal64, false, 4),  // Catalog: Decimal{15,2} → DECIMAL64 (col_pos=4)
-            ("l_extendedprice", TPrimitiveType::Decimal64, false, 5), // Catalog: Decimal{15,2} → DECIMAL64 (col_pos=5)
-            ("l_discount", TPrimitiveType::Decimal64, false, 6),  // Catalog: Decimal{15,2} → DECIMAL64 (col_pos=6)
-            ("l_tax", TPrimitiveType::Decimal64, false, 7),       // Catalog: Decimal{15,2} → DECIMAL64 (col_pos=7)
+            ("l_quantity", TPrimitiveType::Decimal64, false, 4),  // Decimal(15,2) → DECIMAL64 (col_pos=4)
+            ("l_extendedprice", TPrimitiveType::Decimal64, false, 5), // Decimal(15,2) → DECIMAL64 (col_pos=5)
+            ("l_discount", TPrimitiveType::Decimal64, false, 6),  // Decimal(15,2) → DECIMAL64 (col_pos=6)
+            ("l_tax", TPrimitiveType::Decimal64, false, 7),       // Decimal(15,2) → DECIMAL64 (col_pos=7)
             ("l_returnflag", TPrimitiveType::Char, false, 8),     // Catalog: Char{1} (col_pos=8)
             ("l_linestatus", TPrimitiveType::Char, false, 9),     // Catalog: Char{1} (col_pos=9)
-            ("l_shipdate", TPrimitiveType::Date, false, 10),      // Catalog: Date (col_pos=10)
-            ("l_commitdate", TPrimitiveType::Date, false, 11),    // Catalog: Date (col_pos=11)
-            ("l_receiptdate", TPrimitiveType::Date, false, 12),   // Catalog: Date (col_pos=12)
+            ("l_shipdate", TPrimitiveType::DateV2, false, 10),    // Date → DATEV2 (col_pos=10)
+            ("l_commitdate", TPrimitiveType::DateV2, false, 11),  // Date → DATEV2 (col_pos=11)
+            ("l_receiptdate", TPrimitiveType::DateV2, false, 12), // Date → DATEV2 (col_pos=12)
             ("l_shipinstruct", TPrimitiveType::Char, false, 13),  // Catalog: Char{25} (col_pos=13)
             ("l_shipmode", TPrimitiveType::Char, false, 14),      // Catalog: Char{10} (col_pos=14)
             ("l_comment", TPrimitiveType::Varchar, false, 15),    // Catalog: Varchar{44} (col_pos=15)
