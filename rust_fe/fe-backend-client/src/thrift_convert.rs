@@ -447,6 +447,51 @@ fn convert_primitive_type(manual: &fe_planner::thrift_plan::TPrimitiveType) -> d
 }
 
 /// Convert TOlapScanNode
+/// Convert TColumnType
+fn convert_column_type(manual: &fe_planner::thrift_plan::TColumnType) -> doris_thrift::types::TColumnType {
+    doris_thrift::types::TColumnType {
+        type_: convert_primitive_type(&manual.type_field),
+        len: manual.len,
+        index_len: None,  // Not used for standard types
+        precision: manual.precision,
+        scale: manual.scale,
+        variant_max_subcolumns_count: None,  // Not used for standard types
+    }
+}
+
+/// Convert TColumn
+fn convert_column(manual: &fe_planner::thrift_plan::TColumn) -> doris_thrift::descriptors::TColumn {
+    use doris_thrift::descriptors::TColumn;
+
+    TColumn {
+        column_name: manual.column_name.clone(),
+        column_type: convert_column_type(&manual.column_type),
+        aggregation_type: None,  // Not used for simple SELECT queries
+        is_key: manual.is_key,
+        is_allow_null: manual.is_allow_null,
+        default_value: manual.default_value.clone(),
+        is_bloom_filter_column: None,
+        define_expr: None,
+        visible: manual.visible,
+        children_column: None,
+        col_unique_id: manual.col_unique_id,
+        has_bitmap_index: None,
+        has_ngram_bf_index: None,
+        gram_size: None,
+        gram_bf_size: None,
+        aggregation: None,
+        result_is_nullable: None,
+        is_auto_increment: None,
+        cluster_key_id: None,
+        be_exec_version: None,
+        pattern_type: None,
+        variant_enable_typed_paths_to_sparse: None,
+        is_on_update_current_timestamp: None,
+        variant_max_sparse_column_statistics_size: None,
+        variant_sparse_hash_shard_count: None,
+    }
+}
+
 fn convert_olap_scan_node(
     manual: &fe_planner::thrift_plan::TOlapScanNode,
 ) -> Result<doris_thrift::plan_nodes::TOlapScanNode> {
@@ -459,6 +504,11 @@ fn convert_olap_scan_node(
         .map(convert_primitive_type)
         .collect();
 
+    // Convert columns_desc if present
+    let columns_desc = manual.columns_desc.as_ref().map(|cols| {
+        cols.iter().map(convert_column).collect()
+    });
+
     Ok(TOlapScanNode {
         tuple_id: manual.tuple_id,  // Required
         key_column_name: manual.key_column_name.clone(),  // Required Vec<String>
@@ -467,7 +517,7 @@ fn convert_olap_scan_node(
         sort_column: None,
         key_type: None,
         table_name: manual.table_name.clone(),
-        columns_desc: None,
+        columns_desc,  // CRITICAL: Full column metadata!
         sort_info: None,
         sort_limit: None,
         enable_unique_key_merge_on_write: None,

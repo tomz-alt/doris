@@ -98,6 +98,7 @@ impl QueryPlanner {
                 key_column_type: key_types,
                 is_preaggregation: true,
                 table_name: Some(table.name.clone()),
+                columns_desc: None,  // TODO: Generate from table schema
                 output_column_unique_ids: Some(output_column_unique_ids),
             }),
         })

@@ -131,6 +131,39 @@ pub type TTupleId = i32;
 /// Plan node ID
 pub type TPlanNodeId = i32;
 
+/// Column descriptor (from Descriptors.thrift TColumn)
+/// Provides full column metadata for BE to read from storage
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TColumn {
+    pub column_name: String,
+    pub column_type: TColumnType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub aggregation_type: Option<i32>,  // TAggregationType as i32
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_key: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_allow_null: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_value: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub visible: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub col_unique_id: Option<i32>,
+}
+
+/// Column type descriptor (simplified TColumnType from Types.thrift)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TColumnType {
+    #[serde(rename = "type")]
+    pub type_field: TPrimitiveType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub len: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub precision: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scale: Option<i32>,
+}
+
 /// OLAP scan node (from PlanNodes.thrift)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TOlapScanNode {
@@ -140,6 +173,9 @@ pub struct TOlapScanNode {
     pub is_preaggregation: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub table_name: Option<String>,
+    /// Column descriptors - CRITICAL for BE to read from storage!
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub columns_desc: Option<Vec<TColumn>>,
     /// Column unique IDs to actually read and return (maps to descriptor col_unique_id)
     /// CRITICAL: Without this, BE doesn't know which columns to materialize!
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -836,6 +872,269 @@ impl TDescriptorTable {
             table_descriptors: None,  // TTableDescriptor is optional for basic queries
         }
     }
+}
+
+/// Build TColumn descriptors for lineitem table (all 16 columns)
+/// These provide complete column metadata for BE to read from storage
+pub fn build_lineitem_columns_desc() -> Vec<TColumn> {
+    vec![
+        // Column 0: l_orderkey (BigInt, key)
+        TColumn {
+            column_name: "l_orderkey".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::BigInt,
+                len: None,
+                precision: None,
+                scale: None,
+            },
+            aggregation_type: None,
+            is_key: Some(true),
+            is_allow_null: Some(false),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(0),
+        },
+        // Column 1: l_partkey (BigInt)
+        TColumn {
+            column_name: "l_partkey".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::BigInt,
+                len: None,
+                precision: None,
+                scale: None,
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(1),
+        },
+        // Column 2: l_suppkey (BigInt)
+        TColumn {
+            column_name: "l_suppkey".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::BigInt,
+                len: None,
+                precision: None,
+                scale: None,
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(2),
+        },
+        // Column 3: l_linenumber (Int)
+        TColumn {
+            column_name: "l_linenumber".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::Int,
+                len: None,
+                precision: None,
+                scale: None,
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(3),
+        },
+        // Column 4: l_quantity (Decimal64(15,2))
+        TColumn {
+            column_name: "l_quantity".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::Decimal64,
+                len: None,
+                precision: Some(15),
+                scale: Some(2),
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(4),
+        },
+        // Column 5: l_extendedprice (Decimal64(15,2))
+        TColumn {
+            column_name: "l_extendedprice".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::Decimal64,
+                len: None,
+                precision: Some(15),
+                scale: Some(2),
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(5),
+        },
+        // Column 6: l_discount (Decimal64(15,2))
+        TColumn {
+            column_name: "l_discount".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::Decimal64,
+                len: None,
+                precision: Some(15),
+                scale: Some(2),
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(6),
+        },
+        // Column 7: l_tax (Decimal64(15,2))
+        TColumn {
+            column_name: "l_tax".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::Decimal64,
+                len: None,
+                precision: Some(15),
+                scale: Some(2),
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(7),
+        },
+        // Column 8: l_returnflag (Char(1))
+        TColumn {
+            column_name: "l_returnflag".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::Char,
+                len: Some(1),
+                precision: None,
+                scale: None,
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(8),
+        },
+        // Column 9: l_linestatus (Char(1))
+        TColumn {
+            column_name: "l_linestatus".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::Char,
+                len: Some(1),
+                precision: None,
+                scale: None,
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(9),
+        },
+        // Column 10: l_shipdate (DateV2)
+        TColumn {
+            column_name: "l_shipdate".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::DateV2,
+                len: None,
+                precision: None,
+                scale: None,
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(10),
+        },
+        // Column 11: l_commitdate (DateV2)
+        TColumn {
+            column_name: "l_commitdate".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::DateV2,
+                len: None,
+                precision: None,
+                scale: None,
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(11),
+        },
+        // Column 12: l_receiptdate (DateV2)
+        TColumn {
+            column_name: "l_receiptdate".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::DateV2,
+                len: None,
+                precision: None,
+                scale: None,
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(12),
+        },
+        // Column 13: l_shipinstruct (Char(25))
+        TColumn {
+            column_name: "l_shipinstruct".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::Char,
+                len: Some(25),
+                precision: None,
+                scale: None,
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(13),
+        },
+        // Column 14: l_shipmode (Char(10))
+        TColumn {
+            column_name: "l_shipmode".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::Char,
+                len: Some(10),
+                precision: None,
+                scale: None,
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(14),
+        },
+        // Column 15: l_comment (Varchar(44))
+        TColumn {
+            column_name: "l_comment".to_string(),
+            column_type: TColumnType {
+                type_field: TPrimitiveType::Varchar,
+                len: Some(44),
+                precision: None,
+                scale: None,
+            },
+            aggregation_type: None,
+            is_key: Some(false),
+            is_allow_null: Some(true),
+            default_value: None,
+            visible: Some(true),
+            col_unique_id: Some(15),
+        },
+    ]
 }
 
 #[cfg(test)]
