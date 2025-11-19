@@ -22,7 +22,9 @@ members = [
     "fe-ha",
     "fe-metric",
     "fe-job",
-    "fe-main", "fe-backend-client",
+    "fe-main",
+    "fe-backend-client",
+    "thrift-gen-rs",
 ]
 
 [workspace.package]
