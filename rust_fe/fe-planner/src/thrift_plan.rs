@@ -422,11 +422,19 @@ impl TPipelineFragmentParamsList {
         // Reference: Java FE Coordinator.java:3214 params.setDescTbl(descTable)
         let desc_tbl = if let Some(first_node) = fragment.plan.nodes.first() {
             if let Some(olap_node) = &first_node.olap_scan_node {
-                Some(TDescriptorTable::for_olap_scan(
-                    olap_node.tuple_id,
-                    &olap_node.key_column_name,
-                    &olap_node.key_column_type,
-                ))
+                // Use complete descriptor table for lineitem, generic for others
+                if olap_node.table_name.as_ref().map(|s| s.as_str()) == Some("lineitem") {
+                    Some(TDescriptorTable::for_lineitem_table(
+                        olap_node.tuple_id,
+                        10001,  // lineitem table_id
+                    ))
+                } else {
+                    Some(TDescriptorTable::for_olap_scan(
+                        olap_node.tuple_id,
+                        &olap_node.key_column_name,
+                        &olap_node.key_column_type,
+                    ))
+                }
             } else {
                 None
             }
@@ -500,10 +508,14 @@ pub struct TSlotDescriptor {
     /// Is materialized
     pub is_materialized: bool,
 
-    /// Optional fields
+    /// Optional fields (11-17)
     pub col_unique_id: Option<i32>,
     pub is_key: Option<bool>,
     pub need_materialize: Option<bool>,
+    pub is_auto_increment: Option<bool>,
+    pub column_paths: Option<Vec<String>>,
+    pub col_default_value: Option<String>,
+    pub primitive_type: Option<TPrimitiveType>,
 }
 
 /// Type descriptor for columns
@@ -632,6 +644,10 @@ impl TDescriptorTable {
                     col_unique_id: Some(-1),
                     is_key: Some(true),
                     need_materialize: Some(true),
+                    is_auto_increment: None,
+                    column_paths: None,
+                    col_default_value: None,
+                    primitive_type: Some(*col_type),
                 }
             })
             .collect();
@@ -648,6 +664,111 @@ impl TDescriptorTable {
             slot_descriptors: Some(slot_descriptors),
             tuple_descriptors: vec![tuple_descriptor],
             table_descriptors: None,  // Optional, not needed for simple queries
+        }
+    }
+
+    /// Build complete TDescriptorTable for TPC-H lineitem table
+    /// Reference: TPC-H lineitem schema with 16 columns
+    pub fn for_lineitem_table(tuple_id: i32, table_id: i64) -> Self {
+        // Define lineitem columns with proper types
+        let columns: Vec<(&str, TPrimitiveType, bool)> = vec![
+            ("l_orderkey", TPrimitiveType::BigInt, true),      // key column
+            ("l_partkey", TPrimitiveType::BigInt, true),       // key column
+            ("l_suppkey", TPrimitiveType::BigInt, true),       // key column
+            ("l_linenumber", TPrimitiveType::Int, true),       // key column
+            ("l_quantity", TPrimitiveType::DecimalV2, false),  // decimal(15,2)
+            ("l_extendedprice", TPrimitiveType::DecimalV2, false), // decimal(15,2)
+            ("l_discount", TPrimitiveType::DecimalV2, false),  // decimal(15,2)
+            ("l_tax", TPrimitiveType::DecimalV2, false),       // decimal(15,2)
+            ("l_returnflag", TPrimitiveType::Char, false),     // char(1)
+            ("l_linestatus", TPrimitiveType::Char, false),     // char(1)
+            ("l_shipdate", TPrimitiveType::DateV2, false),     // date
+            ("l_commitdate", TPrimitiveType::DateV2, false),   // date
+            ("l_receiptdate", TPrimitiveType::DateV2, false),  // date
+            ("l_shipinstruct", TPrimitiveType::Char, false),   // char(25)
+            ("l_shipmode", TPrimitiveType::Char, false),       // char(10)
+            ("l_comment", TPrimitiveType::Varchar, false),     // varchar(44)
+        ];
+
+        // Build slot descriptors for all 16 columns
+        let slot_descriptors: Vec<TSlotDescriptor> = columns
+            .iter()
+            .enumerate()
+            .map(|(idx, &(col_name, col_type, is_key))| {
+                let scalar_type = match col_type {
+                    TPrimitiveType::DecimalV2 => TScalarType {
+                        scalar_type: col_type,
+                        len: None,
+                        precision: Some(15),
+                        scale: Some(2),
+                    },
+                    TPrimitiveType::Char => TScalarType {
+                        scalar_type: col_type,
+                        len: if col_name == "l_returnflag" || col_name == "l_linestatus" {
+                            Some(1)
+                        } else if col_name == "l_shipinstruct" {
+                            Some(25)
+                        } else if col_name == "l_shipmode" {
+                            Some(10)
+                        } else {
+                            Some(1)
+                        },
+                        precision: None,
+                        scale: None,
+                    },
+                    TPrimitiveType::Varchar => TScalarType {
+                        scalar_type: col_type,
+                        len: Some(44), // l_comment varchar(44)
+                        precision: None,
+                        scale: None,
+                    },
+                    _ => TScalarType {
+                        scalar_type: col_type,
+                        len: None,
+                        precision: None,
+                        scale: None,
+                    },
+                };
+
+                TSlotDescriptor {
+                    id: idx as i32,
+                    parent: tuple_id,
+                    slot_type: TTypeDesc {
+                        types: vec![TTypeNode {
+                            node_type: TTypeNodeType::Scalar,
+                            scalar_type: Some(scalar_type),
+                        }],
+                    },
+                    column_pos: idx as i32,
+                    byte_offset: 0,  // Deprecated in modern Doris
+                    null_indicator_byte: 0,  // Deprecated
+                    null_indicator_bit: idx as i32 % 8,
+                    col_name: col_name.to_string(),
+                    slot_idx: idx as i32,
+                    is_materialized: true,
+                    col_unique_id: Some(idx as i32),  // Use index as unique ID
+                    is_key: Some(is_key),
+                    need_materialize: Some(true),
+                    is_auto_increment: Some(false),
+                    column_paths: None,  // Not used for regular columns
+                    col_default_value: None,  // No default values
+                    primitive_type: Some(col_type),
+                }
+            })
+            .collect();
+
+        // Build tuple descriptor
+        let tuple_descriptor = TTupleDescriptor {
+            id: tuple_id,
+            byte_size: 0,  // Deprecated
+            num_null_bytes: 0,  // Deprecated
+            table_id: Some(table_id),
+        };
+
+        TDescriptorTable {
+            slot_descriptors: Some(slot_descriptors),
+            tuple_descriptors: vec![tuple_descriptor],
+            table_descriptors: None,  // TTableDescriptor is optional for basic queries
         }
     }
 }

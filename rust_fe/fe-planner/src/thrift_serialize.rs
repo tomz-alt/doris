@@ -1025,7 +1025,7 @@ fn write_network_address<P: TOutputProtocol>(
 
 /// Write TDescriptorTable structure
 /// Field IDs from Descriptors.thrift
-fn write_descriptor_table<P: TOutputProtocol>(
+pub fn write_descriptor_table<P: TOutputProtocol>(
     protocol: &mut P,
     desc_tbl: &crate::thrift_plan::TDescriptorTable,
 ) -> Result<()> {
@@ -1232,6 +1232,66 @@ fn write_slot_descriptor<P: TOutputProtocol>(
             .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
         protocol
             .write_bool(need_materialize)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 14: is_auto_increment (optional bool)
+    if let Some(is_auto_increment) = slot.is_auto_increment {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("is_auto_increment", TType::Bool, 14))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_bool(is_auto_increment)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 15: column_paths (optional list<string>)
+    if let Some(ref column_paths) = slot.column_paths {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("column_paths", TType::List, 15))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_list_begin(&TListIdentifier::new(TType::String, column_paths.len() as i32))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        for path in column_paths {
+            protocol
+                .write_string(path)
+                .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        }
+        protocol
+            .write_list_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 16: col_default_value (optional string)
+    if let Some(ref col_default_value) = slot.col_default_value {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("col_default_value", TType::String, 16))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_string(col_default_value)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 17: primitive_type (optional TPrimitiveType)
+    if let Some(primitive_type) = slot.primitive_type {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("primitive_type", TType::I32, 17))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(primitive_type as i32)
             .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
         protocol
             .write_field_end()
