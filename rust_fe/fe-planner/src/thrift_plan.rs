@@ -717,10 +717,10 @@ impl TDescriptorTable {
     pub fn for_lineitem_table(tuple_id: i32, table_id: i64) -> Self {
         // Define lineitem columns with proper types
         let columns: Vec<(&str, TPrimitiveType, bool)> = vec![
-            ("l_orderkey", TPrimitiveType::BigInt, true),      // INTEGER → BigInt (Doris internal type)
-            ("l_partkey", TPrimitiveType::BigInt, true),       // INTEGER → BigInt (Doris internal type)
-            ("l_suppkey", TPrimitiveType::BigInt, true),       // INTEGER → BigInt (Doris internal type)
-            ("l_linenumber", TPrimitiveType::BigInt, true),    // INTEGER → BigInt (Doris internal type)
+            ("l_orderkey", TPrimitiveType::BigInt, true),      // Catalog: BigInt (key)
+            ("l_partkey", TPrimitiveType::BigInt, false),      // Catalog: BigInt (non-key)
+            ("l_suppkey", TPrimitiveType::BigInt, false),      // Catalog: BigInt (non-key)
+            ("l_linenumber", TPrimitiveType::Int, false),      // Catalog: Int (non-key)
             ("l_quantity", TPrimitiveType::DecimalV2, false),  // DECIMAL(15,2)
             ("l_extendedprice", TPrimitiveType::DecimalV2, false), // DECIMAL(15,2)
             ("l_discount", TPrimitiveType::DecimalV2, false),  // DECIMAL(15,2)
