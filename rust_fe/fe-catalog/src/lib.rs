@@ -21,6 +21,7 @@ pub mod replica;
 pub mod catalog;
 pub mod datastore;
 pub mod tpch_loader;
+pub mod metadata_fetcher;
 
 pub use database::Database;
 pub use table::{Table, OlapTable};
