@@ -47,10 +47,10 @@ async fn main() {
                 "l_linenumber".to_string(),
             ],
             key_column_type: vec![
-                TPrimitiveType::BigInt,
-                TPrimitiveType::BigInt,
-                TPrimitiveType::BigInt,
-                TPrimitiveType::Int,
+                TPrimitiveType::BigInt,  // l_orderkey: INTEGER → BigInt
+                TPrimitiveType::BigInt,  // l_partkey: INTEGER → BigInt
+                TPrimitiveType::BigInt,  // l_suppkey: INTEGER → BigInt
+                TPrimitiveType::BigInt,  // l_linenumber: INTEGER → BigInt
             ],
             is_preaggregation: true,
             table_name: Some("lineitem".to_string()),

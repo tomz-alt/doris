@@ -717,22 +717,22 @@ impl TDescriptorTable {
     pub fn for_lineitem_table(tuple_id: i32, table_id: i64) -> Self {
         // Define lineitem columns with proper types
         let columns: Vec<(&str, TPrimitiveType, bool)> = vec![
-            ("l_orderkey", TPrimitiveType::BigInt, true),      // key column
-            ("l_partkey", TPrimitiveType::BigInt, true),       // key column
-            ("l_suppkey", TPrimitiveType::BigInt, true),       // key column
-            ("l_linenumber", TPrimitiveType::Int, true),       // key column
-            ("l_quantity", TPrimitiveType::DecimalV2, false),  // decimal(15,2)
-            ("l_extendedprice", TPrimitiveType::DecimalV2, false), // decimal(15,2)
-            ("l_discount", TPrimitiveType::DecimalV2, false),  // decimal(15,2)
-            ("l_tax", TPrimitiveType::DecimalV2, false),       // decimal(15,2)
-            ("l_returnflag", TPrimitiveType::Char, false),     // char(1)
-            ("l_linestatus", TPrimitiveType::Char, false),     // char(1)
-            ("l_shipdate", TPrimitiveType::DateV2, false),     // date
-            ("l_commitdate", TPrimitiveType::DateV2, false),   // date
-            ("l_receiptdate", TPrimitiveType::DateV2, false),  // date
-            ("l_shipinstruct", TPrimitiveType::Char, false),   // char(25)
-            ("l_shipmode", TPrimitiveType::Char, false),       // char(10)
-            ("l_comment", TPrimitiveType::Varchar, false),     // varchar(44)
+            ("l_orderkey", TPrimitiveType::BigInt, true),      // INTEGER → BigInt (Doris internal type)
+            ("l_partkey", TPrimitiveType::BigInt, true),       // INTEGER → BigInt (Doris internal type)
+            ("l_suppkey", TPrimitiveType::BigInt, true),       // INTEGER → BigInt (Doris internal type)
+            ("l_linenumber", TPrimitiveType::BigInt, true),    // INTEGER → BigInt (Doris internal type)
+            ("l_quantity", TPrimitiveType::DecimalV2, false),  // DECIMAL(15,2)
+            ("l_extendedprice", TPrimitiveType::DecimalV2, false), // DECIMAL(15,2)
+            ("l_discount", TPrimitiveType::DecimalV2, false),  // DECIMAL(15,2)
+            ("l_tax", TPrimitiveType::DecimalV2, false),       // DECIMAL(15,2)
+            ("l_returnflag", TPrimitiveType::Char, false),     // CHAR(1)
+            ("l_linestatus", TPrimitiveType::Char, false),     // CHAR(1)
+            ("l_shipdate", TPrimitiveType::Date, false),       // DATE (not DateV2)
+            ("l_commitdate", TPrimitiveType::Date, false),     // DATE (not DateV2)
+            ("l_receiptdate", TPrimitiveType::Date, false),    // DATE (not DateV2)
+            ("l_shipinstruct", TPrimitiveType::Char, false),   // CHAR(25)
+            ("l_shipmode", TPrimitiveType::Char, false),       // CHAR(10)
+            ("l_comment", TPrimitiveType::Varchar, false),     // VARCHAR(44)
         ];
 
         // Build slot descriptors for all 16 columns
