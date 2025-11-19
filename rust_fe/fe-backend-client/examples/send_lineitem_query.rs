@@ -2,6 +2,7 @@ use fe_backend_client::BackendClient;
 use fe_planner::thrift_plan::*;
 use fe_planner::{TScanRangeLocations, TPaloScanRange, TScanRangeLocation};
 use fe_planner::scan_range_builder::{TScanRange, TNetworkAddress};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[tokio::main]
 async fn main() {
@@ -10,14 +11,21 @@ async fn main() {
     // Configuration
     let be_host = "127.0.0.1";
     let be_port = 8060; // BE brpc port (8060) - trying instead of 9060
+
+    // Generate unique query ID from timestamp
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    let hi = now.as_secs();
+    let lo = now.subsec_nanos() as u64;
     let query_id: [u8; 16] = [
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39,  // hi = 12345
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x09, 0x32,  // lo = 67890
+        (hi >> 56) as u8, (hi >> 48) as u8, (hi >> 40) as u8, (hi >> 32) as u8,
+        (hi >> 24) as u8, (hi >> 16) as u8, (hi >> 8) as u8, hi as u8,
+        (lo >> 56) as u8, (lo >> 48) as u8, (lo >> 40) as u8, (lo >> 32) as u8,
+        (lo >> 24) as u8, (lo >> 16) as u8, (lo >> 8) as u8, lo as u8,
     ];
 
     println!("Configuration:");
     println!("  BE Address: {}:{}", be_host, be_port);
-    println!("  Query ID: hi=12345, lo=67890");
+    println!("  Query ID: hi={}, lo={} (timestamp-based)", hi, lo);
     println!();
 
     // Create scan node for lineitem table
@@ -77,7 +85,7 @@ async fn main() {
     let palo_range = TPaloScanRange {
         db_name: String::new(),
         schema_hash: "0".to_string(),
-        version: "2".to_string(),
+        version: "8".to_string(),  // Use exact tablet version (will be parsed as range [0-8])
         version_hash: String::new(),
         tablet_id: 1763520834036, // REAL tablet ID from Java FE
         hosts: vec![backend_addr.clone()],
@@ -101,7 +109,7 @@ async fn main() {
     println!("     - Tablet ID: 1763520834036 (REAL from Java FE)");
     println!("     - Backend ID: 1763520834074 (REAL from Java FE)");
     println!("     - Backend: {}:{}", be_host, be_port);
-    println!("     - Version: 2");
+    println!("     - Version: 8 (range [0-8])");
     println!();
 
     // Connect to BE

@@ -741,6 +741,12 @@ impl TDescriptorTable {
             .enumerate()
             .map(|(idx, &(col_name, col_type, is_key))| {
                 let scalar_type = match col_type {
+                    TPrimitiveType::Decimal32 => TScalarType {
+                        scalar_type: col_type,
+                        len: None,
+                        precision: Some(9),  // Decimal32 max precision is 9
+                        scale: Some(2),
+                    },
                     TPrimitiveType::DecimalV2 => TScalarType {
                         scalar_type: col_type,
                         len: None,

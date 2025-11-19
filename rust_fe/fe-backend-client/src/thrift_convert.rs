@@ -229,9 +229,21 @@ fn convert_type_desc(manual: &fe_planner::thrift_plan::TTypeDesc) -> doris_thrif
                 fe_planner::thrift_plan::TTypeNodeType::Map => 2,
                 fe_planner::thrift_plan::TTypeNodeType::Struct => 3,
             };
+
+            // Convert scalar_type if present
+            let scalar_type = tn.scalar_type.as_ref().map(|st| {
+                TScalarType {
+                    type_: convert_primitive_type(&st.scalar_type),  // Required
+                    len: st.len,
+                    precision: st.precision,
+                    scale: st.scale,
+                    variant_max_subcolumns_count: None,
+                }
+            });
+
             TTypeNode {
                 type_: TTypeNodeType(node_type_val),  // Required
-                scalar_type: None,
+                scalar_type,
                 struct_fields: None,
                 contains_null: None,
                 contains_nulls: None,
@@ -255,14 +267,40 @@ fn convert_plan_fragment(
     manual: &fe_planner::thrift_plan::TPlanFragment,
 ) -> Result<doris_thrift::planner::TPlanFragment> {
     use doris_thrift::planner::*;
+    use doris_thrift::data_sinks::*;
 
     let plan = convert_plan(&manual.plan)?;
     let partition = convert_data_partition(&manual.partition)?;
 
+    // Create a result sink to return query results to FE
+    let result_sink = TResultSink {
+        type_: Some(TResultSinkType::MYSQL_PROTOCOL),  // Use MySQL protocol for result fetch
+        file_options: None,
+        fetch_option: None,
+    };
+
+    let output_sink = TDataSink {
+        type_: TDataSinkType::RESULT_SINK,  // Required field
+        stream_sink: None,
+        result_sink: Some(result_sink),
+        mysql_table_sink: None,
+        export_sink: None,
+        olap_table_sink: None,
+        memory_scratch_sink: None,
+        odbc_table_sink: None,
+        result_file_sink: None,
+        jdbc_table_sink: None,
+        multi_cast_stream_sink: None,
+        hive_table_sink: None,
+        iceberg_table_sink: None,
+        dictionary_sink: None,
+        blackhole_sink: None,
+    };
+
     Ok(TPlanFragment {
         plan: Some(plan),
         output_exprs: None,
-        output_sink: None,
+        output_sink: Some(output_sink),  // Add result sink for query execution
         partition,  // Required field
         min_reservation_bytes: None,
         initial_reservation_total_claims: None,
@@ -360,16 +398,71 @@ fn convert_plan_node(
     })
 }
 
+/// Convert TPrimitiveType from manual enum to auto-generated struct
+fn convert_primitive_type(manual: &fe_planner::thrift_plan::TPrimitiveType) -> doris_thrift::types::TPrimitiveType {
+    use fe_planner::thrift_plan::TPrimitiveType as Manual;
+    use doris_thrift::types::TPrimitiveType as Auto;
+
+    let value = match manual {
+        Manual::InvalidType => 0,
+        Manual::NullType => 1,
+        Manual::Boolean => 2,
+        Manual::TinyInt => 3,
+        Manual::SmallInt => 4,
+        Manual::Int => 5,
+        Manual::BigInt => 6,
+        Manual::Float => 7,
+        Manual::Double => 8,
+        Manual::Date => 9,
+        Manual::DateTime => 10,
+        Manual::Binary => 11,
+        Manual::DecimalDeprecated => 12,
+        Manual::Char => 13,
+        Manual::LargeInt => 14,
+        Manual::Varchar => 15,
+        Manual::Hll => 16,
+        Manual::DecimalV2 => 17,
+        Manual::Bitmap => 19,
+        Manual::Array => 20,
+        Manual::Map => 21,
+        Manual::Struct => 22,
+        Manual::String => 23,
+        Manual::All => 24,
+        Manual::QuantileState => 25,
+        Manual::DateV2 => 26,
+        Manual::DateTimeV2 => 27,
+        Manual::TimeV2 => 28,
+        Manual::Decimal32 => 29,
+        Manual::Decimal64 => 30,
+        Manual::Decimal128I => 31,
+        Manual::Decimal256 => 32,
+        Manual::JsonB => 33,
+        Manual::Variant => 34,
+        Manual::AggState => 35,
+        Manual::LambdaFunction => 36,
+        Manual::Ipv4 => 37,
+        Manual::Ipv6 => 38,
+    };
+    Auto(value)
+}
+
 /// Convert TOlapScanNode
 fn convert_olap_scan_node(
     manual: &fe_planner::thrift_plan::TOlapScanNode,
 ) -> Result<doris_thrift::plan_nodes::TOlapScanNode> {
     use doris_thrift::plan_nodes::*;
 
+    // Convert key column types
+    let key_column_type: Vec<doris_thrift::types::TPrimitiveType> = manual
+        .key_column_type
+        .iter()
+        .map(convert_primitive_type)
+        .collect();
+
     Ok(TOlapScanNode {
         tuple_id: manual.tuple_id,  // Required
         key_column_name: manual.key_column_name.clone(),  // Required Vec<String>
-        key_column_type: vec![],  // Required Vec - manual type is Vec<TPrimitiveType>, convert later if needed
+        key_column_type,  // Required Vec<TPrimitiveType>
         is_preaggregation: manual.is_preaggregation,  // Required bool
         sort_column: None,
         key_type: None,
