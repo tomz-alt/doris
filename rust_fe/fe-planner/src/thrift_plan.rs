@@ -96,6 +96,32 @@ pub enum TPlanNodeType {
     MaterializationNode = 34,
 }
 
+/// Partition types (from Partitions.thrift)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[repr(i32)]
+pub enum TPartitionType {
+    Unpartitioned = 0,
+    Random = 1,
+    HashPartitioned = 2,
+    RangePartitioned = 3,
+    ListPartitioned = 4,
+    BucketShuffleHashPartitioned = 5,
+    OlapTableSinkHashPartitioned = 6,
+    HiveTableSinkHashPartitioned = 7,
+}
+
+/// Data partition (from Partitions.thrift)
+/// Describes how data is partitioned across instances
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TDataPartition {
+    /// Partition type (REQUIRED)
+    pub partition_type: TPartitionType,
+    /// Partition expressions (optional) - for HASH_PARTITIONED, etc.
+    pub partition_exprs: Option<Vec<()>>,  // TExpr placeholder for now
+    /// Partition info (optional) - for RANGE_PARTITIONED
+    pub partition_infos: Option<Vec<()>>,  // TRangePartition placeholder
+}
+
 /// Tablet ID
 pub type TTabletId = i64;
 
@@ -137,9 +163,13 @@ pub struct TPlan {
 }
 
 /// Plan fragment (from Planner.thrift)
+/// Reference: Planner.thrift TPlanFragment
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TPlanFragment {
+    /// Field 2: Plan tree (optional)
     pub plan: TPlan,
+    /// Field 6: Data partitioning (REQUIRED!)
+    pub partition: TDataPartition,
 }
 
 impl TPlanFragment {
@@ -676,6 +706,11 @@ mod tests {
                         }),
                     }
                 ],
+            },
+            partition: TDataPartition {
+                partition_type: TPartitionType::Unpartitioned,
+                partition_exprs: None,
+                partition_infos: None,
             },
         };
 

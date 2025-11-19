@@ -56,6 +56,11 @@ impl QueryPlanner {
             plan: TPlan {
                 nodes: vec![scan_node],
             },
+            partition: TDataPartition {
+                partition_type: TPartitionType::Unpartitioned,
+                partition_exprs: None,
+                partition_infos: None,
+            },
         })
     }
 

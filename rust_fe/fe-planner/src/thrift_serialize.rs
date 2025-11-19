@@ -606,6 +606,7 @@ fn write_pipeline_fragment_params<P: TOutputProtocol>(
 }
 
 /// Write TPlanFragment structure (reuse for pipeline params)
+/// Reference: Planner.thrift TPlanFragment
 fn write_plan_fragment<P: TOutputProtocol>(
     protocol: &mut P,
     fragment: &TPlanFragment,
@@ -614,14 +615,57 @@ fn write_plan_fragment<P: TOutputProtocol>(
         .write_struct_begin(&TStructIdentifier::new("TPlanFragment"))
         .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
 
-    // Field 1: plan (TPlan)
+    // Field 2: plan (TPlan) - optional
     protocol
-        .write_field_begin(&TFieldIdentifier::new("plan", TType::Struct, 1))
+        .write_field_begin(&TFieldIdentifier::new("plan", TType::Struct, 2))
         .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
     write_plan(protocol, &fragment.plan)?;
     protocol
         .write_field_end()
         .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 6: partition (TDataPartition) - REQUIRED!
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("partition", TType::Struct, 6))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    write_data_partition(protocol, &fragment.partition)?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    protocol
+        .write_field_stop()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_struct_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    Ok(())
+}
+
+/// Write TDataPartition structure
+/// Reference: Partitions.thrift TDataPartition
+fn write_data_partition<P: TOutputProtocol>(
+    protocol: &mut P,
+    partition: &TDataPartition,
+) -> Result<()> {
+    protocol
+        .write_struct_begin(&TStructIdentifier::new("TDataPartition"))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 1: type (TPartitionType) - REQUIRED
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("type", TType::I32, 1))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_i32(partition.partition_type as i32)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 2: partition_exprs (optional list<TExpr>) - not implemented yet
+    // Field 3: partition_infos (optional list<TRangePartition>) - not implemented yet
 
     protocol
         .write_field_stop()
@@ -1664,6 +1708,11 @@ mod tests {
     fn test_serialize_empty_plan() {
         let fragment = TPlanFragment {
             plan: TPlan { nodes: Vec::new() },
+            partition: TDataPartition {
+                partition_type: TPartitionType::Unpartitioned,
+                partition_exprs: None,
+                partition_infos: None,
+            },
         };
 
         let bytes = serialize_plan_fragment(&fragment).unwrap();
@@ -1691,6 +1740,11 @@ mod tests {
                         table_name: Some("lineitem".to_string()),
                     }),
                 }],
+            },
+            partition: TDataPartition {
+                partition_type: TPartitionType::Unpartitioned,
+                partition_exprs: None,
+                partition_infos: None,
             },
         };
 

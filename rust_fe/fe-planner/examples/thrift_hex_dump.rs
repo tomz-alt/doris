@@ -22,6 +22,11 @@ fn main() {
         plan: TPlan {
             nodes: vec![],
         },
+        partition: TDataPartition {
+            partition_type: TPartitionType::Unpartitioned,
+            partition_exprs: None,
+            partition_infos: None,
+        },
     };
 
     // Create minimal local params
