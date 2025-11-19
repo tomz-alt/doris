@@ -140,6 +140,10 @@ pub struct TOlapScanNode {
     pub is_preaggregation: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub table_name: Option<String>,
+    /// Column unique IDs to actually read and return (maps to descriptor col_unique_id)
+    /// CRITICAL: Without this, BE doesn't know which columns to materialize!
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_column_unique_ids: Option<Vec<i32>>,
 }
 
 /// Plan node (from PlanNodes.thrift)

@@ -474,7 +474,7 @@ fn convert_olap_scan_node(
         push_down_agg_type_opt: None,
         use_topn_opt: None,
         indexes_desc: None,
-        output_column_unique_ids: None,
+        output_column_unique_ids: manual.output_column_unique_ids.as_ref().map(|ids| ids.iter().copied().collect()),
         distribute_column_ids: None,
         schema_version: None,
         topn_filter_source_node_ids: None,

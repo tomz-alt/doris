@@ -81,6 +81,9 @@ impl QueryPlanner {
             (names, types)
         };
 
+        // Generate output_column_unique_ids for all columns (SELECT *)
+        let output_column_unique_ids: Vec<i32> = (0..table.columns.len() as i32).collect();
+
         Ok(TPlanNode {
             node_id: 0,
             node_type: TPlanNodeType::OlapScanNode,
@@ -95,6 +98,7 @@ impl QueryPlanner {
                 key_column_type: key_types,
                 is_preaggregation: true,
                 table_name: Some(table.name.clone()),
+                output_column_unique_ids: Some(output_column_unique_ids),
             }),
         })
     }
