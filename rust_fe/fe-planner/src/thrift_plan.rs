@@ -712,22 +712,35 @@ impl TDescriptorTable {
         }
     }
 
-    /// Build MINIMAL TDescriptorTable for TPC-H lineitem table (key columns only)
-    /// Reference: Simplified to avoid decimal type mismatches - testing with keys only
+    /// Build complete TDescriptorTable for TPC-H lineitem table (all 16 columns)
+    /// Reference: Exact schema from fe-catalog/src/tpch_loader.rs
     pub fn for_lineitem_table(tuple_id: i32, table_id: i64) -> Self {
-        // SIMPLIFIED: Only key columns to isolate type issues
-        let columns: Vec<(&str, TPrimitiveType, bool)> = vec![
-            ("l_orderkey", TPrimitiveType::BigInt, true),      // Catalog: BigInt (key)
-            ("l_partkey", TPrimitiveType::BigInt, false),      // Catalog: BigInt (non-key)
-            ("l_suppkey", TPrimitiveType::BigInt, false),      // Catalog: BigInt (non-key)
-            ("l_linenumber", TPrimitiveType::Int, false),      // Catalog: Int (non-key)
+        // Complete schema with all 16 columns - column_pos MUST match actual table positions
+        // Format: (name, type, is_key, actual_column_pos)
+        let columns: Vec<(&str, TPrimitiveType, bool, i32)> = vec![
+            ("l_orderkey", TPrimitiveType::BigInt, true, 0),      // Catalog: BigInt (key, col_pos=0)
+            ("l_partkey", TPrimitiveType::BigInt, false, 1),      // Catalog: BigInt (col_pos=1)
+            ("l_suppkey", TPrimitiveType::BigInt, false, 2),      // Catalog: BigInt (col_pos=2)
+            ("l_linenumber", TPrimitiveType::Int, false, 3),      // Catalog: Int (col_pos=3)
+            ("l_quantity", TPrimitiveType::DecimalV2, false, 4),  // Catalog: Decimal{15,2} (col_pos=4)
+            ("l_extendedprice", TPrimitiveType::DecimalV2, false, 5), // Catalog: Decimal{15,2} (col_pos=5)
+            ("l_discount", TPrimitiveType::DecimalV2, false, 6),  // Catalog: Decimal{15,2} (col_pos=6)
+            ("l_tax", TPrimitiveType::DecimalV2, false, 7),       // Catalog: Decimal{15,2} (col_pos=7)
+            ("l_returnflag", TPrimitiveType::Char, false, 8),     // Catalog: Char{1} (col_pos=8)
+            ("l_linestatus", TPrimitiveType::Char, false, 9),     // Catalog: Char{1} (col_pos=9)
+            ("l_shipdate", TPrimitiveType::Date, false, 10),      // Catalog: Date (col_pos=10)
+            ("l_commitdate", TPrimitiveType::Date, false, 11),    // Catalog: Date (col_pos=11)
+            ("l_receiptdate", TPrimitiveType::Date, false, 12),   // Catalog: Date (col_pos=12)
+            ("l_shipinstruct", TPrimitiveType::Char, false, 13),  // Catalog: Char{25} (col_pos=13)
+            ("l_shipmode", TPrimitiveType::Char, false, 14),      // Catalog: Char{10} (col_pos=14)
+            ("l_comment", TPrimitiveType::Varchar, false, 15),    // Catalog: Varchar{44} (col_pos=15)
         ];
 
-        // Build slot descriptors for key columns only (4 columns)
+        // Build slot descriptors for all 16 columns
         let slot_descriptors: Vec<TSlotDescriptor> = columns
             .iter()
             .enumerate()
-            .map(|(idx, &(col_name, col_type, is_key))| {
+            .map(|(idx, &(col_name, col_type, is_key, col_pos))| {
                 let scalar_type = match col_type {
                     TPrimitiveType::Decimal32 => TScalarType {
                         scalar_type: col_type,
@@ -738,8 +751,8 @@ impl TDescriptorTable {
                     TPrimitiveType::DecimalV2 => TScalarType {
                         scalar_type: col_type,
                         len: None,
-                        precision: Some(15),
-                        scale: Some(2),
+                        precision: Some(27),  // DecimalV2 is ALWAYS Decimal(27,9)
+                        scale: Some(9),       // Fixed scale for DecimalV2
                     },
                     TPrimitiveType::Char => TScalarType {
                         scalar_type: col_type,
@@ -778,14 +791,14 @@ impl TDescriptorTable {
                             scalar_type: Some(scalar_type),
                         }],
                     },
-                    column_pos: idx as i32,
+                    column_pos: col_pos,  // Use explicit table column position
                     byte_offset: 0,  // Deprecated in modern Doris
                     null_indicator_byte: 0,  // Deprecated
                     null_indicator_bit: idx as i32 % 8,
                     col_name: col_name.to_string(),
                     slot_idx: idx as i32,
                     is_materialized: true,
-                    col_unique_id: Some(idx as i32),  // Use index as unique ID
+                    col_unique_id: Some(col_pos),  // Use table column position as unique ID
                     is_key: Some(is_key),
                     need_materialize: Some(true),
                     is_auto_increment: Some(false),
