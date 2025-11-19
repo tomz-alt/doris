@@ -99,7 +99,7 @@ impl BackendClient {
         let request = tonic::Request::new(PExecPlanFragmentRequest {
             request: Some(fragment_bytes),
             compact: Some(true), // Using TCompactProtocol
-            version: Some(2), // PFragmentRequestVersion::VERSION_2
+            version: Some(3), // PFragmentRequestVersion::VERSION_3 (required by BE)
         });
 
         // Call gRPC method
