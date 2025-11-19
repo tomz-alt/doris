@@ -52,6 +52,9 @@ pub enum TPrimitiveType {
     Ipv6 = 38,
 }
 
+// Import TNetworkAddress from scan_range_builder to avoid duplication
+pub use crate::scan_range_builder::TNetworkAddress;
+
 /// Plan node types (from PlanNodes.thrift)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(i32)]
@@ -93,13 +96,6 @@ pub enum TPlanNodeType {
     MaterializationNode = 34,
 }
 
-/// Network address
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TNetworkAddress {
-    pub hostname: String,
-    pub port: i32,
-}
-
 /// Tablet ID
 pub type TTabletId = i64;
 
@@ -108,19 +104,6 @@ pub type TTupleId = i32;
 
 /// Plan node ID
 pub type TPlanNodeId = i32;
-
-/// OLAP scan range (from PlanNodes.thrift TPaloScanRange)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TPaloScanRange {
-    pub hosts: Vec<TNetworkAddress>,
-    pub schema_hash: String,
-    pub version: String,
-    pub version_hash: String,
-    pub tablet_id: TTabletId,
-    pub db_name: String,
-    pub index_name: Option<String>,
-    pub table_name: Option<String>,
-}
 
 /// OLAP scan node (from PlanNodes.thrift)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -168,6 +151,140 @@ impl TPlanFragment {
     /// Serialize to compact JSON
     pub fn to_json_compact(&self) -> serde_json::Result<String> {
         serde_json::to_string(self)
+    }
+}
+
+// ============================================================================
+// Pipeline Execution Structures (VERSION_3)
+// Reference: PaloInternalService.thrift, Coordinator.java:3185-3350
+// ============================================================================
+
+use std::collections::HashMap;
+
+/// Unique ID for queries and fragments (16 bytes total)
+/// Reference: Types.thrift TUniqueId
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TUniqueId {
+    pub hi: i64,
+    pub lo: i64,
+}
+
+impl TUniqueId {
+    /// Create from 16-byte array
+    pub fn from_bytes(bytes: [u8; 16]) -> Self {
+        Self {
+            hi: i64::from_be_bytes(bytes[0..8].try_into().unwrap()),
+            lo: i64::from_be_bytes(bytes[8..16].try_into().unwrap()),
+        }
+    }
+}
+
+/// Scan range parameters wrapper
+/// Reference: PlanNodes.thrift TScanRangeParams
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TScanRangeParams {
+    pub scan_range: crate::scan_range_builder::TScanRange,
+    pub volume_id: Option<i32>,
+}
+
+/// Pipeline instance parameters (per execution instance)
+/// Reference: PaloInternalService.thrift TPipelineInstanceParams
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TPipelineInstanceParams {
+    /// Unique fragment instance ID
+    pub fragment_instance_id: TUniqueId,
+
+    /// Scan ranges per plan node (node_id -> scan_ranges)
+    pub per_node_scan_ranges: HashMap<i32, Vec<TScanRangeParams>>,
+
+    /// Sender ID for this instance
+    pub sender_id: Option<i32>,
+
+    /// Backend number
+    pub backend_num: Option<i32>,
+}
+
+/// Pipeline fragment parameters (per backend)
+/// Reference: PaloInternalService.thrift TPipelineFragmentParams
+/// Java FE: Coordinator.java:3209
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TPipelineFragmentParams {
+    /// Protocol version (0 = V1)
+    pub protocol_version: i32,
+
+    /// Query ID
+    pub query_id: TUniqueId,
+
+    /// Number of senders per exchange node
+    pub per_exch_num_senders: HashMap<i32, i32>,
+
+    /// The plan fragment to execute
+    pub fragment: TPlanFragment,
+
+    /// Per-instance parameters
+    pub local_params: Vec<TPipelineInstanceParams>,
+
+    /// Coordinator address (optional)
+    pub coord: Option<TNetworkAddress>,
+
+    /// Number of senders (optional)
+    pub num_senders: Option<i32>,
+}
+
+/// Pipeline fragment parameters list (VERSION_3 top-level)
+/// Reference: PaloInternalService.thrift TPipelineFragmentParamsList
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TPipelineFragmentParamsList {
+    /// List of pipeline parameters (one per backend usually)
+    pub params_list: Vec<TPipelineFragmentParams>,
+}
+
+impl TPipelineFragmentParamsList {
+    /// Create minimal pipeline params from fragment and scan ranges
+    /// Reference: Java FE Coordinator.java:3185-3350 (toThrift method)
+    pub fn from_fragment_and_ranges(
+        fragment: TPlanFragment,
+        query_id: [u8; 16],
+        node_id: i32,
+        scan_ranges: Vec<crate::scan_range_builder::TScanRangeLocations>,
+    ) -> Self {
+        let unique_id = TUniqueId::from_bytes(query_id);
+
+        // Build scan range params (wrap TScanRange in TScanRangeParams)
+        let scan_params: Vec<TScanRangeParams> = scan_ranges
+            .into_iter()
+            .map(|loc| TScanRangeParams {
+                scan_range: loc.scan_range,
+                volume_id: None,
+            })
+            .collect();
+
+        // Map node_id to scan ranges
+        let mut per_node_scan_ranges = HashMap::new();
+        per_node_scan_ranges.insert(node_id, scan_params);
+
+        // Build instance params (one instance for simple case)
+        let local_params = vec![TPipelineInstanceParams {
+            fragment_instance_id: unique_id.clone(),
+            per_node_scan_ranges,
+            sender_id: Some(0),
+            backend_num: Some(0),
+        }];
+
+        // Build fragment params
+        let params = TPipelineFragmentParams {
+            protocol_version: 0,  // V1
+            query_id: unique_id,
+            per_exch_num_senders: HashMap::new(),
+            fragment,
+            local_params,
+            coord: None,
+            num_senders: Some(1),
+        };
+
+        TPipelineFragmentParamsList {
+            params_list: vec![params],
+        }
     }
 }
 

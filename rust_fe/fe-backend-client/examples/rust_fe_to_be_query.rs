@@ -121,8 +121,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let query_id = generate_query_id();
     println!("  Query ID: {}", hex::encode(&query_id));
 
-    let finst_id = client.exec_plan_fragment(&plan_fragment, query_id).await?;
-    println!("  ✓ Query submitted to BE");
+    // Execute with VERSION_3 pipeline params (scan_ranges + node_id 0 for OLAP_SCAN_NODE)
+    let finst_id = client.exec_plan_fragment(&plan_fragment, query_id, &scan_ranges, 0).await?;
+    println!("  ✓ Query submitted to BE with pipeline execution model");
     println!("  Fragment Instance ID: {}", hex::encode(&finst_id));
     println!();
 

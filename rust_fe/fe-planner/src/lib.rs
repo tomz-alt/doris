@@ -11,5 +11,14 @@ pub mod thrift_serialize;
 pub mod scan_range_builder;
 
 pub use planner::QueryPlanner;
-pub use thrift_serialize::serialize_plan_fragment;
+pub use thrift_serialize::{serialize_plan_fragment, serialize_pipeline_params};
 pub use scan_range_builder::{ScanRangeBuilder, TScanRangeLocations, TPaloScanRange, TScanRangeLocation};
+
+// Export pipeline execution structures (VERSION_3)
+pub use thrift_plan::{
+    TPipelineFragmentParamsList,
+    TPipelineFragmentParams,
+    TPipelineInstanceParams,
+    TScanRangeParams,
+    TUniqueId,
+};

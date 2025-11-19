@@ -66,11 +66,13 @@ impl BackendClient {
         })
     }
 
-    /// Execute a query fragment on the backend
+    /// Execute a query fragment on the backend (VERSION_3 with pipeline execution)
     ///
     /// # Arguments
-    /// * `fragment` - The plan fragment to execute (Thrift serialized)
+    /// * `fragment` - The plan fragment to execute
     /// * `query_id` - Unique query identifier (16 bytes UUID)
+    /// * `scan_ranges` - Scan range locations for OLAP_SCAN_NODE
+    /// * `node_id` - Plan node ID for the scan node (usually 0)
     ///
     /// # Returns
     /// Fragment instance ID for fetching results (16 bytes UUID)
@@ -79,25 +81,38 @@ impl BackendClient {
     /// ```no_run
     /// # use fe_backend_client::BackendClient;
     /// # use fe_planner::thrift_plan::{TPlanFragment, TPlan};
+    /// # use fe_planner::TScanRangeLocations;
     /// # #[tokio::main]
     /// # async fn main() {
     /// let mut client = BackendClient::new("127.0.0.1", 8060).await.unwrap();
     /// let fragment = TPlanFragment { plan: TPlan { nodes: vec![] } };
     /// let query_id = [1u8; 16]; // UUID
-    /// let finst_id = client.exec_plan_fragment(&fragment, query_id).await.unwrap();
+    /// let scan_ranges: Vec<TScanRangeLocations> = vec![];
+    /// let finst_id = client.exec_plan_fragment(&fragment, query_id, &scan_ranges, 0).await.unwrap();
     /// # }
     /// ```
     pub async fn exec_plan_fragment(
         &mut self,
         fragment: &fe_planner::thrift_plan::TPlanFragment,
         query_id: [u8; 16],
+        scan_ranges: &[fe_planner::TScanRangeLocations],
+        node_id: i32,
     ) -> Result<[u8; 16]> {
-        // Serialize fragment to Thrift bytes
-        let fragment_bytes = fe_planner::serialize_plan_fragment(fragment)?;
+        // Build pipeline params from fragment and scan ranges
+        // Reference: Java FE Coordinator.java:3185-3350
+        let pipeline_params = fe_planner::TPipelineFragmentParamsList::from_fragment_and_ranges(
+            fragment.clone(),
+            query_id,
+            node_id,
+            scan_ranges.to_vec(),
+        );
+
+        // Serialize pipeline params to Thrift bytes
+        let pipeline_bytes = fe_planner::serialize_pipeline_params(&pipeline_params)?;
 
         // Create gRPC request
         let request = tonic::Request::new(PExecPlanFragmentRequest {
-            request: Some(fragment_bytes),
+            request: Some(pipeline_bytes),
             compact: Some(true), // Using TCompactProtocol
             version: Some(3), // PFragmentRequestVersion::VERSION_3 (required by BE)
         });
@@ -238,8 +253,9 @@ mod tests {
             },
         };
         let query_id = [1u8; 16];
+        let scan_ranges: Vec<fe_planner::TScanRangeLocations> = vec![];
 
-        let finst_id = client.exec_plan_fragment(&fragment, query_id).await
+        let finst_id = client.exec_plan_fragment(&fragment, query_id, &scan_ranges, 0).await
             .expect("Failed to execute plan fragment");
 
         let rows = client.fetch_data(finst_id).await
