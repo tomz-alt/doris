@@ -329,10 +329,14 @@ pub struct TQueryGlobals {
 
     /// Nano seconds (optional)
     pub nano_seconds: Option<i32>,
+
+    /// Locale name for month/day formatting (optional, e.g. "en_US")
+    pub lc_time_names: Option<String>,
 }
 
 impl TQueryGlobals {
-    /// Create minimal query globals with current timestamp
+    /// Create query globals with current timestamp
+    /// Reference: Java FE CoordinatorContext.initQueryGlobals()
     pub fn minimal() -> Self {
         use std::time::{SystemTime, UNIX_EPOCH};
         let now = SystemTime::now()
@@ -340,40 +344,75 @@ impl TQueryGlobals {
             .unwrap();
         let timestamp_ms = now.as_millis() as i64;
 
-        // Format timestamp as yyyy-MM-dd HH:mm:ss
-        let now_string = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        // Get local time for nano_seconds
+        let local_now = chrono::Local::now();
+        let nano_seconds = local_now.timestamp_subsec_nanos() as i32;
+
+        // Format timestamp as yyyy-MM-dd HH:MM:ss (matching Java DateTimeFormatter)
+        let now_string = local_now.format("%Y-%m-%d %H:%M:%S").to_string();
 
         Self {
             now_string,
             timestamp_ms: Some(timestamp_ms),
-            time_zone: Some("UTC".to_string()),
+            time_zone: Some("UTC".to_string()),  // Default to UTC
             load_zero_tolerance: Some(false),
-            nano_seconds: None,
+            nano_seconds: Some(nano_seconds),
+            lc_time_names: Some("en_US".to_string()),  // Default locale
         }
     }
 }
 
-/// Query options for pipeline execution (minimal version)
+/// Query options for pipeline execution
 /// Reference: PaloInternalService.thrift TQueryOptions
+/// Java FE: SessionVariable.toThrift()
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TQueryOptions {
-    /// Batch size (optional, field 4)
+    /// Batch size (field 4)
     pub batch_size: Option<i32>,
 
-    /// Memory limit in bytes (optional, field 12)
+    /// Memory limit in bytes (field 12)
     pub mem_limit: Option<i64>,
 
-    /// Query timeout in seconds (optional, field 14)
+    /// Query timeout in seconds (field 14)
     pub query_timeout: Option<i32>,
+
+    /// Report success back to FE (field 15)
+    pub is_report_success: Option<bool>,
+
+    /// Number of scanner threads (field 7)
+    pub num_scanner_threads: Option<i32>,
+
+    /// Max scan key number (field 29)
+    pub max_scan_key_num: Option<i32>,
+
+    /// Max pushdown conditions per column (field 30)
+    pub max_pushdown_conditions_per_column: Option<i32>,
+
+    /// BE execution version (field 52)
+    pub be_exec_version: Option<i32>,
+
+    /// Enable profile collection (not in thrift, but used)
+    pub enable_profile: Option<bool>,
+
+    /// Parallel execution instance count (field 27 mt_dop for newer versions)
+    pub parallel_instance: Option<i32>,
 }
 
 impl TQueryOptions {
-    /// Create minimal query options with reasonable defaults
+    /// Create query options with defaults matching Java FE SessionVariable
+    /// Reference: SessionVariable.toThrift() lines 4724-4904
     pub fn minimal() -> Self {
         Self {
-            batch_size: Some(4096),  // Default batch size
-            mem_limit: Some(2147483648),  // 2GB default
-            query_timeout: Some(3600),  // 1 hour timeout
+            batch_size: Some(4096),  // Default batch size (Java: 4096)
+            mem_limit: Some(2147483648),  // 2GB default (Java: maxExecMemByte)
+            query_timeout: Some(3600),  // 1 hour timeout (Java: queryTimeoutS default)
+            is_report_success: Some(false),  // Java: set to true if enableProfile
+            num_scanner_threads: Some(0),  // 0 means use BE default (Java: numScannerThreads)
+            max_scan_key_num: Some(48),  // Java: default 48 if not set
+            max_pushdown_conditions_per_column: Some(1024),  // Java: default 1024
+            be_exec_version: Some(3),  // VERSION_3 pipeline execution (Java: Config.be_exec_version)
+            enable_profile: Some(false),  // Profile disabled by default
+            parallel_instance: Some(1),  // Single instance for simple queries (Java: getParallelExecInstanceNum)
         }
     }
 }

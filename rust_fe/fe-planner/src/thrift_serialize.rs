@@ -1642,6 +1642,19 @@ fn write_query_globals<P: TOutputProtocol>(
             .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
     }
 
+    // Field 6: lc_time_names (optional string)
+    if let Some(ref lc_time_names) = query_globals.lc_time_names {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("lc_time_names", TType::String, 6))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_string(lc_time_names)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
     protocol
         .write_field_stop()
         .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
@@ -1675,6 +1688,19 @@ fn write_query_options<P: TOutputProtocol>(
             .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
     }
 
+    // Field 7: num_scanner_threads (optional i32)
+    if let Some(num_scanner_threads) = query_options.num_scanner_threads {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("num_scanner_threads", TType::I32, 7))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(num_scanner_threads)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
     // Field 12: mem_limit (optional i64)
     if let Some(mem_limit) = query_options.mem_limit {
         protocol
@@ -1695,6 +1721,71 @@ fn write_query_options<P: TOutputProtocol>(
             .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
         protocol
             .write_i32(query_timeout)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 15: is_report_success (optional bool)
+    if let Some(is_report_success) = query_options.is_report_success {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("is_report_success", TType::Bool, 15))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_bool(is_report_success)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 27: mt_dop (parallel_instance) (optional i32)
+    if let Some(parallel_instance) = query_options.parallel_instance {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("mt_dop", TType::I32, 27))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(parallel_instance)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 29: max_scan_key_num (optional i32)
+    if let Some(max_scan_key_num) = query_options.max_scan_key_num {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("max_scan_key_num", TType::I32, 29))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(max_scan_key_num)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 30: max_pushdown_conditions_per_column (optional i32)
+    if let Some(max_pushdown_conditions_per_column) = query_options.max_pushdown_conditions_per_column {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("max_pushdown_conditions_per_column", TType::I32, 30))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(max_pushdown_conditions_per_column)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 52: be_exec_version (optional i32)
+    if let Some(be_exec_version) = query_options.be_exec_version {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("be_exec_version", TType::I32, 52))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(be_exec_version)
             .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
         protocol
             .write_field_end()
