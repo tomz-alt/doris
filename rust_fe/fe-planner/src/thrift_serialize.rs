@@ -8,7 +8,7 @@
 use crate::thrift_plan::*;
 use fe_common::{DorisError, Result};
 use thrift::protocol::{
-    TCompactOutputProtocol, TFieldIdentifier, TListIdentifier, TMapIdentifier, TOutputProtocol,
+    TBinaryOutputProtocol, TCompactOutputProtocol, TFieldIdentifier, TListIdentifier, TMapIdentifier, TOutputProtocol,
     TStructIdentifier, TType,
 };
 use thrift::transport::TBufferChannel;

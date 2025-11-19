@@ -437,6 +437,12 @@ impl TPipelineFragmentParamsList {
         let unique_id = TUniqueId::from_bytes(query_id);
 
         // Build scan range params (wrap TScanRange in TScanRangeParams)
+        // Also extract backend_id from first scan range location
+        let backend_id = scan_ranges.first()
+            .and_then(|sr| sr.locations.first())
+            .map(|loc| loc.backend_id)
+            .unwrap_or(10001);  // Fallback to default if no scan ranges
+
         let scan_params: Vec<TScanRangeParams> = scan_ranges
             .into_iter()
             .map(|loc| TScanRangeParams {
@@ -459,6 +465,9 @@ impl TPipelineFragmentParamsList {
 
         // Build descriptor table from OLAP_SCAN_NODE
         // Reference: Java FE Coordinator.java:3214 params.setDescTbl(descTable)
+        // TEMPORARILY DISABLED FOR DEBUGGING
+        let desc_tbl: Option<TDescriptorTable> = None;
+        /*
         let desc_tbl = if let Some(first_node) = fragment.plan.nodes.first() {
             if let Some(olap_node) = &first_node.olap_scan_node {
                 // Use complete descriptor table for lineitem, generic for others
@@ -480,6 +489,7 @@ impl TPipelineFragmentParamsList {
         } else {
             None
         };
+        */
 
         // Build fragment params
         // Reference: Java FE ThriftPlansBuilder.java:334-370
@@ -494,10 +504,10 @@ impl TPipelineFragmentParamsList {
             local_params,
             coord: None,
             num_senders: Some(1),
-            query_globals: Some(TQueryGlobals::minimal()),  // Query globals
-            query_options: Some(TQueryOptions::minimal()),  // Query options
+            query_globals: None,  // TEMPORARILY DISABLED FOR DEBUGGING
+            query_options: None,  // TEMPORARILY DISABLED FOR DEBUGGING
             fragment_num_on_host: Some(1),  // Number of fragments on this host
-            backend_id: Some(10001),  // Backend ID (hardcoded for now, should come from metadata)
+            backend_id: Some(backend_id),  // Backend ID from scan range metadata
             total_instances: Some(1),  // Total number of instances (Java: instanceNumInThisFragment)
             is_nereids: Some(true),  // Nereids-generated plan flag (Java always sets true)
         };

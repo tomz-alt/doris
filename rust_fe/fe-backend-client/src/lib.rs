@@ -110,6 +110,11 @@ impl BackendClient {
         // Serialize pipeline params to Thrift bytes
         let pipeline_bytes = fe_planner::serialize_pipeline_params(&pipeline_params)?;
 
+        // Debug: Print first 100 bytes of serialized data
+        eprintln!("📦 Serialized Thrift payload size: {} bytes", pipeline_bytes.len());
+        eprintln!("📦 First 64 bytes (hex): {}",
+            pipeline_bytes.iter().take(64).map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(" "));
+
         // Create gRPC request
         let request = tonic::Request::new(PExecPlanFragmentRequest {
             request: Some(pipeline_bytes),

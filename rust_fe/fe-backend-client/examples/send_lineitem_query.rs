@@ -9,7 +9,7 @@ async fn main() {
 
     // Configuration
     let be_host = "127.0.0.1";
-    let be_port = 9060; // BE gRPC port
+    let be_port = 8060; // BE brpc port (8060) - trying instead of 9060
     let query_id: [u8; 16] = [
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x39,  // hi = 12345
         0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x09, 0x32,  // lo = 67890
@@ -79,13 +79,13 @@ async fn main() {
         schema_hash: "0".to_string(),
         version: "2".to_string(),
         version_hash: String::new(),
-        tablet_id: 10003, // table_id + 2
+        tablet_id: 1763520834036, // REAL tablet ID from Java FE
         hosts: vec![backend_addr.clone()],
     };
 
     let scan_location = TScanRangeLocation {
         server: backend_addr,
-        backend_id: 10000,
+        backend_id: 1763520834074, // REAL backend ID from Java FE
     };
 
     let scan_range = TScanRange {
@@ -98,7 +98,8 @@ async fn main() {
     }];
 
     println!("  ✅ Scan ranges generated");
-    println!("     - Tablet ID: 10003");
+    println!("     - Tablet ID: 1763520834036 (REAL from Java FE)");
+    println!("     - Backend ID: 1763520834074 (REAL from Java FE)");
     println!("     - Backend: {}:{}", be_host, be_port);
     println!("     - Version: 2");
     println!();
