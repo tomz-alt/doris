@@ -87,7 +87,7 @@ async fn main() {
     let palo_range = TPaloScanRange {
         db_name: String::new(),
         schema_hash: "0".to_string(),
-        version: "8".to_string(),  // Use exact tablet version (will be parsed as range [0-8])
+        version: "8".to_string(),  // Latest version in rowset [2-8] which contains our 4.06KB data
         version_hash: String::new(),
         tablet_id: 1763520834036, // REAL tablet ID from Java FE
         hosts: vec![backend_addr.clone()],
