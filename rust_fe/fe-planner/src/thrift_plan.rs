@@ -218,6 +218,10 @@ pub struct TPipelineFragmentParams {
     /// Number of senders per exchange node
     pub per_exch_num_senders: HashMap<i32, i32>,
 
+    /// Descriptor table (field 5 in Thrift)
+    /// Reference: Java FE Coordinator.java:3214 params.setDescTbl(descTable)
+    pub desc_tbl: Option<TDescriptorTable>,
+
     /// The plan fragment to execute
     pub fragment: TPlanFragment,
 
@@ -271,11 +275,28 @@ impl TPipelineFragmentParamsList {
             backend_num: Some(0),
         }];
 
+        // Build descriptor table from OLAP_SCAN_NODE
+        // Reference: Java FE Coordinator.java:3214 params.setDescTbl(descTable)
+        let desc_tbl = if let Some(first_node) = fragment.plan.nodes.first() {
+            if let Some(olap_node) = &first_node.olap_scan_node {
+                Some(TDescriptorTable::for_olap_scan(
+                    olap_node.tuple_id,
+                    &olap_node.key_column_name,
+                    &olap_node.key_column_type,
+                ))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         // Build fragment params
         let params = TPipelineFragmentParams {
             protocol_version: 0,  // V1
             query_id: unique_id,
             per_exch_num_senders: HashMap::new(),
+            desc_tbl,  // Add descriptor table
             fragment,
             local_params,
             coord: None,
@@ -284,6 +305,197 @@ impl TPipelineFragmentParamsList {
 
         TPipelineFragmentParamsList {
             params_list: vec![params],
+        }
+    }
+}
+
+// ============================================================================
+// Descriptor Table Structures
+// Reference: Descriptors.thrift
+// ============================================================================
+
+/// Slot descriptor - describes a single column/slot in a tuple
+/// Reference: Descriptors.thrift TSlotDescriptor
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TSlotDescriptor {
+    /// Slot ID
+    pub id: i32,
+
+    /// Parent tuple ID
+    pub parent: i32,
+
+    /// Slot type descriptor
+    pub slot_type: TTypeDesc,
+
+    /// Column position in originating table
+    pub column_pos: i32,
+
+    /// Byte offset (deprecated but required)
+    pub byte_offset: i32,
+
+    /// Null indicator byte
+    pub null_indicator_byte: i32,
+
+    /// Null indicator bit
+    pub null_indicator_bit: i32,
+
+    /// Column name
+    pub col_name: String,
+
+    /// Slot index
+    pub slot_idx: i32,
+
+    /// Is materialized
+    pub is_materialized: bool,
+
+    /// Optional fields
+    pub col_unique_id: Option<i32>,
+    pub is_key: Option<bool>,
+    pub need_materialize: Option<bool>,
+}
+
+/// Type descriptor for columns
+/// Reference: Types.thrift TTypeDesc
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TTypeDesc {
+    pub types: Vec<TTypeNode>,
+}
+
+/// Type node in type descriptor
+/// Reference: Types.thrift TTypeNode
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TTypeNode {
+    pub node_type: TTypeNodeType,
+    pub scalar_type: Option<TScalarType>,
+}
+
+/// Type node type enum
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TTypeNodeType {
+    Scalar = 0,
+    Array = 1,
+    Map = 2,
+    Struct = 3,
+}
+
+/// Scalar type descriptor
+/// Reference: Types.thrift TScalarType
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TScalarType {
+    pub scalar_type: TPrimitiveType,
+    pub len: Option<i32>,
+    pub precision: Option<i32>,
+    pub scale: Option<i32>,
+}
+
+/// Tuple descriptor - describes a tuple (row) structure
+/// Reference: Descriptors.thrift TTupleDescriptor
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TTupleDescriptor {
+    /// Tuple ID
+    pub id: i32,
+
+    /// Byte size (deprecated but required)
+    pub byte_size: i32,
+
+    /// Number of null bytes (deprecated but required)
+    pub num_null_bytes: i32,
+
+    /// Optional table ID this tuple belongs to
+    pub table_id: Option<i64>,
+}
+
+/// Descriptor table - top-level schema descriptor
+/// Reference: Descriptors.thrift TDescriptorTable
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TDescriptorTable {
+    /// All slot descriptors
+    pub slot_descriptors: Option<Vec<TSlotDescriptor>>,
+
+    /// All tuple descriptors (required)
+    pub tuple_descriptors: Vec<TTupleDescriptor>,
+
+    /// All table descriptors (optional)
+    pub table_descriptors: Option<Vec<TTableDescriptor>>,
+}
+
+/// Table descriptor (minimal - we may not need this for simple queries)
+/// Reference: Descriptors.thrift TTableDescriptor
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TTableDescriptor {
+    pub id: i64,
+    pub table_type: TTableType,
+    pub num_cols: i32,
+    pub num_clustering_cols: i32,
+    pub table_name: String,
+    pub db_name: String,
+}
+
+/// Table type enum
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TTableType {
+    MysqlTable = 0,
+    OlapTable = 1,
+    SchemaTable = 2,
+    BrokerTable = 3,
+    EsTable = 4,
+    OdbcTable = 5,
+}
+
+impl TDescriptorTable {
+    /// Build minimal descriptor table for OLAP scan
+    /// Reference: Java FE DescriptorTable.toThrift()
+    pub fn for_olap_scan(
+        tuple_id: i32,
+        key_column_names: &[String],
+        key_column_types: &[TPrimitiveType],
+    ) -> Self {
+        // Build slot descriptors for key columns
+        let slot_descriptors: Vec<TSlotDescriptor> = key_column_names
+            .iter()
+            .zip(key_column_types.iter())
+            .enumerate()
+            .map(|(idx, (col_name, col_type))| {
+                TSlotDescriptor {
+                    id: idx as i32,
+                    parent: tuple_id,
+                    slot_type: TTypeDesc {
+                        types: vec![TTypeNode {
+                            node_type: TTypeNodeType::Scalar,
+                            scalar_type: Some(TScalarType {
+                                scalar_type: col_type.clone(),
+                                len: None,
+                                precision: None,
+                                scale: None,
+                            }),
+                        }],
+                    },
+                    column_pos: idx as i32,
+                    byte_offset: 0,  // Deprecated
+                    null_indicator_byte: 0,
+                    null_indicator_bit: idx as i32 % 8,
+                    col_name: col_name.clone(),
+                    slot_idx: idx as i32,
+                    is_materialized: true,
+                    col_unique_id: Some(-1),
+                    is_key: Some(true),
+                    need_materialize: Some(true),
+                }
+            })
+            .collect();
+
+        // Build tuple descriptor
+        let tuple_descriptor = TTupleDescriptor {
+            id: tuple_id,
+            byte_size: 0,  // Deprecated
+            num_null_bytes: 0,  // Deprecated
+            table_id: None,
+        };
+
+        TDescriptorTable {
+            slot_descriptors: Some(slot_descriptors),
+            tuple_descriptors: vec![tuple_descriptor],
+            table_descriptors: None,  // Optional, not needed for simple queries
         }
     }
 }

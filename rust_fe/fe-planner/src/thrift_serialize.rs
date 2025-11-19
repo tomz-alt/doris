@@ -415,6 +415,18 @@ fn write_pipeline_fragment_params<P: TOutputProtocol>(
         .write_field_end()
         .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
 
+    // Field 5: desc_tbl (optional TDescriptorTable)
+    // Reference: Java FE Coordinator.java:3214 params.setDescTbl(descTable)
+    if let Some(ref desc_tbl) = params.desc_tbl {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("desc_tbl", TType::Struct, 5))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        write_descriptor_table(protocol, desc_tbl)?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
     // Field 8: num_senders (optional i32) - MUST come before field 10+
     if let Some(num_senders) = params.num_senders {
         protocol
@@ -836,6 +848,497 @@ fn write_network_address<P: TOutputProtocol>(
     protocol
         .write_field_end()
         .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    protocol
+        .write_field_stop()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_struct_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    Ok(())
+}
+
+// ============================================================================
+// Descriptor Table Serialization
+// Reference: Descriptors.thrift
+// ============================================================================
+
+/// Write TDescriptorTable structure
+/// Field IDs from Descriptors.thrift
+fn write_descriptor_table<P: TOutputProtocol>(
+    protocol: &mut P,
+    desc_tbl: &crate::thrift_plan::TDescriptorTable,
+) -> Result<()> {
+    protocol
+        .write_struct_begin(&TStructIdentifier::new("TDescriptorTable"))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 1: slotDescriptors (optional list<TSlotDescriptor>)
+    if let Some(ref slot_descriptors) = desc_tbl.slot_descriptors {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("slotDescriptors", TType::List, 1))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_list_begin(&TListIdentifier::new(TType::Struct, slot_descriptors.len() as i32))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        for slot_desc in slot_descriptors {
+            write_slot_descriptor(protocol, slot_desc)?;
+        }
+        protocol
+            .write_list_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 2: tupleDescriptors (required list<TTupleDescriptor>)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("tupleDescriptors", TType::List, 2))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_list_begin(&TListIdentifier::new(TType::Struct, desc_tbl.tuple_descriptors.len() as i32))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    for tuple_desc in &desc_tbl.tuple_descriptors {
+        write_tuple_descriptor(protocol, tuple_desc)?;
+    }
+    protocol
+        .write_list_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 3: tableDescriptors (optional list<TTableDescriptor>) - skip for now
+
+    protocol
+        .write_field_stop()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_struct_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    Ok(())
+}
+
+/// Write TSlotDescriptor structure
+/// Field IDs from Descriptors.thrift (fields 1-10 required, 11-13 optional)
+fn write_slot_descriptor<P: TOutputProtocol>(
+    protocol: &mut P,
+    slot: &crate::thrift_plan::TSlotDescriptor,
+) -> Result<()> {
+    protocol
+        .write_struct_begin(&TStructIdentifier::new("TSlotDescriptor"))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 1: id (i32)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("id", TType::I32, 1))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_i32(slot.id)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 2: parent (i32)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("parent", TType::I32, 2))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_i32(slot.parent)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 3: slotType (TTypeDesc)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("slotType", TType::Struct, 3))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    write_type_desc(protocol, &slot.slot_type)?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 4: columnPos (i32)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("columnPos", TType::I32, 4))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_i32(slot.column_pos)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 5: byteOffset (i32)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("byteOffset", TType::I32, 5))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_i32(slot.byte_offset)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 6: nullIndicatorByte (i32)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("nullIndicatorByte", TType::I32, 6))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_i32(slot.null_indicator_byte)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 7: nullIndicatorBit (i32)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("nullIndicatorBit", TType::I32, 7))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_i32(slot.null_indicator_bit)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 8: colName (string)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("colName", TType::String, 8))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_string(&slot.col_name)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 9: slotIdx (i32)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("slotIdx", TType::I32, 9))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_i32(slot.slot_idx)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 10: isMaterialized (bool)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("isMaterialized", TType::Bool, 10))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_bool(slot.is_materialized)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 11: col_unique_id (optional i32)
+    if let Some(col_unique_id) = slot.col_unique_id {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("col_unique_id", TType::I32, 11))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(col_unique_id)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 12: is_key (optional bool)
+    if let Some(is_key) = slot.is_key {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("is_key", TType::Bool, 12))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_bool(is_key)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 13: need_materialize (optional bool)
+    if let Some(need_materialize) = slot.need_materialize {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("need_materialize", TType::Bool, 13))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_bool(need_materialize)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    protocol
+        .write_field_stop()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_struct_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    Ok(())
+}
+
+/// Write TTupleDescriptor structure
+/// Field IDs from Descriptors.thrift
+fn write_tuple_descriptor<P: TOutputProtocol>(
+    protocol: &mut P,
+    tuple: &crate::thrift_plan::TTupleDescriptor,
+) -> Result<()> {
+    protocol
+        .write_struct_begin(&TStructIdentifier::new("TTupleDescriptor"))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 1: id (i32)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("id", TType::I32, 1))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_i32(tuple.id)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 2: byteSize (i32)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("byteSize", TType::I32, 2))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_i32(tuple.byte_size)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 3: numNullBytes (i32)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("numNullBytes", TType::I32, 3))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_i32(tuple.num_null_bytes)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 4: tableId (optional i64)
+    if let Some(table_id) = tuple.table_id {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("tableId", TType::I64, 4))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i64(table_id)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    protocol
+        .write_field_stop()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_struct_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    Ok(())
+}
+
+/// Write TTypeDesc structure
+/// Reference: Types.thrift TTypeDesc
+fn write_type_desc<P: TOutputProtocol>(
+    protocol: &mut P,
+    type_desc: &crate::thrift_plan::TTypeDesc,
+) -> Result<()> {
+    protocol
+        .write_struct_begin(&TStructIdentifier::new("TTypeDesc"))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 1: types (list<TTypeNode>)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("types", TType::List, 1))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_list_begin(&TListIdentifier::new(TType::Struct, type_desc.types.len() as i32))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    for type_node in &type_desc.types {
+        write_type_node(protocol, type_node)?;
+    }
+    protocol
+        .write_list_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    protocol
+        .write_field_stop()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_struct_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    Ok(())
+}
+
+/// Write TTypeNode structure
+/// Reference: Types.thrift TTypeNode
+fn write_type_node<P: TOutputProtocol>(
+    protocol: &mut P,
+    type_node: &crate::thrift_plan::TTypeNode,
+) -> Result<()> {
+    protocol
+        .write_struct_begin(&TStructIdentifier::new("TTypeNode"))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 1: type (TTypeNodeType enum as i32)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("type", TType::I32, 1))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    let type_value = match type_node.node_type {
+        crate::thrift_plan::TTypeNodeType::Scalar => 0,
+        crate::thrift_plan::TTypeNodeType::Array => 1,
+        crate::thrift_plan::TTypeNodeType::Map => 2,
+        crate::thrift_plan::TTypeNodeType::Struct => 3,
+    };
+    protocol
+        .write_i32(type_value)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 2: scalar_type (optional TScalarType)
+    if let Some(ref scalar_type) = type_node.scalar_type {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("scalar_type", TType::Struct, 2))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        write_scalar_type(protocol, scalar_type)?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    protocol
+        .write_field_stop()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_struct_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    Ok(())
+}
+
+/// Write TScalarType structure
+/// Reference: Types.thrift TScalarType (field 1 only, simplified)
+fn write_scalar_type<P: TOutputProtocol>(
+    protocol: &mut P,
+    scalar_type: &crate::thrift_plan::TScalarType,
+) -> Result<()> {
+    protocol
+        .write_struct_begin(&TStructIdentifier::new("TScalarType"))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 1: type (TPrimitiveType enum as i32)
+    protocol
+        .write_field_begin(&TFieldIdentifier::new("type", TType::I32, 1))
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    let prim_value = match scalar_type.scalar_type {
+        crate::thrift_plan::TPrimitiveType::InvalidType => 0,
+        crate::thrift_plan::TPrimitiveType::NullType => 1,
+        crate::thrift_plan::TPrimitiveType::Boolean => 2,
+        crate::thrift_plan::TPrimitiveType::TinyInt => 3,
+        crate::thrift_plan::TPrimitiveType::SmallInt => 4,
+        crate::thrift_plan::TPrimitiveType::Int => 5,
+        crate::thrift_plan::TPrimitiveType::BigInt => 6,
+        crate::thrift_plan::TPrimitiveType::Float => 7,
+        crate::thrift_plan::TPrimitiveType::Double => 8,
+        crate::thrift_plan::TPrimitiveType::Date => 9,
+        crate::thrift_plan::TPrimitiveType::DateTime => 10,
+        crate::thrift_plan::TPrimitiveType::Binary => 11,
+        crate::thrift_plan::TPrimitiveType::DecimalDeprecated => 12,
+        crate::thrift_plan::TPrimitiveType::Char => 13,
+        crate::thrift_plan::TPrimitiveType::LargeInt => 14,
+        crate::thrift_plan::TPrimitiveType::Varchar => 15,
+        crate::thrift_plan::TPrimitiveType::Hll => 16,
+        crate::thrift_plan::TPrimitiveType::DecimalV2 => 17,
+        crate::thrift_plan::TPrimitiveType::Bitmap => 19,
+        crate::thrift_plan::TPrimitiveType::Array => 20,
+        crate::thrift_plan::TPrimitiveType::Map => 21,
+        crate::thrift_plan::TPrimitiveType::Struct => 22,
+        crate::thrift_plan::TPrimitiveType::String => 23,
+        crate::thrift_plan::TPrimitiveType::All => 24,
+        crate::thrift_plan::TPrimitiveType::QuantileState => 25,
+        crate::thrift_plan::TPrimitiveType::DateV2 => 26,
+        crate::thrift_plan::TPrimitiveType::DateTimeV2 => 27,
+        crate::thrift_plan::TPrimitiveType::TimeV2 => 28,
+        crate::thrift_plan::TPrimitiveType::Decimal32 => 29,
+        crate::thrift_plan::TPrimitiveType::Decimal64 => 30,
+        crate::thrift_plan::TPrimitiveType::Decimal128I => 31,
+        crate::thrift_plan::TPrimitiveType::Decimal256 => 32,
+        crate::thrift_plan::TPrimitiveType::JsonB => 33,
+        crate::thrift_plan::TPrimitiveType::Variant => 34,
+        crate::thrift_plan::TPrimitiveType::AggState => 35,
+        crate::thrift_plan::TPrimitiveType::LambdaFunction => 36,
+        crate::thrift_plan::TPrimitiveType::Ipv4 => 37,
+        crate::thrift_plan::TPrimitiveType::Ipv6 => 38,
+    };
+    protocol
+        .write_i32(prim_value)
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    protocol
+        .write_field_end()
+        .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+
+    // Field 2: len (optional i32)
+    if let Some(len) = scalar_type.len {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("len", TType::I32, 2))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(len)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 3: precision (optional i32)
+    if let Some(precision) = scalar_type.precision {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("precision", TType::I32, 3))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(precision)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
+
+    // Field 4: scale (optional i32)
+    if let Some(scale) = scalar_type.scale {
+        protocol
+            .write_field_begin(&TFieldIdentifier::new("scale", TType::I32, 4))
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_i32(scale)
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+        protocol
+            .write_field_end()
+            .map_err(|e| DorisError::InternalError(format!("Thrift serialize error: {}", e)))?;
+    }
 
     protocol
         .write_field_stop()
