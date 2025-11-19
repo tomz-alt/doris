@@ -201,6 +201,13 @@ impl BackendClient {
 
         // Decode result set from row_batch
         if let Some(row_batch_bytes) = response.row_batch {
+            // Debug: Log first bytes
+            eprintln!("📦 Received {} bytes in row_batch", row_batch_bytes.len());
+            if row_batch_bytes.len() > 0 {
+                let preview_len = row_batch_bytes.len().min(32);
+                eprintln!("📦 First {} bytes: {:02x?}", preview_len, &row_batch_bytes[..preview_len]);
+            }
+
             // Parse PBlock from bytes
             let pblock = pblock_parser::parse_pblock(&row_batch_bytes)?;
 
