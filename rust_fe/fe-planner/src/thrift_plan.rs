@@ -465,9 +465,6 @@ impl TPipelineFragmentParamsList {
 
         // Build descriptor table from OLAP_SCAN_NODE
         // Reference: Java FE Coordinator.java:3214 params.setDescTbl(descTable)
-        // TEMPORARILY DISABLED FOR DEBUGGING
-        let desc_tbl: Option<TDescriptorTable> = None;
-        /*
         let desc_tbl = if let Some(first_node) = fragment.plan.nodes.first() {
             if let Some(olap_node) = &first_node.olap_scan_node {
                 // Use complete descriptor table for lineitem, generic for others
@@ -489,7 +486,6 @@ impl TPipelineFragmentParamsList {
         } else {
             None
         };
-        */
 
         // Build fragment params
         // Reference: Java FE ThriftPlansBuilder.java:334-370
@@ -504,8 +500,8 @@ impl TPipelineFragmentParamsList {
             local_params,
             coord: None,
             num_senders: Some(1),
-            query_globals: None,  // TEMPORARILY DISABLED FOR DEBUGGING
-            query_options: None,  // TEMPORARILY DISABLED FOR DEBUGGING
+            query_globals: Some(TQueryGlobals::minimal()),  // Re-enabled for auto-gen conversion
+            query_options: Some(TQueryOptions::minimal()),  // Re-enabled for auto-gen conversion
             fragment_num_on_host: Some(1),  // Number of fragments on this host
             backend_id: Some(backend_id),  // Backend ID from scan range metadata
             total_instances: Some(1),  // Total number of instances (Java: instanceNumInThisFragment)
