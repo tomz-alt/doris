@@ -10,11 +10,15 @@ fe-common = { path = "../fe-common" }
 fe-planner = { path = "../fe-planner" }
 fe-qe = { path = "../fe-qe" }
 fe-catalog = { path = "../fe-catalog" }
+doris-thrift = { path = "../thrift-gen-rs" }
 
 # gRPC/Protobuf
 tonic = "0.10"
 prost = "0.12"
 prost-types = "0.12"
+
+# Thrift serialization
+thrift = "0.17.0"
 
 # Async runtime
 tokio = { workspace = true, features = ["full"] }

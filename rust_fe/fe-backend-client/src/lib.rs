@@ -21,6 +21,9 @@ pub mod generated;
 pub mod pblock_parser_v2;
 pub use pblock_parser_v2 as pblock_parser;
 
+// Thrift type conversion (temporary bridge to auto-generated code)
+mod thrift_convert;
+
 use generated::doris::{
     p_backend_service_client::PBackendServiceClient,
     PExecPlanFragmentRequest, PExecPlanFragmentResult,
@@ -107,10 +110,10 @@ impl BackendClient {
             scan_ranges.to_vec(),
         );
 
-        // Serialize pipeline params to Thrift bytes
-        let pipeline_bytes = fe_planner::serialize_pipeline_params(&pipeline_params)?;
+        // Serialize pipeline params using auto-generated Thrift code
+        let pipeline_bytes = thrift_convert::serialize_with_autogen(&pipeline_params, query_id)?;
 
-        // Debug: Print first 100 bytes of serialized data
+        // Debug: Print first 64 bytes of serialized data
         eprintln!("📦 Serialized Thrift payload size: {} bytes", pipeline_bytes.len());
         eprintln!("📦 First 64 bytes (hex): {}",
             pipeline_bytes.iter().take(64).map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(" "));

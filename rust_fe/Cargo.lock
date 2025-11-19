@@ -703,6 +703,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "byteorder",
+ "doris-thrift",
  "fe-catalog",
  "fe-common",
  "fe-planner",
@@ -715,6 +716,7 @@ dependencies = [
  "prost-types",
  "snap",
  "sqlparser 0.43.1",
+ "thrift",
  "tokio",
  "tonic",
  "tonic-build",
