@@ -90,7 +90,7 @@ async fn main() {
 
     let palo_range = TPaloScanRange {
         db_name: String::new(),
-        schema_hash: "2105693168".to_string(),  // CRITICAL: Real schema hash from tablet metadata!
+        schema_hash: "0".to_string(),  // Java FE uses "0" - not the real hash! (deprecated field?)
         version: "8".to_string(),  // Latest version in rowset [2-8] which contains our 4.06KB data
         version_hash: String::new(),
         tablet_id: 1763520834036, // REAL tablet ID from Java FE
