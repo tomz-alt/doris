@@ -1,0 +1,76 @@
+# Apache Doris - Backend Util Tests
+# Licensed to the Apache Software Foundation (ASF)
+
+package(default_visibility = ["//be/test:__subpackages__"])
+
+# Individual test targets for key utilities
+cc_test(
+    name = "bitmap_test",
+    srcs = ["bitmap_test.cpp"],
+    copts = ["-std=c++17"],
+    deps = [
+        "//be/src/util:util",
+        "//bazel/third_party:gtest",
+        "//bazel/third_party:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "block_compression_test",
+    srcs = ["block_compression_test.cpp"],
+    copts = ["-std=c++17"],
+    deps = [
+        "//be/src/util:util",
+        "//bazel/third_party:gtest",
+        "//bazel/third_party:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "coding_test",
+    srcs = ["coding_test.cpp"],
+    copts = ["-std=c++17"],
+    deps = [
+        "//be/src/util:util",
+        "//bazel/third_party:gtest",
+        "//bazel/third_party:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "crc32c_test",
+    srcs = ["crc32c_test.cpp"],
+    copts = ["-std=c++17"],
+    deps = [
+        "//be/src/util:util",
+        "//bazel/third_party:gtest",
+        "//bazel/third_party:gtest_main",
+    ],
+)
+
+# Test suite for all util tests
+# Note: This may fail to compile initially due to missing dependencies
+# We'll add them incrementally as we migrate more libraries
+cc_test(
+    name = "util_test_suite",
+    srcs = glob(
+        ["*_test.cpp"],
+        exclude = [
+            "bitmap_test.cpp",
+            "block_compression_test.cpp",
+            "coding_test.cpp",
+            "crc32c_test.cpp",
+        ],
+    ),
+    copts = ["-std=c++17"],
+    deps = [
+        "//be/src/util:util",
+        "//be/src/util:arrow",
+        "//be/src/util:hash",
+        "//bazel/third_party:gtest",
+        "//bazel/third_party:gtest_main",
+        # May need additional deps
+        # "//be/src/common:common",
+        # "//be/src/io:io",
+    ],
+)

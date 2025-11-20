@@ -1,0 +1,122 @@
+# Apache Doris - Backend Utility Library
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This library contains utility functions for:
+# - CPU/memory introspection
+# - Compression/encoding
+# - Networking utilities
+# - Data structures and algorithms
+# - Performance profiling
+
+package(default_visibility = ["//be:__subpackages__"])
+
+# Main utility library (split into smaller targets for better granularity)
+cc_library(
+    name = "util",
+    srcs = glob(
+        [
+            "*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+            "*_benchmark.cpp",
+            # Subdirectories handled separately
+            "arrow/*.cpp",
+            "hash/*.cpp",
+            "debug/*.cpp",
+            "mustache/*.cpp",
+            "simd/*.cpp",
+        ],
+    ),
+    hdrs = glob(
+        [
+            "*.h",
+            "*.hpp",
+        ],
+        exclude = [
+            # Subdirectories handled separately
+            "arrow/*.h",
+            "hash/*.h",
+            "debug/*.h",
+            "mustache/*.h",
+            "simd/*.h",
+        ],
+    ),
+    copts = [
+        "-std=c++17",
+    ],
+    includes = [
+        ".",
+        "..",  # for be/src includes
+    ],
+    deps = [
+        "//bazel/third_party:gflags",
+        "//bazel/third_party:glog",
+        "//bazel/third_party:gtest",
+        "//bazel/third_party:snappy",
+        "//bazel/third_party:lz4",
+        "//bazel/third_party:zlib",
+        "//bazel/third_party:zstd",
+        "//bazel/third_party:bzip2",
+        "//bazel/third_party:brpc",
+        "//bazel/third_party:protobuf_local",
+        # Will add common after resolving circular deps
+        # "//be/src/common:common",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Arrow utilities (Apache Arrow integration)
+cc_library(
+    name = "arrow",
+    srcs = glob(["arrow/*.cpp"]),
+    hdrs = glob(["arrow/*.h"]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":util",
+        "//bazel/third_party:arrow",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Hash utilities
+cc_library(
+    name = "hash",
+    srcs = glob(["hash/*.cpp"]),
+    hdrs = glob(["hash/*.h"]),
+    copts = ["-std=c++17"],
+    deps = [":util"],
+    visibility = ["//visibility:public"],
+)
+
+# Debug utilities
+cc_library(
+    name = "debug",
+    hdrs = glob(["debug/*.h"]),
+    copts = ["-std=c++17"],
+    deps = [":util"],
+    visibility = ["//visibility:public"],
+)
+
+# Mustache template engine
+cc_library(
+    name = "mustache",
+    srcs = glob(["mustache/*.cpp"]),
+    hdrs = glob(["mustache/*.h"]),
+    copts = ["-std=c++17"],
+    deps = [":util"],
+    visibility = ["//visibility:public"],
+)
+
+# SIMD optimizations
+cc_library(
+    name = "simd",
+    srcs = glob(["simd/*.cpp"]),
+    hdrs = glob(["simd/*.h"]),
+    copts = [
+        "-std=c++17",
+        # Platform-specific SIMD flags will be added via .bazelrc
+    ],
+    deps = [":util"],
+    visibility = ["//visibility:public"],
+)

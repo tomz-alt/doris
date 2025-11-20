@@ -1,0 +1,69 @@
+# Apache Doris - Backend Common Tests
+# Licensed to the Apache Software Foundation (ASF)
+
+package(default_visibility = ["//be/test:__subpackages__"])
+
+cc_test(
+    name = "compare_test",
+    srcs = ["compare_test.cpp"],
+    copts = ["-std=c++17"],
+    deps = [
+        "//be/src/common:common",
+        "//bazel/third_party:gtest",
+        "//bazel/third_party:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "config_test",
+    srcs = ["config_test.cpp"],
+    copts = ["-std=c++17"],
+    deps = [
+        "//be/src/common:common",
+        "//bazel/third_party:gtest",
+        "//bazel/third_party:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "config_validator_test",
+    srcs = ["config_validator_test.cpp"],
+    copts = ["-std=c++17"],
+    deps = [
+        "//be/src/common:common",
+        "//bazel/third_party:gtest",
+        "//bazel/third_party:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "exception_test",
+    srcs = ["exception_test.cpp"],
+    copts = ["-std=c++17"],
+    deps = [
+        "//be/src/common:common",
+        "//bazel/third_party:gtest",
+        "//bazel/third_party:gtest_main",
+    ],
+)
+
+# Add more tests as they are discovered
+# Pattern: glob all *_test.cpp files
+cc_test(
+    name = "common_test_suite",
+    srcs = glob(
+        ["*_test.cpp"],
+        exclude = [
+            "compare_test.cpp",
+            "config_test.cpp",
+            "config_validator_test.cpp",
+            "exception_test.cpp",
+        ],
+    ),
+    copts = ["-std=c++17"],
+    deps = [
+        "//be/src/common:common",
+        "//bazel/third_party:gtest",
+        "//bazel/third_party:gtest_main",
+    ],
+)

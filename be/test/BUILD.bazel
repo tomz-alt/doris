@@ -1,0 +1,43 @@
+# Apache Doris - Backend Test Suite
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This package contains all backend unit tests organized by component.
+
+package(default_visibility = ["//be:__subpackages__"])
+
+# Test data files
+filegroup(
+    name = "test_data",
+    srcs = glob(["data/**/*"]),
+    visibility = ["//be/test:__subpackages__"],
+)
+
+# Expected results for tests
+filegroup(
+    name = "expected_results",
+    srcs = glob(["expected_result/**/*"]),
+    visibility = ["//be/test:__subpackages__"],
+)
+
+# Run all tests (will be populated as we add more test targets)
+test_suite(
+    name = "all_tests",
+    tests = [
+        "//be/test/common:compare_test",
+        "//be/test/common:config_test",
+        "//be/test/common:exception_test",
+        "//be/test/util:bitmap_test",
+        "//be/test/util:coding_test",
+        "//be/test/util:crc32c_test",
+        # Add more as we validate them
+    ],
+)
+
+# Quick tests (fast-running tests for rapid development)
+test_suite(
+    name = "quick_tests",
+    tests = [
+        "//be/test/common:compare_test",
+        "//be/test/util:coding_test",
+    ],
+)

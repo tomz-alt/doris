@@ -1,0 +1,62 @@
+# Apache Doris - Backend Common Library
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This library contains common utilities, configuration, and base types
+# used across the Doris backend.
+
+package(default_visibility = ["//be:__subpackages__"])
+
+cc_library(
+    name = "common",
+    srcs = glob(
+        [
+            "*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+            "be_mock_util.cpp",  # Only for testing
+        ],
+    ),
+    hdrs = glob([
+        "*.h",
+    ]),
+    copts = [
+        "-std=c++17",
+    ],
+    includes = [
+        ".",
+        "..",  # for be/src includes
+    ],
+    deps = [
+        "//bazel/third_party:gflags",
+        "//bazel/third_party:glog",
+        # fmt is typically included in thirdparty but may need explicit import
+        # "//bazel/third_party:fmt",
+        # lz4 for compression
+        "//bazel/third_party:lz4",
+        # Generated sources (will be added in Phase 3)
+        # "//gensrc:gen_cpp",
+    ],
+    # Note: This has circular dependencies with io, cloud, util
+    # We'll resolve these incrementally as we add more BUILD files
+    visibility = ["//visibility:public"],
+)
+
+# For testing utilities
+cc_library(
+    name = "be_mock_util",
+    srcs = ["be_mock_util.cpp"],
+    hdrs = ["be_mock_util.h"],
+    deps = [":common"],
+    testonly = True,
+    visibility = ["//be/test:__subpackages__"],
+)
+
+# Kerberos subpackage (if needed separately)
+cc_library(
+    name = "kerberos",
+    srcs = glob(["kerberos/*.cpp"]),
+    hdrs = glob(["kerberos/*.h"]),
+    deps = [":common"],
+    visibility = ["//visibility:public"],
+)

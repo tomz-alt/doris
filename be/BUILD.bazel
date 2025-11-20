@@ -1,0 +1,58 @@
+# Apache Doris - Backend (BE) Root BUILD
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This is the root BUILD file for the Doris backend components.
+
+package(default_visibility = ["//visibility:public"])
+
+# Export configuration files
+exports_files([
+    "CMakeLists.txt",
+    "cmake/thirdparty.cmake",
+])
+
+# Top-level backend library (combines all components)
+# This will be populated incrementally as we migrate more components
+cc_library(
+    name = "backend_libs",
+    deps = [
+        "//be/src/common:common",
+        "//be/src/util:util",
+        # Add more as we migrate:
+        # "//be/src/olap:olap",
+        # "//be/src/exec:exec",
+        # "//be/src/runtime:runtime",
+        # "//be/src/vec:vec",
+        # "//be/src/io:io",
+        # "//be/src/service:service",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Backend binary (doris_be) - placeholder for now
+# Will be implemented after core libraries are migrated
+# cc_binary(
+#     name = "doris_be",
+#     srcs = ["src/service/doris_be_main.cpp"],
+#     deps = [
+#         ":backend_libs",
+#         "//bazel/third_party:jemalloc",
+#     ],
+#     linkopts = [
+#         "-lpthread",
+#         "-ldl",
+#         "-lrt",
+#     ],
+# )
+
+# All backend tests
+alias(
+    name = "all_tests",
+    actual = "//be/test:all_tests",
+)
+
+# Quick test suite
+alias(
+    name = "quick_tests",
+    actual = "//be/test:quick_tests",
+)

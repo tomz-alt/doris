@@ -266,17 +266,33 @@ cc_library(
 # ===========================================
 
 # These are stub definitions using linkopts.
-# For proper integration, we should:
-# 1. Use cc_import with static_library or shared_library attributes
-# 2. Properly handle transitive dependencies
-# 3. Add filegroup for header files
-# 4. Test that linking works correctly
+# For proper integration with actual thirdparty libraries:
+#
+# PREREQUISITES:
+# 1. Build third-party libraries:
+#    cd thirdparty && ./build-thirdparty.sh
+#
+# 2. Verify libraries are installed:
+#    ls -la thirdparty/installed/lib/
+#
+# 3. Update cc_library targets to use cc_import pattern:
 #
 # Example proper cc_import:
 # cc_import(
-#     name = "glog_imported",
+#     name = "glog_import",
 #     hdrs = glob(["../../thirdparty/installed/include/glog/**/*.h"]),
 #     static_library = "../../thirdparty/installed/lib/libglog.a",
-#     # OR
-#     shared_library = "../../thirdparty/installed/lib/libglog.so",
+#     # OR for shared library:
+#     # shared_library = "../../thirdparty/installed/lib/libglog.so",
 # )
+#
+# cc_library(
+#     name = "glog",
+#     hdrs = glob(["../../thirdparty/installed/include/glog/**/*.h"]),
+#     includes = ["../../thirdparty/installed/include"],
+#     deps = [":glog_import", ":gflags"],
+#     visibility = ["//visibility:public"],
+# )
+#
+# Current approach: Use system linker with -l flags (works for validation)
+# Next phase: Convert to proper cc_import once thirdparty libraries are built
