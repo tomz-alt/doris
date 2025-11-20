@@ -582,7 +582,7 @@ impl TPipelineFragmentParamsList {
                 if olap_node.table_name.as_ref().map(|s| s.as_str()) == Some("lineitem") {
                     Some(TDescriptorTable::for_lineitem_table(
                         olap_node.tuple_id,
-                        10001,  // lineitem table_id
+                        1763520834034,  // REAL lineitem table_id from BE metadata!
                     ))
                 } else {
                     Some(TDescriptorTable::for_olap_scan(

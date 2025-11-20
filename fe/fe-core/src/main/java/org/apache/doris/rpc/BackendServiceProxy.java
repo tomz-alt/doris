@@ -161,14 +161,28 @@ public class BackendServiceProxy {
             TPipelineFragmentParamsList params, boolean twoPhaseExecution) throws TException, RpcException {
         InternalService.PExecPlanFragmentRequest.Builder builder =
                 InternalService.PExecPlanFragmentRequest.newBuilder();
+        byte[] serializedBytes = null;
         if (Config.use_compact_thrift_rpc) {
-            builder.setRequest(
-                    ByteString.copyFrom(new TSerializer(new TCompactProtocol.Factory()).serialize(params)));
+            serializedBytes = new TSerializer(new TCompactProtocol.Factory()).serialize(params);
+            builder.setRequest(ByteString.copyFrom(serializedBytes));
             builder.setCompact(true);
         } else {
-            builder.setRequest(ByteString.copyFrom(new TSerializer().serialize(params))).build();
+            serializedBytes = new TSerializer().serialize(params);
+            builder.setRequest(ByteString.copyFrom(serializedBytes));
             builder.setCompact(false);
         }
+
+        // DEBUG: Log serialized bytes for comparison with Rust FE
+        if (serializedBytes != null && serializedBytes.length > 0) {
+            StringBuilder hexDump = new StringBuilder();
+            hexDump.append("📦 Java FE Serialized Thrift payload size: ").append(serializedBytes.length).append(" bytes\n");
+            hexDump.append("📦 First ").append(Math.min(128, serializedBytes.length)).append(" bytes (hex): ");
+            for (int i = 0; i < Math.min(128, serializedBytes.length); i++) {
+                hexDump.append(String.format("%02x ", serializedBytes[i] & 0xFF));
+            }
+            LOG.info(hexDump.toString());
+        }
+
         // VERSION 3 means we send TPipelineFragmentParamsList
         builder.setVersion(InternalService.PFragmentRequestVersion.VERSION_3);
 
