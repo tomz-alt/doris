@@ -1,0 +1,220 @@
+# Apache Doris - Bazel Configuration
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This file configures build options, compiler flags, and optimization settings
+# for the Bazel build system migration from CMake.
+
+# ===========================================
+# Common Build Options
+# ===========================================
+
+# C++ Standard (matching CMake: C++17)
+build --cxxopt=-std=c++17
+build --host_cxxopt=-std=c++17
+
+# Enable compile_commands.json generation for IDE support
+build --experimental_proto_descriptor_sets_include_source_info
+
+# Show detailed errors
+build --verbose_failures
+
+# Use worker threads for better performance
+build --worker_sandboxing
+
+# Color output
+common --color=yes
+
+# ===========================================
+# Compiler Flags (migrated from CMakeLists.txt)
+# ===========================================
+
+# Warning flags
+build --copt=-Wall
+build --copt=-Wextra
+build --cxxopt=-Wno-deprecated-declarations
+build --cxxopt=-Wno-unused-parameter
+build --copt=-Wno-unused-function
+
+# Position-independent code
+build --copt=-fPIC
+
+# Stack protection
+build --copt=-fstack-protector-strong
+
+# Debug symbols (can be stripped later for release)
+build --copt=-g
+
+# ===========================================
+# Platform-Specific Configurations
+# ===========================================
+
+# Linux x86_64
+build:linux_x86_64 --platforms=//bazel/platforms:linux_x86_64
+build:linux_x86_64 --copt=-DLINUX
+build:linux_x86_64 --copt=-DOS_LINUX
+
+# Linux aarch64
+build:linux_aarch64 --platforms=//bazel/platforms:linux_aarch64
+build:linux_aarch64 --copt=-DLINUX
+build:linux_aarch64 --copt=-DOS_LINUX
+build:linux_aarch64 --copt=-march=armv8-a+crc
+
+# macOS (if needed)
+build:macos --copt=-DMACOS
+build:macos --copt=-DOS_MACOSX
+
+# Auto-detect platform (default)
+build --enable_platform_specific_config
+
+# ===========================================
+# Optimization Levels
+# ===========================================
+
+# Debug build (no optimization, full debug info)
+build:debug --compilation_mode=dbg
+build:debug --copt=-O0
+build:debug --strip=never
+
+# Release build (full optimization, strip debug info)
+build:release --compilation_mode=opt
+build:release --copt=-O3
+build:release --copt=-DNDEBUG
+build:release --strip=always
+
+# Release with debug info (for profiling)
+build:relwithdebinfo --compilation_mode=opt
+build:relwithdebinfo --copt=-O2
+build:relwithdebinfo --copt=-g
+build:relwithdebinfo --strip=never
+
+# ===========================================
+# Feature Flags (migrated from CMake options)
+# ===========================================
+
+# USE_AVX2 (default: ON)
+build:avx2 --copt=-mavx2
+build:avx2 --copt=-DUSE_AVX2
+
+# No AVX2 (for older CPUs)
+build:noavx2 --copt=-mno-avx2
+build:noavx2 --copt=-DUSE_AVX2=0
+
+# GLIBC compatibility
+build:glibc_compat --copt=-DGLIBC_COMPATIBILITY
+build:glibc_compat --linkopt=-Wl,--wrap=memcpy
+
+# Use jemalloc (default: ON)
+build:jemalloc --copt=-DUSE_JEMALLOC
+build:jemalloc --linkopt=-ljemalloc
+
+# Use libunwind (default: ON for Linux)
+build:libunwind --copt=-DUSE_UNWIND
+build:libunwind --linkopt=-lunwind
+
+# Use libc++ (default: ON for macOS)
+build:libcpp --cxxopt=-stdlib=libc++
+build:libcpp --linkopt=-lc++
+
+# Google Log custom prefix
+build --copt=-DGLOG_CUSTOM_PREFIX_SUPPORT
+
+# Boost stacktrace (use backtrace on Linux, noop on macOS)
+build:linux --copt=-DBOOST_STACKTRACE_USE_BACKTRACE
+build:macos --copt=-DBOOST_STACKTRACE_USE_NOOP
+
+# ===========================================
+# Performance & Resource Management
+# ===========================================
+
+# Use all available CPU cores (auto-detect)
+build --jobs=auto
+
+# RAM usage limit (80% of host RAM)
+build --local_ram_resources=HOST_RAM*0.8
+
+# CPU usage limit (80% of host CPUs)
+build --local_cpu_resources=HOST_CPUS*0.8
+
+# Worker memory limit (4GB per worker)
+build --experimental_worker_max_memory=4096
+
+# Disk cache (speeds up rebuilds)
+build --disk_cache=~/.cache/bazel/doris
+
+# ===========================================
+# Remote Caching (optional, for distributed teams)
+# ===========================================
+
+# Enable with: bazel build --config=remote ...
+build:remote --remote_cache=grpc://localhost:9092
+build:remote --remote_upload_local_results=true
+build:remote --remote_timeout=60s
+build:remote --remote_accept_cached=true
+
+# Remote execution (if available)
+# build:remote_exec --remote_executor=grpc://localhost:8980
+
+# ===========================================
+# Testing Configuration
+# ===========================================
+
+# Test output settings
+test --test_output=errors
+test --test_summary=detailed
+test --test_verbose_timeout_warnings
+
+# Test environment
+test --test_env=GTEST_COLOR=1
+test --test_env=LANG=en_US.UTF-8
+
+# ===========================================
+# Code Coverage (for --config=coverage)
+# ===========================================
+
+coverage --combined_report=lcov
+coverage --instrumentation_filter="//be/..."
+coverage --test_tag_filters=-nocoverage
+
+# ===========================================
+# Sanitizers (for debugging)
+# ===========================================
+
+# Address Sanitizer
+build:asan --strip=never
+build:asan --copt=-fsanitize=address
+build:asan --copt=-DADDRESS_SANITIZER
+build:asan --copt=-O1
+build:asan --copt=-g
+build:asan --copt=-fno-omit-frame-pointer
+build:asan --linkopt=-fsanitize=address
+
+# Thread Sanitizer
+build:tsan --strip=never
+build:tsan --copt=-fsanitize=thread
+build:tsan --copt=-DTHREAD_SANITIZER
+build:tsan --copt=-fno-omit-frame-pointer
+build:tsan --linkopt=-fsanitize=thread
+
+# Undefined Behavior Sanitizer
+build:ubsan --strip=never
+build:ubsan --copt=-fsanitize=undefined
+build:ubsan --copt=-fno-omit-frame-pointer
+build:ubsan --linkopt=-fsanitize=undefined
+
+# ===========================================
+# Output & Logging
+# ===========================================
+
+# Build event logging (for analysis)
+# build --build_event_json_file=build_events.json
+
+# Show progress
+build --show_progress_rate_limit=1
+
+# Show timestamps
+build --show_timestamps
+
+# ===========================================
+# Try to import user-specific .bazelrc (optional)
+# ===========================================
+try-import %workspace%/.bazelrc.user

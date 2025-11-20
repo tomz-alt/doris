@@ -1,0 +1,9 @@
+# Apache Doris - Bazel Configuration Directory
+# Licensed to the Apache Software Foundation (ASF)
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "platforms/BUILD.bazel",
+    "third_party/BUILD.bazel",
+])

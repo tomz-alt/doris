@@ -1,0 +1,84 @@
+# Apache Doris - Root BUILD file
+# Licensed to the Apache Software Foundation (ASF)
+
+# This is the root BUILD file for the Doris project.
+# It defines top-level targets and exports for the entire workspace.
+
+package(default_visibility = ["//visibility:public"])
+
+# ===========================================
+# Documentation
+# ===========================================
+
+exports_files([
+    "LICENSE.txt",
+    "NOTICE.txt",
+    "README.md",
+    "CONTRIBUTING.md",
+    "CONTRIBUTING_CN.md",
+    "CODE_OF_CONDUCT.md",
+    # Migration documentation
+    "todos.md",
+    "tools.md",
+    "CLAUDE.md",
+])
+
+# ===========================================
+# Top-level build targets
+# ===========================================
+
+# Build everything (to be populated as we migrate)
+filegroup(
+    name = "all",
+    srcs = [
+        # "//be:doris_be",      # Backend binary (Phase 3)
+        # "//fe:doris_fe",      # Frontend JAR (Phase 4)
+        # "//ui:doris_ui",      # UI artifacts (Phase 5)
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Backend-only target
+filegroup(
+    name = "backend",
+    srcs = [
+        # "//be:doris_be",
+        # "//be:all_tests",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Frontend-only target
+filegroup(
+    name = "frontend",
+    srcs = [
+        # "//fe:doris_fe",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# ===========================================
+# Build and test all
+# ===========================================
+
+# Alias for building everything (future)
+# alias(
+#     name = "build_all",
+#     actual = ":all",
+# )
+
+# ===========================================
+# Generated compile_commands.json for IDE support
+# Run: bazel run @hedron_compile_commands//:refresh_all
+# ===========================================
+
+# This generates compile_commands.json for clangd and other LSPs
+# No explicit target needed - use the command above
+
+# ===========================================
+# Code formatting and linting (future integration)
+# ===========================================
+
+# TODO: Add buildifier target for BUILD file formatting
+# TODO: Add clang-format target for C++ code formatting
+# TODO: Add clang-tidy target for C++ linting

@@ -1,0 +1,282 @@
+# Apache Doris - Third-party Dependencies
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This file imports third-party libraries built by thirdparty/build-thirdparty.sh
+# We use cc_import to wrap existing libraries for use in Bazel targets
+#
+# Strategy: Import existing installations rather than rebuild from source
+# This avoids the complexity of rebuilding 30+ dependencies with custom patches
+
+package(default_visibility = ["//visibility:public"])
+
+# ===========================================
+# Third-party Base Path
+# ===========================================
+
+# The third-party libraries are installed in thirdparty/installed/
+# after running thirdparty/build-thirdparty.sh
+
+TP_INSTALLED = "$(DORIS_THIRDPARTY)/installed"
+TP_INCLUDE = TP_INSTALLED + "/include"
+TP_LIB = TP_INSTALLED + "/lib"
+
+# ===========================================
+# Core Libraries (Essential for Phase 3)
+# ===========================================
+
+# Google Flags (command-line flag processing)
+# Used extensively in Doris BE for configuration
+cc_library(
+    name = "gflags",
+    hdrs = glob(["../../thirdparty/installed/include/gflags/**/*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-lgflags"],
+    visibility = ["//visibility:public"],
+)
+
+# Google Log (logging library)
+# Core logging infrastructure for Doris BE
+cc_library(
+    name = "glog",
+    hdrs = glob(["../../thirdparty/installed/include/glog/**/*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-lglog"],
+    deps = [":gflags"],
+    visibility = ["//visibility:public"],
+)
+
+# Google Test (unit testing framework)
+# Required for all BE unit tests
+cc_library(
+    name = "gtest",
+    hdrs = glob(["../../thirdparty/installed/include/gtest/**/*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = [
+        "-lgtest",
+        "-lgtest_main",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Google Mock (mocking framework)
+cc_library(
+    name = "gmock",
+    hdrs = glob(["../../thirdparty/installed/include/gmock/**/*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = [
+        "-lgmock",
+        "-lgmock_main",
+    ],
+    deps = [":gtest"],
+    visibility = ["//visibility:public"],
+)
+
+# ===========================================
+# Compression Libraries
+# ===========================================
+
+# Snappy (fast compression)
+cc_library(
+    name = "snappy",
+    hdrs = glob(["../../thirdparty/installed/include/snappy*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-lsnappy"],
+    visibility = ["//visibility:public"],
+)
+
+# LZ4 (very fast compression)
+cc_library(
+    name = "lz4",
+    hdrs = glob(["../../thirdparty/installed/include/lz4*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-llz4"],
+    visibility = ["//visibility:public"],
+)
+
+# Zlib (standard compression)
+cc_library(
+    name = "zlib",
+    hdrs = glob(["../../thirdparty/installed/include/zlib.h", "../../thirdparty/installed/include/zconf.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-lz"],
+    visibility = ["//visibility:public"],
+)
+
+# Zstd (high-ratio compression)
+cc_library(
+    name = "zstd",
+    hdrs = glob(["../../thirdparty/installed/include/zstd*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-lzstd"],
+    visibility = ["//visibility:public"],
+)
+
+# Bzip2 (block-sorting compression)
+cc_library(
+    name = "bzip2",
+    hdrs = glob(["../../thirdparty/installed/include/bzlib.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-lbz2"],
+    visibility = ["//visibility:public"],
+)
+
+# ===========================================
+# Serialization Libraries
+# ===========================================
+
+# Protobuf (protocol buffers)
+# TODO: This might conflict with @com_google_protobuf from WORKSPACE
+# May need to use that instead or create wrapper
+cc_library(
+    name = "protobuf_local",
+    hdrs = glob(["../../thirdparty/installed/include/google/protobuf/**/*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-lprotobuf"],
+    visibility = ["//visibility:public"],
+)
+
+# Thrift (RPC framework)
+cc_library(
+    name = "thrift",
+    hdrs = glob(["../../thirdparty/installed/include/thrift/**/*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-lthrift"],
+    visibility = ["//visibility:public"],
+)
+
+# ===========================================
+# Network & RPC Libraries
+# ===========================================
+
+# libevent (event notification library)
+cc_library(
+    name = "event",
+    hdrs = glob(["../../thirdparty/installed/include/event2/**/*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-levent", "-levent_pthreads"],
+    visibility = ["//visibility:public"],
+)
+
+# OpenSSL (cryptography and SSL/TLS)
+cc_library(
+    name = "openssl",
+    hdrs = glob([
+        "../../thirdparty/installed/include/openssl/**/*.h",
+    ]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-lssl", "-lcrypto"],
+    visibility = ["//visibility:public"],
+)
+
+# brpc (Baidu RPC framework)
+cc_library(
+    name = "brpc",
+    hdrs = glob(["../../thirdparty/installed/include/brpc/**/*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-lbrpc"],
+    deps = [
+        ":gflags",
+        ":glog",
+        ":protobuf_local",
+        ":openssl",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# ===========================================
+# Data Processing Libraries
+# ===========================================
+
+# Apache Arrow (columnar in-memory data)
+cc_library(
+    name = "arrow",
+    hdrs = glob(["../../thirdparty/installed/include/arrow/**/*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-larrow"],
+    visibility = ["//visibility:public"],
+)
+
+# ===========================================
+# Storage Libraries
+# ===========================================
+
+# RocksDB (embedded key-value store)
+cc_library(
+    name = "rocksdb",
+    hdrs = glob(["../../thirdparty/installed/include/rocksdb/**/*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-lrocksdb"],
+    visibility = ["//visibility:public"],
+)
+
+# ===========================================
+# Utility Libraries
+# ===========================================
+
+# Boost (C++ utility libraries)
+# Note: Boost is header-only mostly, but some parts need linking
+cc_library(
+    name = "boost",
+    hdrs = glob(["../../thirdparty/installed/include/boost/**/*.hpp", "../../thirdparty/installed/include/boost/**/*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = [
+        "-lboost_system",
+        "-lboost_thread",
+        "-lboost_filesystem",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# libunwind (stack unwinding for debugging)
+cc_library(
+    name = "unwind",
+    hdrs = glob(["../../thirdparty/installed/include/libunwind*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-lunwind"],
+    visibility = ["//visibility:public"],
+)
+
+# ===========================================
+# Memory Allocator
+# ===========================================
+
+# jemalloc (scalable memory allocator)
+cc_library(
+    name = "jemalloc",
+    hdrs = glob(["../../thirdparty/installed/include/jemalloc/**/*.h"]),
+    includes = ["../../thirdparty/installed/include"],
+    linkopts = ["-ljemalloc"],
+    visibility = ["//visibility:public"],
+)
+
+# ===========================================
+# TODO: Additional libraries to add as needed
+# ===========================================
+
+# - rapidjson (JSON parsing)
+# - re2 (regular expressions)
+# - librdkafka (Kafka client)
+# - aws-sdk-cpp (AWS integration)
+# - azure-storage-cpp (Azure integration)
+# - curl (HTTP client)
+# - ... (add others as discovered during BE migration)
+
+# ===========================================
+# Notes for Phase 3 Migration
+# ===========================================
+
+# These are stub definitions using linkopts.
+# For proper integration, we should:
+# 1. Use cc_import with static_library or shared_library attributes
+# 2. Properly handle transitive dependencies
+# 3. Add filegroup for header files
+# 4. Test that linking works correctly
+#
+# Example proper cc_import:
+# cc_import(
+#     name = "glog_imported",
+#     hdrs = glob(["../../thirdparty/installed/include/glog/**/*.h"]),
+#     static_library = "../../thirdparty/installed/lib/libglog.a",
+#     # OR
+#     shared_library = "../../thirdparty/installed/lib/libglog.so",
+# )

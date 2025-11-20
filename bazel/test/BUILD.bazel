@@ -1,0 +1,22 @@
+# Apache Doris - Bazel Test Targets
+# Licensed to the Apache Software Foundation (ASF)
+
+package(default_visibility = ["//visibility:public"])
+
+# Simple hello world test to validate Bazel setup
+cc_binary(
+    name = "hello_bazel",
+    srcs = ["hello_bazel.cc"],
+    copts = ["-std=c++17"],
+)
+
+# Test that third-party imports work (when they're ready)
+# cc_test(
+#     name = "third_party_test",
+#     srcs = ["third_party_test.cc"],
+#     deps = [
+#         "//bazel/third_party:glog",
+#         "//bazel/third_party:gflags",
+#         "//bazel/third_party:gtest",
+#     ],
+# )
