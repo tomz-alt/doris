@@ -40,7 +40,7 @@ brew install bazel
 **Verify Installation:**
 ```bash
 bazel --version
-# Should show: bazel 6.x.x or higher
+# Should show: bazel 7.7.0 or higher
 ```
 
 ## Quick Start

@@ -31,7 +31,7 @@ brew install bazelisk
 sudo apt install bazel
 
 # Verify installation
-bazel version  # Should show 6.5.0 or higher
+bazel version  # Should show 7.7.0 or higher
 ```
 
 ### 2. Build Third-Party Dependencies (30-60 minutes)
@@ -321,7 +321,7 @@ If you encounter issues:
 1. **Run validation:** `./bazel/validate_setup.sh`
 2. **Check docs:** See README.Bazel.md and docs/Phase3Complete.md
 3. **Review BUILD files:** Look for missing deps or incorrect paths
-4. **Check Bazel version:** Must be 6.5.0 or higher
+4. **Check Bazel version:** Must be 7.7.0 or higher
 5. **Verify prerequisites:** Third-party libs built, sources generated
 
 ---

@@ -179,7 +179,7 @@ sudo mv bazelisk-linux-amd64 /usr/local/bin/bazel
 brew install bazel
 
 # Verify
-bazel --version  # Should show 6.5.0 or higher
+bazel --version  # Should show 7.7.0 or higher
 ```
 
 **See**: [bazel/README.md](bazel/README.md) for detailed installation instructions.
@@ -244,8 +244,8 @@ This checks:
 Doris Bazel Setup Validation
 ==========================================
 
-✓ Bazel is installed (version: 6.5.0)
-✓ Bazel version is compatible (>= 6.0.0)
+✓ Bazel is installed (version: 7.7.0)
+✓ Bazel version is compatible (>= 7.0.0)
 ✓ Third-party directory exists
 ✓ Third-party lib directory exists
 ✓ Third-party libraries built (54 files found)

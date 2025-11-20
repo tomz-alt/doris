@@ -56,7 +56,7 @@ This document tracks the current progress, finished tasks, and expected upcoming
      - Performance settings (jobs=auto, RAM/CPU limits, disk cache)
      - Remote caching support (optional)
      - Sanitizers (ASAN, TSAN, UBSAN)
-   - Created .bazelversion pinning to Bazel 6.5.0
+   - Created .bazelversion pinning to Bazel 7.7.0
 
 5. **Platform Definitions** - COMPLETED
    - Created bazel/platforms/BUILD.bazel:
@@ -296,7 +296,7 @@ Major BE components now covered:
 
 ### Immediate Next Steps (Phase 3)
 
-**Prerequisites**: Install Bazel 6.5.0+ (see bazel/README.md)
+**Prerequisites**: Install Bazel 7.7.0+ (see bazel/README.md)
 
 1. **Validate Bazel Setup** (IMPORTANT FIRST STEP)
    - Install Bazel using bazelisk or package manager
@@ -524,7 +524,7 @@ None - analysis phase complete, ready to begin implementation
 2. **e318f6c9 - build: Initialize Bazel workspace for gradual migration**
    - Added WORKSPACE.bazel with 10+ external dependencies
    - Added .bazelrc with comprehensive build configuration
-   - Added .bazelversion (6.5.0)
+   - Added .bazelversion (7.7.0)
    - Added BUILD.bazel (root build file)
    - Added bazel/platforms/BUILD.bazel (platform definitions)
    - Added bazel/third_party/BUILD.bazel (20+ library wrappers)

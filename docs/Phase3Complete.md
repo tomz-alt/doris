@@ -208,7 +208,7 @@ After:  foundation → core → io → olap/runtime (CLEAN!)
 
 Before Bazel compilation can be validated:
 
-1. **Install Bazel 6.5.0+** (5 minutes):
+1. **Install Bazel 7.7.0+** (5 minutes):
    ```bash
    npm install -g @bazel/bazelisk
    # Or: brew install bazelisk (macOS)
