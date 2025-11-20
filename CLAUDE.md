@@ -9,7 +9,7 @@ This document tracks the current progress, finished tasks, and expected upcoming
 - **Session ID**: claude/migrate-cmake-to-bazel-016aCAqvuWxkoyNukiH5BUSg
 - **Branch**: claude/migrate-cmake-to-bazel-016aCAqvuWxkoyNukiH5BUSg
 - **Start Date**: 2025-11-20
-- **Current Phase**: Phase 2 - Bazel Foundation (COMPLETED)
+- **Current Phase**: Phase 3 - Backend Prototype (IN PROGRESS)
 
 ---
 
@@ -90,7 +90,55 @@ This document tracks the current progress, finished tasks, and expected upcoming
 9. **Git Commits** - COMPLETED
    - Commit 55bad1a8: "docs: Add comprehensive Bazel migration documentation"
    - Commit e318f6c9: "build: Initialize Bazel workspace for gradual migration"
-   - Both commits pushed to branch
+   - Commit 9e18ec77: "docs: Update CLAUDE.md with Phase 2 completion status"
+   - All commits pushed to branch
+
+### Backend Prototype (Phase 3)
+
+10. **Backend Core Libraries** - COMPLETED
+   - Created be/src/common/BUILD.bazel:
+     - Common utilities library (13 .cpp files)
+     - Config management, daemon, exception, status, logging
+     - Kerberos subpackage support
+     - Testing utilities (be_mock_util)
+   - Created be/src/util/BUILD.bazel:
+     - Utility functions library (71 .cpp files)
+     - Subpackages: arrow, hash, debug, mustache, simd
+     - Compression, encoding, networking, data structures
+     - Dependencies on compression libs and brpc
+
+11. **Test Infrastructure** - COMPLETED
+   - Created be/test/BUILD.bazel:
+     - Test suite definitions (all_tests, quick_tests)
+     - Test data and expected results filegroups
+   - Created be/test/common/BUILD.bazel:
+     - Individual tests: compare_test, config_test, exception_test
+     - Test suite for remaining tests
+   - Created be/test/util/BUILD.bazel:
+     - Individual tests: bitmap_test, coding_test, crc32c_test
+     - Comprehensive test suite
+
+12. **Backend BUILD Structure** - COMPLETED
+   - Created be/BUILD.bazel:
+     - Top-level backend_libs target
+     - Test suite aliases
+     - Placeholder for doris_be binary
+   - Created be/README.bazel.md:
+     - Comprehensive build guide
+     - Prerequisites and setup instructions
+     - Build/test commands
+     - IDE integration
+     - Known issues and workarounds
+     - Migration progress tracking
+
+13. **Third-party Refinement** - COMPLETED
+   - Updated bazel/third_party/BUILD.bazel notes
+   - Documented cc_import pattern for proper library imports
+   - Added prerequisites for thirdparty build
+
+14. **Git Commits** - COMPLETED
+   - Commit 0c5f5eeb: "build: Add backend (BE) prototype BUILD files for Phase 3"
+   - All commits pushed to branch
 
 ### Key Findings from Analysis
 
@@ -127,16 +175,55 @@ build.sh (root orchestrator)
 
 ## Current Tasks 🔄
 
-### Phase 2 Complete! ✅
+### Phase 3 Initial Prototype Complete! ✅
 
-All Phase 2 tasks have been completed:
+Phase 2 and Phase 3 initial tasks completed:
 - ✅ Bazel workspace initialized
 - ✅ Configuration files created
 - ✅ Platform definitions added
 - ✅ Third-party stubs created
-- ✅ Test targets added
-- ✅ Documentation updated
-- ✅ All changes committed and pushed
+- ✅ Backend common library BUILD file
+- ✅ Backend util library BUILD file
+- ✅ Test targets for common and util
+- ✅ Documentation updated (be/README.bazel.md)
+- ✅ All changes committed and pushed (4 commits total)
+
+### Next Steps for Phase 3
+
+**Prerequisites** (user must complete):
+1. ⚠️ **Build third-party dependencies**:
+   ```bash
+   cd thirdparty && ./build-thirdparty.sh
+   ```
+   (Takes 30-60 minutes, required for compilation)
+
+2. ⚠️ **Generate sources**:
+   ```bash
+   cd gensrc && make
+   ```
+   (Required for protobuf/thrift generated headers)
+
+3. ⚠️ **Validate Bazel setup**:
+   ```bash
+   bazel build //bazel/test:hello_bazel
+   bazel run //bazel/test:hello_bazel
+   ```
+   (Verifies Bazel is working correctly)
+
+**After prerequisites**:
+4. Validate BE compilation:
+   ```bash
+   bazel build //be/src/common:common
+   bazel build //be/src/util:util
+   ```
+
+5. Run tests:
+   ```bash
+   bazel test //be/test/common:compare_test
+   bazel test //be/test/util:bitmap_test
+   ```
+
+6. Resolve circular dependencies (common <-> util <-> io)
 
 ---
 
@@ -375,6 +462,21 @@ None - analysis phase complete, ready to begin implementation
    - Added bazel/test/BUILD.bazel (test targets)
    - Added bazel/README.md (quick start guide)
 
+3. **9e18ec77 - docs: Update CLAUDE.md with Phase 2 completion status**
+   - Documented all Phase 2 achievements
+   - Updated commit history
+   - Revised next steps for Phase 3
+
+4. **0c5f5eeb - build: Add backend (BE) prototype BUILD files for Phase 3**
+   - Added be/BUILD.bazel (top-level backend targets)
+   - Added be/src/common/BUILD.bazel (13 .cpp files, common utilities)
+   - Added be/src/util/BUILD.bazel (71 .cpp files, 5 subpackages)
+   - Added be/test/BUILD.bazel (test suites)
+   - Added be/test/common/BUILD.bazel (4+ test targets)
+   - Added be/test/util/BUILD.bazel (4+ test targets)
+   - Added be/README.bazel.md (comprehensive build guide)
+   - Updated bazel/third_party/BUILD.bazel notes
+
 ### Planned Next Commits (Phase 3)
 
 1. **build: Refine third-party cc_import rules**
@@ -438,14 +540,22 @@ The migration will be considered successful when:
 ---
 
 **Last Updated**: 2025-11-20
-**Current Status**: Phase 2 complete, ready for Phase 3 implementation
-**Next Session Goal**: Validate Bazel setup with test build, refine third-party imports, prototype BE common/util libraries
+**Current Status**: Phase 3 initial prototype complete, awaiting thirdparty dependencies
+**Next Session Goal**: Build thirdparty dependencies, validate BE compilation, resolve circular deps, add more BE components
 
 **Files Created This Session**:
-- Documentation: todos.md, tools.md, CLAUDE.md
+- Documentation: todos.md, tools.md, CLAUDE.md, be/README.bazel.md
 - Bazel Core: WORKSPACE.bazel, .bazelrc, .bazelversion, BUILD.bazel
 - Bazel Config: bazel/platforms/BUILD.bazel, bazel/third_party/BUILD.bazel, bazel/BUILD.bazel
 - Testing: bazel/test/hello_bazel.cc, bazel/test/BUILD.bazel, bazel/README.md
+- Backend: be/BUILD.bazel, be/src/common/BUILD.bazel, be/src/util/BUILD.bazel
+- BE Tests: be/test/BUILD.bazel, be/test/common/BUILD.bazel, be/test/util/BUILD.bazel
 
-**Commits**: 2 (documentation + workspace setup)
+**Commits**: 4 (documentation + workspace + phase2 update + BE prototype)
 **Branch**: claude/migrate-cmake-to-bazel-016aCAqvuWxkoyNukiH5BUSg (pushed)
+
+**Key Achievements**:
+- ✅ Complete Bazel workspace foundation (Phase 2)
+- ✅ Initial BE common/util library BUILD files (Phase 3)
+- ✅ Test infrastructure with 8+ test targets
+- ✅ Comprehensive documentation (4 docs files)
