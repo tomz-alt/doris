@@ -56,6 +56,7 @@ impl QueryPlanner {
             plan: TPlan {
                 nodes: vec![scan_node],
             },
+            output_sink: None,  // Will use default ResultSink in conversion
             partition: TDataPartition {
                 partition_type: TPartitionType::Unpartitioned,
                 partition_exprs: None,

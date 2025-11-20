@@ -262,27 +262,48 @@ fn convert_type_desc(manual: &fe_planner::thrift_plan::TTypeDesc) -> doris_thrif
     }
 }
 
-/// Convert TPlanFragment
-fn convert_plan_fragment(
-    manual: &fe_planner::thrift_plan::TPlanFragment,
-) -> Result<doris_thrift::planner::TPlanFragment> {
-    use doris_thrift::planner::*;
+/// Convert TDataSink
+fn convert_data_sink(
+    manual: &fe_planner::thrift_plan::TDataSink,
+) -> Result<doris_thrift::data_sinks::TDataSink> {
     use doris_thrift::data_sinks::*;
 
-    let plan = convert_plan(&manual.plan)?;
-    let partition = convert_data_partition(&manual.partition)?;
+    let result_sink = manual.result_sink.as_ref().map(|rs| {
+        TResultSink {
+            type_: rs.type_field.map(|t| match t {
+                fe_planner::thrift_plan::TResultSinkType::MysqlProtocol => TResultSinkType::MYSQL_PROTOCOL,
+                fe_planner::thrift_plan::TResultSinkType::ArrowFlightProtocol => TResultSinkType::ARROW_FLIGHT_PROTOCOL,
+                fe_planner::thrift_plan::TResultSinkType::File => TResultSinkType::FILE,
+            }),
+            file_options: None,
+            fetch_option: None,
+        }
+    });
 
-    // Create a result sink to return query results to FE
-    let result_sink = TResultSink {
-        type_: Some(TResultSinkType::MYSQL_PROTOCOL),  // Use MySQL protocol for result fetch
-        file_options: None,
-        fetch_option: None,
+    let type_field = match manual.type_field {
+        fe_planner::thrift_plan::TDataSinkType::DataStreamSink => TDataSinkType::DATA_STREAM_SINK,
+        fe_planner::thrift_plan::TDataSinkType::ResultSink => TDataSinkType::RESULT_SINK,
+        fe_planner::thrift_plan::TDataSinkType::DataSplitSink => TDataSinkType::DATA_SPLIT_SINK,
+        fe_planner::thrift_plan::TDataSinkType::MysqlTableSink => TDataSinkType::MYSQL_TABLE_SINK,
+        fe_planner::thrift_plan::TDataSinkType::ExportSink => TDataSinkType::EXPORT_SINK,
+        fe_planner::thrift_plan::TDataSinkType::OlapTableSink => TDataSinkType::OLAP_TABLE_SINK,
+        fe_planner::thrift_plan::TDataSinkType::MemoryScratchSink => TDataSinkType::MEMORY_SCRATCH_SINK,
+        fe_planner::thrift_plan::TDataSinkType::OdbcTableSink => TDataSinkType::ODBC_TABLE_SINK,
+        fe_planner::thrift_plan::TDataSinkType::ResultFileSink => TDataSinkType::RESULT_FILE_SINK,
+        fe_planner::thrift_plan::TDataSinkType::JdbcTableSink => TDataSinkType::JDBC_TABLE_SINK,
+        fe_planner::thrift_plan::TDataSinkType::MultiCastDataStreamSink => TDataSinkType::MULTI_CAST_DATA_STREAM_SINK,
+        fe_planner::thrift_plan::TDataSinkType::GroupCommitOlapTableSink => TDataSinkType::GROUP_COMMIT_OLAP_TABLE_SINK,
+        fe_planner::thrift_plan::TDataSinkType::GroupCommitBlockSink => TDataSinkType::GROUP_COMMIT_BLOCK_SINK,
+        fe_planner::thrift_plan::TDataSinkType::HiveTableSink => TDataSinkType::HIVE_TABLE_SINK,
+        fe_planner::thrift_plan::TDataSinkType::IcebergTableSink => TDataSinkType::ICEBERG_TABLE_SINK,
+        fe_planner::thrift_plan::TDataSinkType::DictionarySink => TDataSinkType::DICTIONARY_SINK,
+        fe_planner::thrift_plan::TDataSinkType::BlackholeSink => TDataSinkType::BLACKHOLE_SINK,
     };
 
-    let output_sink = TDataSink {
-        type_: TDataSinkType::RESULT_SINK,  // Required field
+    Ok(TDataSink {
+        type_: type_field,
         stream_sink: None,
-        result_sink: Some(result_sink),
+        result_sink,
         mysql_table_sink: None,
         export_sink: None,
         olap_table_sink: None,
@@ -295,6 +316,47 @@ fn convert_plan_fragment(
         iceberg_table_sink: None,
         dictionary_sink: None,
         blackhole_sink: None,
+    })
+}
+
+/// Convert TPlanFragment
+fn convert_plan_fragment(
+    manual: &fe_planner::thrift_plan::TPlanFragment,
+) -> Result<doris_thrift::planner::TPlanFragment> {
+    use doris_thrift::planner::*;
+    use doris_thrift::data_sinks::*;
+
+    let plan = convert_plan(&manual.plan)?;
+    let partition = convert_data_partition(&manual.partition)?;
+
+    // Use manual output_sink if present, otherwise create default ResultSink
+    let output_sink = if let Some(manual_sink) = &manual.output_sink {
+        convert_data_sink(manual_sink)?
+    } else {
+        // Create default result sink to return query results to FE
+        let result_sink = TResultSink {
+            type_: Some(TResultSinkType::MYSQL_PROTOCOL),  // Use MySQL protocol for result fetch
+            file_options: None,
+            fetch_option: None,
+        };
+
+        TDataSink {
+            type_: TDataSinkType::RESULT_SINK,  // Required field
+            stream_sink: None,
+            result_sink: Some(result_sink),
+            mysql_table_sink: None,
+            export_sink: None,
+            olap_table_sink: None,
+            memory_scratch_sink: None,
+            odbc_table_sink: None,
+            result_file_sink: None,
+            jdbc_table_sink: None,
+            multi_cast_stream_sink: None,
+            hive_table_sink: None,
+            iceberg_table_sink: None,
+            dictionary_sink: None,
+            blackhole_sink: None,
+        }
     };
 
     Ok(TPlanFragment {

@@ -205,12 +205,74 @@ pub struct TPlan {
     pub nodes: Vec<TPlanNode>,
 }
 
+// ============================================================================
+// Data Sink Structures (Tell BE where to send results!)
+// Reference: DataSinks.thrift, ResultSink.java:69-78
+// ============================================================================
+
+/// Data sink types
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[repr(i32)]
+pub enum TDataSinkType {
+    DataStreamSink = 0,
+    ResultSink = 1,  // For query results!
+    DataSplitSink = 2,
+    MysqlTableSink = 3,
+    ExportSink = 4,
+    OlapTableSink = 5,
+    MemoryScratchSink = 6,
+    OdbcTableSink = 7,
+    ResultFileSink = 8,
+    JdbcTableSink = 9,
+    MultiCastDataStreamSink = 10,
+    GroupCommitOlapTableSink = 11,
+    GroupCommitBlockSink = 12,
+    HiveTableSink = 13,
+    IcebergTableSink = 14,
+    DictionarySink = 15,
+    BlackholeSink = 16,
+}
+
+/// Result sink types (how to format results)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[repr(i32)]
+pub enum TResultSinkType {
+    MysqlProtocol = 0,  // Standard MySQL protocol format
+    ArrowFlightProtocol = 1,
+    File = 2,
+}
+
+/// Result sink - tells BE to send results back to FE
+/// Reference: DataSinks.thrift TResultSink
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TResultSink {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "type")]
+    pub type_field: Option<TResultSinkType>,
+    // file_options and fetch_option can be None for simple queries
+}
+
+/// Data sink - wrapper containing all sink types
+/// Reference: DataSinks.thrift TDataSink, ResultSink.java:69-78
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TDataSink {
+    #[serde(rename = "type")]
+    pub type_field: TDataSinkType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result_sink: Option<TResultSink>,
+    // Other sink types omitted for simplicity - we only need ResultSink for SELECT queries
+}
+
 /// Plan fragment (from Planner.thrift)
 /// Reference: Planner.thrift TPlanFragment
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TPlanFragment {
     /// Field 2: Plan tree (optional)
     pub plan: TPlan,
+    /// Field 4: Output sink (CRITICAL! Tells BE where to send results!)
+    /// Reference: PlanFragment.java:331 result.setOutputSink(sink.toThrift())
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_sink: Option<TDataSink>,
     /// Field 6: Data partitioning (REQUIRED!)
     pub partition: TDataPartition,
 }
