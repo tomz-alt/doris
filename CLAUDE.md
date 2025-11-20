@@ -138,6 +138,55 @@ This document tracks the current progress, finished tasks, and expected upcoming
 
 14. **Git Commits** - COMPLETED
    - Commit 0c5f5eeb: "build: Add backend (BE) prototype BUILD files for Phase 3"
+   - Commit 19579471: "docs: Update CLAUDE.md with Phase 3 progress"
+   - All commits pushed to branch
+
+### Backend Expansion (Phase 3 Continued)
+
+15. **Additional BE Components** - COMPLETED
+   - Created be/src/io/BUILD.bazel:
+     - I/O layer library (48 .cpp files)
+     - Filesystem abstractions: local, HDFS, S3, Azure, broker
+     - File caching and buffering subsystems
+     - Subpackages: fs (filesystems), cache (file cache)
+   - Created be/src/runtime/BUILD.bazel:
+     - Runtime environment library (73 .cpp files)
+     - Execution environment, query context, fragment management
+     - Load management: stream_load, routine_load, group_commit
+     - Subpackages: memory, cache, stream_load, routine_load, workload_management, workload_group
+   - Created be/src/olap/BUILD.bazel:
+     - OLAP storage engine library (211 .cpp files)
+     - Tablet and rowset management, compaction (base/cumulative/cold)
+     - Schema and index management, data readers/writers
+     - Subpackages: rowset, task (scheduling), wal (write-ahead log)
+
+16. **Generated Sources Integration** - COMPLETED
+   - Created gensrc/BUILD.bazel:
+     - Filegroups for proto_gen_cpp, thrift_gen_cpp, script_gen_cpp
+     - Wrapper cc_library (gen_cpp_lib) for easy dependency
+     - Includes paths for build/gen_cpp subdirectories
+     - Dependencies on protobuf and thrift
+     - Documented 'make' command requirement for generation
+     - Noted future work: convert to native proto_library/genrule
+
+17. **Validation Tooling** - COMPLETED
+   - Created bazel/validate_setup.sh (200+ lines):
+     - Checks Bazel installation and version compatibility
+     - Verifies thirdparty libraries (50+ files expected)
+     - Validates generated sources (proto/thrift counts)
+     - Tests Bazel workspace validity
+     - Attempts to build hello_bazel target
+     - Color-coded pass/warn/fail output
+     - Provides actionable next steps
+
+18. **Updated Dependencies** - COMPLETED
+   - Updated be/BUILD.bazel: Added io, runtime, olap to backend_libs
+   - Updated be/src/common/BUILD.bazel: Added gensrc:gen_cpp_lib dependency
+   - Updated be/README.bazel.md: Documented all components with build commands
+   - Updated bazel/README.md: Added validation script section
+
+19. **Git Commits** - COMPLETED
+   - Commit 90e76589: "build: Expand BE component coverage with io, runtime, olap, and gensrc"
    - All commits pushed to branch
 
 ### Key Findings from Analysis
@@ -188,33 +237,45 @@ Phase 2 and Phase 3 initial tasks completed:
 - ✅ Documentation updated (be/README.bazel.md)
 - ✅ All changes committed and pushed (4 commits total)
 
-### Next Steps for Phase 3
+### Phase 3 Significant Expansion Complete! ✅
 
-**Prerequisites** (user must complete):
-1. ⚠️ **Build third-party dependencies**:
+Major BE components now covered:
+- ✅ common (13 .cpp files)
+- ✅ util (71 .cpp files, 5 subpackages)
+- ✅ io (48 .cpp files, fs/cache subsystems)
+- ✅ runtime (73 .cpp files, 6 subpackages)
+- ✅ olap (211 .cpp files, rowset/task/wal subsystems)
+- ✅ gensrc integration (proto/thrift/script generated sources)
+- ✅ Validation script (bazel/validate_setup.sh)
+- **TOTAL: 416 .cpp files across 5 core BE libraries**
+
+### Next Steps for Phase 3+
+
+**Prerequisites** (user must complete before compilation):
+1. ⚠️ **Build third-party dependencies** (30-60 minutes):
    ```bash
    cd thirdparty && ./build-thirdparty.sh
    ```
-   (Takes 30-60 minutes, required for compilation)
 
 2. ⚠️ **Generate sources**:
    ```bash
    cd gensrc && make
    ```
-   (Required for protobuf/thrift generated headers)
 
-3. ⚠️ **Validate Bazel setup**:
+3. ⚠️ **Validate setup**:
    ```bash
-   bazel build //bazel/test:hello_bazel
-   bazel run //bazel/test:hello_bazel
+   ./bazel/validate_setup.sh
    ```
-   (Verifies Bazel is working correctly)
+   This comprehensive script checks all prerequisites automatically.
 
 **After prerequisites**:
-4. Validate BE compilation:
+4. Build BE components:
    ```bash
    bazel build //be/src/common:common
    bazel build //be/src/util:util
+   bazel build //be/src/io:io
+   bazel build //be/src/runtime:runtime
+   bazel build //be/src/olap:olap
    ```
 
 5. Run tests:
@@ -223,7 +284,11 @@ Phase 2 and Phase 3 initial tasks completed:
    bazel test //be/test/util:bitmap_test
    ```
 
-6. Resolve circular dependencies (common <-> util <-> io)
+6. Remaining work:
+   - Resolve circular dependencies (common <-> util <-> io <-> runtime <-> olap)
+   - Add remaining BE components (exec, vec, service, exprs, http, geo)
+   - Test actual compilation with thirdparty dependencies
+   - Add more comprehensive test coverage
 
 ---
 
@@ -477,6 +542,20 @@ None - analysis phase complete, ready to begin implementation
    - Added be/README.bazel.md (comprehensive build guide)
    - Updated bazel/third_party/BUILD.bazel notes
 
+5. **19579471 - docs: Update CLAUDE.md with Phase 3 progress**
+   - Documented Phase 3 initial achievements
+   - Updated session tracking
+
+6. **90e76589 - build: Expand BE component coverage with io, runtime, olap, and gensrc**
+   - Added be/src/io/BUILD.bazel (48 .cpp files, fs/cache subsystems)
+   - Added be/src/runtime/BUILD.bazel (73 .cpp files, 6 subpackages)
+   - Added be/src/olap/BUILD.bazel (211 .cpp files, rowset/task/wal subsystems)
+   - Added gensrc/BUILD.bazel (proto/thrift/script integration)
+   - Added bazel/validate_setup.sh (200+ line validation script)
+   - Updated be/BUILD.bazel with new components
+   - Updated be/src/common/BUILD.bazel with gensrc dependency
+   - Updated documentation (be/README.bazel.md, bazel/README.md)
+
 ### Planned Next Commits (Phase 3)
 
 1. **build: Refine third-party cc_import rules**
@@ -540,22 +619,30 @@ The migration will be considered successful when:
 ---
 
 **Last Updated**: 2025-11-20
-**Current Status**: Phase 3 initial prototype complete, awaiting thirdparty dependencies
-**Next Session Goal**: Build thirdparty dependencies, validate BE compilation, resolve circular deps, add more BE components
+**Current Status**: Phase 3 significantly expanded - 5 major BE components migrated (416 .cpp files)
+**Next Session Goal**: Build thirdparty dependencies, validate actual compilation, resolve circular deps, add remaining BE components
 
 **Files Created This Session**:
-- Documentation: todos.md, tools.md, CLAUDE.md, be/README.bazel.md
-- Bazel Core: WORKSPACE.bazel, .bazelrc, .bazelversion, BUILD.bazel
-- Bazel Config: bazel/platforms/BUILD.bazel, bazel/third_party/BUILD.bazel, bazel/BUILD.bazel
-- Testing: bazel/test/hello_bazel.cc, bazel/test/BUILD.bazel, bazel/README.md
-- Backend: be/BUILD.bazel, be/src/common/BUILD.bazel, be/src/util/BUILD.bazel
-- BE Tests: be/test/BUILD.bazel, be/test/common/BUILD.bazel, be/test/util/BUILD.bazel
+- Documentation: todos.md, tools.md, CLAUDE.md, be/README.bazel.md (4 files)
+- Bazel Core: WORKSPACE.bazel, .bazelrc, .bazelversion, BUILD.bazel (4 files)
+- Bazel Config: bazel/platforms/BUILD.bazel, bazel/third_party/BUILD.bazel, bazel/BUILD.bazel (3 files)
+- Testing: bazel/test/hello_bazel.cc, bazel/test/BUILD.bazel, bazel/README.md (3 files)
+- Validation: bazel/validate_setup.sh (1 file)
+- Backend Core: be/BUILD.bazel, be/src/common/BUILD.bazel, be/src/util/BUILD.bazel (3 files)
+- Backend Expanded: be/src/io/BUILD.bazel, be/src/runtime/BUILD.bazel, be/src/olap/BUILD.bazel (3 files)
+- Generated Sources: gensrc/BUILD.bazel (1 file)
+- BE Tests: be/test/BUILD.bazel, be/test/common/BUILD.bazel, be/test/util/BUILD.bazel (3 files)
 
-**Commits**: 4 (documentation + workspace + phase2 update + BE prototype)
-**Branch**: claude/migrate-cmake-to-bazel-016aCAqvuWxkoyNukiH5BUSg (pushed)
+**Total Files Created**: 25 files
+**Commits**: 6 (documentation + workspace + phase2 docs + BE prototype + phase3 docs + BE expansion)
+**Branch**: claude/migrate-cmake-to-bazel-016aCAqvuWxkoyNukiH5BUSg (all pushed)
 
 **Key Achievements**:
-- ✅ Complete Bazel workspace foundation (Phase 2)
-- ✅ Initial BE common/util library BUILD files (Phase 3)
+- ✅ Complete Bazel workspace foundation with 10+ external dependencies (Phase 2)
+- ✅ 5 major BE components migrated: common, util, io, runtime, olap (Phase 3)
+- ✅ Generated sources integration (proto/thrift/script)
+- ✅ Validation tooling (comprehensive setup checking script)
 - ✅ Test infrastructure with 8+ test targets
-- ✅ Comprehensive documentation (4 docs files)
+- ✅ Comprehensive documentation (4 detailed docs files)
+- ✅ 416 .cpp files across 5 core BE libraries covered
+- ✅ 15+ subpackages organized (arrow, hash, debug, mustache, simd, fs, cache, memory, rowset, task, wal, etc.)
