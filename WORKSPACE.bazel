@@ -59,7 +59,7 @@ http_archive(
     name = "com_google_protobuf",
     urls = ["https://github.com/protocolbuffers/protobuf/releases/download/v21.11/protobuf-all-21.11.tar.gz"],
     strip_prefix = "protobuf-21.11",
-    sha256 = "b3b104f0374802e1add5d5d7a5a845ac",
+    sha256 = "f045f136e61e367a9436571b6676b94e5e16631a06c864146688c3aaf7df794b",
 )
 
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")

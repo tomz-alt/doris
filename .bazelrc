@@ -5,6 +5,14 @@
 # for the Bazel build system migration from CMake.
 
 # ===========================================
+# Bazel Module System
+# ===========================================
+
+# Disable Bzlmod (use WORKSPACE.bazel instead)
+# Bazel 7.x enables bzlmod by default, but we're using WORKSPACE
+common --noenable_bzlmod
+
+# ===========================================
 # Common Build Options
 # ===========================================
 
@@ -129,14 +137,14 @@ build:macos --copt=-DBOOST_STACKTRACE_USE_NOOP
 # Use all available CPU cores (auto-detect)
 build --jobs=auto
 
-# RAM usage limit (80% of host RAM)
-build --local_ram_resources=HOST_RAM*0.8
-
-# CPU usage limit (80% of host CPUs)
-build --local_cpu_resources=HOST_CPUS*0.8
+# RAM and CPU usage limits (80% of host resources)
+# Updated for Bazel 7.x compatibility
+build --local_resources=memory=HOST_RAM*0.8
+build --local_resources=cpu=HOST_CPUS*0.8
 
 # Worker memory limit (4GB per worker)
-build --experimental_worker_max_memory=4096
+# Note: --experimental_worker_max_memory removed in Bazel 7.x
+# build --experimental_worker_max_memory=4096
 
 # Disk cache (speeds up rebuilds)
 build --disk_cache=~/.cache/bazel/doris
