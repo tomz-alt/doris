@@ -1,0 +1,149 @@
+# Apache Doris - OLAP Storage Engine
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This is the core OLAP storage engine library containing:
+# - Tablet management
+# - Rowset management
+# - Compaction (base, cumulative, cold data)
+# - Schema management
+# - Index management (inverted index, bloom filters)
+# - Data readers and writers
+# - Delete operations and versioning
+# - WAL (Write-Ahead Logging)
+# - Task scheduling and execution
+#
+# NOTE: This is a LARGE library with 211+ .cpp files
+# Consider splitting into smaller libraries for better build granularity
+
+package(default_visibility = ["//be:__subpackages__"])
+
+# Main OLAP engine library
+# This is intentionally large to match the current CMake structure
+# Future optimization: split into smaller, more granular libraries
+cc_library(
+    name = "olap",
+    srcs = glob(
+        [
+            "*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+            "*_benchmark.cpp",
+            # Subdirectories handled separately
+            "rowset/*.cpp",
+            "task/*.cpp",
+            "wal/*.cpp",
+        ],
+    ),
+    hdrs = glob(
+        [
+            "*.h",
+        ],
+        exclude = [
+            # Subdirectories handled separately
+            "rowset/*.h",
+            "task/*.h",
+            "wal/*.h",
+        ],
+    ),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        ":rowset",
+        ":task",
+        ":wal",
+        "//be/src/common:common",
+        "//be/src/util:util",
+        "//be/src/io:io",
+        "//be/src/runtime:runtime",
+        "//gensrc:gen_cpp_lib",
+        "//bazel/third_party:glog",
+        "//bazel/third_party:gflags",
+        "//bazel/third_party:protobuf_local",
+        "//bazel/third_party:snappy",
+        "//bazel/third_party:lz4",
+        "//bazel/third_party:zstd",
+        "//bazel/third_party:rocksdb",
+        # Will add more deps as discovered:
+        # "//be/src/exec:exec",
+        # "//be/src/vec:vec",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Rowset management subsystem
+cc_library(
+    name = "rowset",
+    srcs = glob([
+        "rowset/*.cpp",
+    ]),
+    hdrs = glob([
+        "rowset/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//be/src/common:common",
+        "//be/src/util:util",
+        "//be/src/io:io",
+        "//gensrc:gen_cpp_lib",
+        "//bazel/third_party:glog",
+        "//bazel/third_party:protobuf_local",
+        "//bazel/third_party:snappy",
+        "//bazel/third_party:lz4",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Task scheduling and execution
+cc_library(
+    name = "task",
+    srcs = glob([
+        "task/*.cpp",
+    ]),
+    hdrs = glob([
+        "task/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//be/src/common:common",
+        "//be/src/util:util",
+        "//be/src/runtime:runtime",
+        "//gensrc:gen_cpp_lib",
+        "//bazel/third_party:glog",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Write-Ahead Logging (WAL)
+cc_library(
+    name = "wal",
+    srcs = glob([
+        "wal/*.cpp",
+    ]),
+    hdrs = glob([
+        "wal/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//be/src/common:common",
+        "//be/src/util:util",
+        "//be/src/io:io",
+        "//bazel/third_party:glog",
+    ],
+    visibility = ["//visibility:public"],
+)

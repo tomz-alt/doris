@@ -1,0 +1,108 @@
+# Apache Doris - Backend I/O Layer
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This library contains the I/O layer with filesystem abstractions:
+# - Local filesystem
+# - HDFS filesystem
+# - S3 object storage
+# - Azure object storage
+# - Broker filesystem
+# - File caching and buffering
+
+package(default_visibility = ["//be:__subpackages__"])
+
+# Main I/O library
+cc_library(
+    name = "io",
+    srcs = glob(
+        [
+            "*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+            "*_benchmark.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "*.h",
+    ]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//be/src/common:common",
+        "//be/src/util:util",
+        "//bazel/third_party:glog",
+        "//bazel/third_party:gflags",
+        # HDFS support
+        # "//bazel/third_party:hdfs",
+        # AWS S3 support
+        # "//bazel/third_party:aws_sdk",
+        # Azure support
+        # "//bazel/third_party:azure_sdk",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Filesystem abstraction layer
+cc_library(
+    name = "fs",
+    srcs = glob(
+        [
+            "fs/*.cpp",
+        ],
+        exclude = [
+            "fs/*_test.cpp",
+            "fs/*_benchmark.cpp",
+            "fs/benchmark/*.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "fs/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        ":io",
+        "//be/src/common:common",
+        "//be/src/util:util",
+        "//bazel/third_party:glog",
+        # Cloud storage deps
+        # "//bazel/third_party:aws_sdk",
+        # "//bazel/third_party:azure_sdk",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# File cache layer
+cc_library(
+    name = "cache",
+    srcs = glob([
+        "cache/*.cpp",
+    ]),
+    hdrs = glob([
+        "cache/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":io",
+        "//be/src/common:common",
+        "//be/src/util:util",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# I/O tools (optional)
+# cc_binary(
+#     name = "io_tool",
+#     srcs = glob(["tools/*.cpp"]),
+#     deps = [
+#         ":io",
+#         ":fs",
+#     ],
+# )

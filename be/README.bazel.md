@@ -70,7 +70,16 @@ bazel build //be/src/common:common
 # Build util library
 bazel build //be/src/util:util
 
-# Build all backend libraries (when available)
+# Build I/O layer
+bazel build //be/src/io:io
+
+# Build runtime environment
+bazel build //be/src/runtime:runtime
+
+# Build OLAP storage engine
+bazel build //be/src/olap:olap
+
+# Build all backend libraries
 bazel build //be:backend_libs
 ```
 
@@ -267,18 +276,23 @@ cd gensrc && make
 
 ### Phase 3: Backend Prototype (Current)
 
-- [x] be/src/common BUILD file
-- [x] be/src/util BUILD file
-- [x] Test targets for common
-- [x] Test targets for util
+- [x] be/src/common BUILD file (13 .cpp files)
+- [x] be/src/util BUILD file (71 .cpp files, 5 subpackages)
+- [x] be/src/io BUILD file (48 .cpp files, fs/cache subsystems)
+- [x] be/src/runtime BUILD file (73 .cpp files, 6 subpackages)
+- [x] be/src/olap BUILD file (211 .cpp files, rowset/task/wal subsystems)
+- [x] Test targets for common (4+ tests)
+- [x] Test targets for util (4+ tests)
+- [x] gensrc integration (proto/thrift generated sources)
 - [ ] Resolve circular dependencies
+- [ ] Validate compilation with thirdparty deps
 - [ ] Add remaining libraries:
-  - [ ] be/src/olap
-  - [ ] be/src/exec
-  - [ ] be/src/runtime
-  - [ ] be/src/vec
-  - [ ] be/src/io
-  - [ ] be/src/service
+  - [ ] be/src/exec (query execution)
+  - [ ] be/src/vec (vectorized execution)
+  - [ ] be/src/service (RPC services)
+  - [ ] be/src/exprs (expressions)
+  - [ ] be/src/http (HTTP handlers)
+  - [ ] be/src/geo (geospatial functions)
 
 ### Phase 4: Generated Sources
 

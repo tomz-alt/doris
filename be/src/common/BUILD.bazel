@@ -30,12 +30,10 @@ cc_library(
     deps = [
         "//bazel/third_party:gflags",
         "//bazel/third_party:glog",
+        "//bazel/third_party:lz4",
+        "//gensrc:gen_cpp_lib",  # Generated proto/thrift sources
         # fmt is typically included in thirdparty but may need explicit import
         # "//bazel/third_party:fmt",
-        # lz4 for compression
-        "//bazel/third_party:lz4",
-        # Generated sources (will be added in Phase 3)
-        # "//gensrc:gen_cpp",
     ],
     # Note: This has circular dependencies with io, cloud, util
     # We'll resolve these incrementally as we add more BUILD files

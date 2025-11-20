@@ -18,13 +18,16 @@ cc_library(
     deps = [
         "//be/src/common:common",
         "//be/src/util:util",
+        "//be/src/io:io",
+        "//be/src/runtime:runtime",
+        "//be/src/olap:olap",
         # Add more as we migrate:
-        # "//be/src/olap:olap",
         # "//be/src/exec:exec",
-        # "//be/src/runtime:runtime",
         # "//be/src/vec:vec",
-        # "//be/src/io:io",
         # "//be/src/service:service",
+        # "//be/src/exprs:exprs",
+        # "//be/src/http:http",
+        # "//be/src/geo:geo",
     ],
     visibility = ["//visibility:public"],
 )

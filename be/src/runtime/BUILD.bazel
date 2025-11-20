@@ -1,0 +1,162 @@
+# Apache Doris - Backend Runtime Environment
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This library contains the runtime environment for query execution:
+# - Execution environment (exec_env)
+# - Query context and state management
+# - Fragment management
+# - Load management (stream load, group commit)
+# - Memory management
+# - Thread context
+# - Descriptors and type system
+# - Client caching
+
+package(default_visibility = ["//be:__subpackages__"])
+
+# Main runtime library
+cc_library(
+    name = "runtime",
+    srcs = glob(
+        [
+            "*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+            "*_benchmark.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "*.h",
+        "*.hpp",
+    ]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//be/src/common:common",
+        "//be/src/util:util",
+        "//be/src/io:io",
+        "//gensrc:gen_cpp_lib",  # Generated proto/thrift
+        "//bazel/third_party:glog",
+        "//bazel/third_party:gflags",
+        "//bazel/third_party:brpc",
+        "//bazel/third_party:protobuf_local",
+        "//bazel/third_party:thrift",
+        # Will add more deps as we migrate:
+        # "//be/src/olap:olap",
+        # "//be/src/exec:exec",
+        # "//be/src/vec:vec",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Memory management subsystem
+cc_library(
+    name = "memory",
+    srcs = glob([
+        "memory/*.cpp",
+    ]),
+    hdrs = glob([
+        "memory/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":runtime",
+        "//be/src/common:common",
+        "//be/src/util:util",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Cache subsystem
+cc_library(
+    name = "cache",
+    srcs = glob([
+        "cache/*.cpp",
+    ]),
+    hdrs = glob([
+        "cache/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":runtime",
+        "//be/src/common:common",
+        "//be/src/util:util",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Stream load subsystem
+cc_library(
+    name = "stream_load",
+    srcs = glob([
+        "stream_load/*.cpp",
+    ]),
+    hdrs = glob([
+        "stream_load/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":runtime",
+        "//be/src/common:common",
+        "//be/src/util:util",
+        "//be/src/io:io",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Routine load subsystem
+cc_library(
+    name = "routine_load",
+    srcs = glob([
+        "routine_load/*.cpp",
+    ]),
+    hdrs = glob([
+        "routine_load/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":runtime",
+        "//be/src/common:common",
+        "//be/src/util:util",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Workload management
+cc_library(
+    name = "workload_management",
+    srcs = glob([
+        "workload_management/*.cpp",
+    ]),
+    hdrs = glob([
+        "workload_management/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":runtime",
+        "//be/src/common:common",
+        "//be/src/util:util",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Workload group
+cc_library(
+    name = "workload_group",
+    srcs = glob([
+        "workload_group/*.cpp",
+    ]),
+    hdrs = glob([
+        "workload_group/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":runtime",
+        "//be/src/common:common",
+        "//be/src/util:util",
+    ],
+    visibility = ["//visibility:public"],
+)
