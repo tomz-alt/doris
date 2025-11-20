@@ -587,8 +587,8 @@ fn convert_olap_scan_node(
         use_topn_opt: None,
         indexes_desc: None,
         output_column_unique_ids: manual.output_column_unique_ids.as_ref().map(|ids| ids.iter().copied().collect()),
-        distribute_column_ids: None,
-        schema_version: None,
+        distribute_column_ids: manual.distribute_column_ids.clone(),  // CRITICAL: Distribution key columns!
+        schema_version: manual.schema_version,  // CRITICAL: Schema version identifier!
         topn_filter_source_node_ids: None,
         score_sort_info: None,
         ann_sort_info: None,

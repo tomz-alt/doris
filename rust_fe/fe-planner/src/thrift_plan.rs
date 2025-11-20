@@ -183,6 +183,12 @@ pub struct TOlapScanNode {
     /// CRITICAL: Without this, BE doesn't know which columns to materialize!
     #[serde(skip_serializing_if = "Option::is_none")]
     pub output_column_unique_ids: Option<Vec<i32>>,
+    /// Distribution column indices (0-based) - for HASH distribution
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub distribute_column_ids: Option<Vec<i32>>,
+    /// Schema version - table schema version identifier
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub schema_version: Option<i32>,
 }
 
 /// Plan node (from PlanNodes.thrift)

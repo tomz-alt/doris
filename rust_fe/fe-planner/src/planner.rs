@@ -102,6 +102,8 @@ impl QueryPlanner {
                 columns_desc: None,  // TODO: Generate from table schema
                 key_type: Some(1),  // DUP_KEYS for now (TPC-H tables are all DUPLICATE KEY)
                 output_column_unique_ids: Some(output_column_unique_ids),
+                distribute_column_ids: Some(vec![0]),  // TODO: Get from table distribution
+                schema_version: Some(0),  // TODO: Get from table metadata
             }),
         })
     }
