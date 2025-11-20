@@ -1,0 +1,91 @@
+# Apache Doris - Backend Execution Layer (Exec)
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This library contains traditional (non-vectorized) query execution operators:
+# - Table scanners (OLAP, MySQL, Elasticsearch, JDBC, etc.)
+# - Join operators (hash join, nested loop join)
+# - Aggregation operators
+# - Sort operators
+# - Schema scanners (metadata introspection)
+#
+# Note: Vectorized execution is in //be/src/vec
+
+package(default_visibility = ["//be:__subpackages__"])
+
+# Elasticsearch integration
+cc_library(
+    name = "es",
+    srcs = glob(
+        ["es/*.cpp"],
+        exclude = ["*_test.cpp"],
+    ),
+    hdrs = glob(["es/*.h"]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//bazel/third_party:glog",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Schema scanners (metadata introspection for information_schema, etc.)
+cc_library(
+    name = "schema_scanner",
+    srcs = glob(
+        ["schema_scanner/*.cpp"],
+        exclude = ["*_test.cpp"],
+    ),
+    hdrs = glob(["schema_scanner/*.h"]),
+    copts = ["-std=c++17"],
+    deps = [
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//be/src/runtime:runtime",
+        "//gensrc:gen_cpp_lib",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Main exec library (query execution operators)
+cc_library(
+    name = "exec",
+    srcs = glob(
+        [
+            "*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+            "*_benchmark.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "*.h",
+    ]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        ":es",
+        ":schema_scanner",
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:foundation",
+        "//be/src/util:core",
+        "//be/src/io:io",
+        "//be/src/runtime:runtime",
+        "//be/src/olap:olap",
+        "//gensrc:gen_cpp_lib",
+        "//bazel/third_party:glog",
+        "//bazel/third_party:gflags",
+        "//bazel/third_party:protobuf_local",
+    ],
+    visibility = ["//visibility:public"],
+)

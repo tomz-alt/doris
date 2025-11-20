@@ -1,0 +1,51 @@
+# Apache Doris - Backend Cloud Storage Integration
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This library contains cloud-native storage mode implementation:
+# - Cloud storage engine (separation of compute and storage)
+# - Cloud compaction (base, cumulative, full)
+# - Cloud backend service
+# - Cloud metadata management
+# - Cloud tablet and rowset management
+
+package(default_visibility = ["//be:__subpackages__"])
+
+# Main cloud library
+cc_library(
+    name = "cloud",
+    srcs = glob(
+        [
+            "*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "*.h",
+    ]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//be/src/io:io",
+        "//be/src/runtime:runtime",
+        "//be/src/olap:olap",
+        "//be/src/exec:exec",
+        "//be/src/http:http",
+        "//gensrc:gen_cpp_lib",
+        "//bazel/third_party:glog",
+        "//bazel/third_party:gflags",
+        "//bazel/third_party:brpc",
+        "//bazel/third_party:protobuf_local",
+        # Cloud storage dependencies (S3, Azure, etc.)
+        # "//bazel/third_party:aws_sdk",
+        # "//bazel/third_party:azure_sdk",
+    ],
+    visibility = ["//visibility:public"],
+)

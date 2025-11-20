@@ -1,0 +1,67 @@
+# Apache Doris - Backend HTTP Layer
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This library contains HTTP server and handlers:
+# - HTTP server (ev_http_server based on libevent)
+# - HTTP handlers (query execution, admin operations, metrics, etc.)
+# - HTTP client (for inter-node communication)
+# - REST API endpoints
+
+package(default_visibility = ["//be:__subpackages__"])
+
+# HTTP actions (endpoint handlers)
+cc_library(
+    name = "action",
+    srcs = glob(
+        ["action/*.cpp"],
+        exclude = ["*_test.cpp"],
+    ),
+    hdrs = glob(["action/*.h"]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//be/src/runtime:runtime",
+        "//be/src/olap:olap",
+        "//gensrc:gen_cpp_lib",
+        "//bazel/third_party:glog",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Main HTTP library
+cc_library(
+    name = "http",
+    srcs = glob(
+        [
+            "*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "*.h",
+    ]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        ":action",
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//be/src/io:io",
+        "//be/src/runtime:runtime",
+        "//bazel/third_party:glog",
+        "//bazel/third_party:gflags",
+        "//bazel/third_party:libevent",
+    ],
+    visibility = ["//visibility:public"],
+)

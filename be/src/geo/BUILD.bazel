@@ -1,0 +1,40 @@
+# Apache Doris - Backend Geospatial Functions
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This library contains geospatial data types and functions:
+# - Geographic types (points, lines, polygons)
+# - Spatial operations (distance, contains, intersects, etc.)
+# - GeoHash encoding/decoding
+# - S2 geometry library integration
+
+package(default_visibility = ["//be:__subpackages__"])
+
+# Main geo library
+cc_library(
+    name = "geo",
+    srcs = glob(
+        [
+            "*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "*.h",
+    ]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//bazel/third_party:glog",
+        # S2 geometry library (may need explicit import)
+        # "//bazel/third_party:s2geometry",
+    ],
+    visibility = ["//visibility:public"],
+)

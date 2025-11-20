@@ -27,13 +27,16 @@ cc_library(
         "//be/src/io:io",
         "//be/src/runtime:runtime",
         "//be/src/olap:olap",
-        # Add more as we migrate:
-        # "//be/src/exec:exec",
-        # "//be/src/vec:vec",
-        # "//be/src/service:service",
-        # "//be/src/exprs:exprs",
-        # "//be/src/http:http",
-        # "//be/src/geo:geo",
+        # Query execution layers
+        "//be/src/exec:exec",            # Traditional query execution
+        "//be/src/vec:vec",              # Vectorized execution engine (LARGEST: 424 files)
+        "//be/src/exprs:exprs",          # Traditional expressions
+        # Service layers
+        "//be/src/http:http",            # HTTP server and REST API
+        "//be/src/service:service",      # RPC services (Thrift, BRPC, Arrow Flight)
+        # Optional components
+        "//be/src/cloud:cloud",          # Cloud-native storage mode
+        "//be/src/geo:geo",              # Geospatial functions
     ],
     visibility = ["//visibility:public"],
 )

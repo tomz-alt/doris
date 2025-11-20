@@ -1,0 +1,95 @@
+# Apache Doris - Backend Service Layer
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This library contains RPC services and the main entry point:
+# - Backend service (Thrift RPC interface)
+# - BRPC service (high-performance RPC)
+# - HTTP service (REST API)
+# - Arrow Flight service (columnar data transfer)
+# - Main entry point (doris_main.cpp)
+
+package(default_visibility = ["//be:__subpackages__"])
+
+# Arrow Flight service (columnar data transfer protocol)
+cc_library(
+    name = "arrow_flight",
+    srcs = glob(
+        ["arrow_flight/*.cpp"],
+        exclude = ["*_test.cpp"],
+    ),
+    hdrs = glob(["arrow_flight/*.h"]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//be/src/runtime:runtime",
+        "//bazel/third_party:arrow",
+        "//bazel/third_party:glog",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Main service library (RPC services)
+cc_library(
+    name = "service",
+    srcs = glob(
+        [
+            "*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+            "doris_main.cpp",  # Main entry point is separate binary
+        ],
+    ),
+    hdrs = glob([
+        "*.h",
+    ]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        ":arrow_flight",
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//be/src/io:io",
+        "//be/src/runtime:runtime",
+        "//be/src/olap:olap",
+        "//be/src/exec:exec",
+        "//be/src/vec:vec",
+        "//be/src/http:http",
+        "//gensrc:gen_cpp_lib",
+        "//bazel/third_party:glog",
+        "//bazel/third_party:gflags",
+        "//bazel/third_party:brpc",
+        "//bazel/third_party:thrift",
+        "//bazel/third_party:protobuf_local",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Main binary (doris_be executable)
+# Note: Commented out until all dependencies are available and tested
+# cc_binary(
+#     name = "doris_be",
+#     srcs = ["doris_main.cpp"],
+#     copts = ["-std=c++17"],
+#     linkopts = [
+#         "-lpthread",
+#         "-ldl",
+#         "-lrt",
+#     ],
+#     deps = [
+#         ":service",
+#         "//be:backend_libs",
+#         "//bazel/third_party:jemalloc",
+#         "//bazel/third_party:glog",
+#         "//bazel/third_party:gflags",
+#     ],
+# )

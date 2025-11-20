@@ -1,0 +1,379 @@
+# Apache Doris - Backend Vectorized Execution Engine (Vec)
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This library contains the vectorized execution engine for Doris:
+# - Vectorized aggregate functions
+# - Vectorized scalar functions
+# - Vectorized data types and columns
+# - Vectorized query execution (scan, format readers)
+# - Expression evaluation
+#
+# This is the LARGEST backend component (424 .cpp files, 38% of backend)
+#
+# DEPENDENCIES: Uses layered common and util libraries
+
+package(default_visibility = ["//be:__subpackages__"])
+
+# Core vectorized types and columns
+cc_library(
+    name = "vec_core",
+    srcs = glob(
+        [
+            "core/*.cpp",
+            "columns/*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+            "*_benchmark.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "core/*.h",
+        "columns/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:foundation",
+        "//be/src/util:core",
+        "//bazel/third_party:glog",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Vectorized data types
+cc_library(
+    name = "data_types",
+    srcs = glob(
+        [
+            "data_types/*.cpp",
+            "data_types/serde/*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "data_types/*.h",
+        "data_types/serde/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":vec_core",
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//bazel/third_party:protobuf_local",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Common vectorized utilities
+cc_library(
+    name = "vec_common",
+    srcs = glob(
+        [
+            "common/*.cpp",
+            "common/hash_table/*.cpp",
+            "common/sort/*.cpp",
+            "common/string_utils/*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "common/*.h",
+        "common/hash_table/*.h",
+        "common/sort/*.h",
+        "common/string_utils/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":vec_core",
+        ":data_types",
+        "//be/src/common:core",
+        "//be/src/util:core",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Vectorized aggregate functions (48 .cpp files)
+cc_library(
+    name = "aggregate_functions",
+    srcs = glob(
+        ["aggregate_functions/*.cpp"],
+        exclude = ["*_test.cpp"],
+    ),
+    hdrs = glob(["aggregate_functions/*.h"]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":vec_core",
+        ":data_types",
+        ":vec_common",
+        "//be/src/common:core",
+        "//be/src/util:core",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Vectorized scalar functions (96 .cpp files)
+cc_library(
+    name = "functions",
+    srcs = glob(
+        [
+            "functions/*.cpp",
+            "functions/*/*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "functions/*.h",
+        "functions/*/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":vec_core",
+        ":data_types",
+        ":vec_common",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//bazel/third_party:glog",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Vectorized expressions
+cc_library(
+    name = "exprs",
+    srcs = glob(
+        [
+            "exprs/*.cpp",
+            "exprs/lambda_function/*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "exprs/*.h",
+        "exprs/lambda_function/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":vec_core",
+        ":data_types",
+        ":functions",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//gensrc:gen_cpp_lib",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Vectorized format readers (CSV, JSON, Parquet, ORC, Avro, Arrow, etc.)
+cc_library(
+    name = "format",
+    srcs = glob(
+        [
+            "exec/format/*.cpp",
+            "exec/format/arrow/*.cpp",
+            "exec/format/avro/*.cpp",
+            "exec/format/csv/*.cpp",
+            "exec/format/file_reader/*.cpp",
+            "exec/format/json/*.cpp",
+            "exec/format/orc/*.cpp",
+            "exec/format/parquet/*.cpp",
+            "exec/format/table/*.cpp",
+            "exec/format/table/iceberg/*.cpp",
+            "exec/format/text/*.cpp",
+            "exec/format/wal/*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "exec/format/*.h",
+        "exec/format/*/*.h",
+        "exec/format/*/*/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":vec_core",
+        ":data_types",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//be/src/io:io",
+        "//bazel/third_party:arrow",
+        "//bazel/third_party:protobuf_local",
+        # Parquet/ORC dependencies (may need explicit imports)
+        # "//bazel/third_party:parquet",
+        # "//bazel/third_party:orc",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Vectorized scan operators
+cc_library(
+    name = "scan",
+    srcs = glob(
+        ["exec/scan/*.cpp"],
+        exclude = ["*_test.cpp"],
+    ),
+    hdrs = glob(["exec/scan/*.h"]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":vec_core",
+        ":data_types",
+        ":format",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//be/src/io:io",
+        "//be/src/olap:olap",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Vectorized executor (pipeline execution engine)
+cc_library(
+    name = "executor",
+    srcs = glob(
+        [
+            "exec/executor/*.cpp",
+            "exec/executor/time_sharing/*.cpp",
+            "exec/executor/tools/*.cpp",
+            "exec/executor/tools/simulator/*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "exec/executor/*.h",
+        "exec/executor/*/*.h",
+        "exec/executor/*/*/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":vec_core",
+        ":data_types",
+        ":exprs",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//be/src/runtime:runtime",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Vectorized I/O, JSON, OLAP, runtime integration layers
+cc_library(
+    name = "vec_integration",
+    srcs = glob(
+        [
+            "io/*.cpp",
+            "json/*.cpp",
+            "jsonb/*.cpp",
+            "olap/*.cpp",
+            "runtime/*.cpp",
+            "utils/*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "io/*.h",
+        "json/*.h",
+        "jsonb/*.h",
+        "olap/*.h",
+        "runtime/*.h",
+        "utils/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":vec_core",
+        ":data_types",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//be/src/io:io",
+        "//be/src/olap:olap",
+        "//be/src/runtime:runtime",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Vectorized sink operators (output writers)
+cc_library(
+    name = "sink",
+    srcs = glob(
+        [
+            "sink/*.cpp",
+            "sink/*/*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "sink/*.h",
+        "sink/*/*.h",
+    ]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":vec_core",
+        ":data_types",
+        ":format",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//be/src/io:io",
+        "//be/src/runtime:runtime",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Vectorized spill (disk spilling for large queries)
+cc_library(
+    name = "spill",
+    srcs = glob(
+        ["spill/*.cpp"],
+        exclude = ["*_test.cpp"],
+    ),
+    hdrs = glob(["spill/*.h"]),
+    copts = ["-std=c++17"],
+    deps = [
+        ":vec_core",
+        ":data_types",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//be/src/io:io",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Top-level vec library (combines all vectorized components)
+cc_library(
+    name = "vec",
+    deps = [
+        ":vec_core",
+        ":data_types",
+        ":vec_common",
+        ":aggregate_functions",
+        ":functions",
+        ":exprs",
+        ":format",
+        ":scan",
+        ":executor",
+        ":vec_integration",
+        ":sink",
+        ":spill",
+    ],
+    visibility = ["//visibility:public"],
+)

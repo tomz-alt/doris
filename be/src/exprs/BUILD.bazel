@@ -1,0 +1,40 @@
+# Apache Doris - Backend Expression Functions (Traditional)
+# Licensed to the Apache Software Foundation (ASF)
+#
+# This library contains traditional (non-vectorized) expression functions:
+# - JSON functions (json_extract, json_parse, etc.)
+# - Math functions (mathematical operations)
+# - String functions (string manipulation)
+#
+# Note: Vectorized expressions are in //be/src/vec/exprs
+
+package(default_visibility = ["//be:__subpackages__"])
+
+# Main exprs library
+cc_library(
+    name = "exprs",
+    srcs = glob(
+        [
+            "*.cpp",
+        ],
+        exclude = [
+            "*_test.cpp",
+        ],
+    ),
+    hdrs = glob([
+        "*.h",
+    ]),
+    copts = ["-std=c++17"],
+    includes = [
+        ".",
+        "..",
+    ],
+    deps = [
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:core",
+        "//gensrc:gen_cpp_lib",
+        "//bazel/third_party:glog",
+    ],
+    visibility = ["//visibility:public"],
+)
