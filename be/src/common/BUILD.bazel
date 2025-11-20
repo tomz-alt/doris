@@ -3,11 +3,48 @@
 #
 # This library contains common utilities, configuration, and base types
 # used across the Doris backend.
+#
+# LAYERED ARCHITECTURE (to break circular dependencies):
+# - foundation: No BE dependencies (only third-party libs)
+# - core: Depends on foundation + util foundation
+# - common: Top-level target (backward compatibility)
 
 package(default_visibility = ["//be:__subpackages__"])
 
+# Foundation layer: Low-level utilities with NO dependencies on other BE libraries
+# These can be used by util/foundation and other foundation layers
 cc_library(
-    name = "common",
+    name = "foundation",
+    hdrs = [
+        "compiler_util.h",           # Compiler macros (LIKELY, UNLIKELY, etc.)
+        "consts.h",                   # Constants
+        "global_types.h",             # Global type definitions
+        "dwarf.h",                    # DWARF debug info (low-level)
+        "elf.h",                      # ELF format (low-level)
+        "compile_check_begin.h",      # Compile check guards
+        "compile_check_end.h",        # Compile check guards
+        "compile_check_avoid_begin.h",
+        "compile_check_avoid_end.h",
+        "atomic_shared_ptr.h",        # Atomic utilities (STL only)
+        "cast_set.h",                 # STL set utilities
+    ],
+    copts = [
+        "-std=c++17",
+    ],
+    includes = [
+        ".",
+        "..",  # for be/src includes
+    ],
+    # Only third-party dependencies, NO BE libraries
+    deps = [],
+    visibility = ["//visibility:public"],
+)
+
+# Core layer: Main common functionality
+# Depends on: foundation, util/foundation (when created), gensrc
+# Contains config, status, exception, etc.
+cc_library(
+    name = "core",
     srcs = glob(
         [
             "*.cpp",
@@ -15,11 +52,28 @@ cc_library(
         exclude = [
             "*_test.cpp",
             "be_mock_util.cpp",  # Only for testing
+            "kerberos/*.cpp",     # Separate target
         ],
     ),
-    hdrs = glob([
-        "*.h",
-    ]),
+    hdrs = glob(
+        ["*.h"],
+        exclude = [
+            # Foundation headers (listed above)
+            "compiler_util.h",
+            "consts.h",
+            "global_types.h",
+            "dwarf.h",
+            "elf.h",
+            "compile_check_begin.h",
+            "compile_check_end.h",
+            "compile_check_avoid_begin.h",
+            "compile_check_avoid_end.h",
+            "atomic_shared_ptr.h",
+            "cast_set.h",
+            # Testing
+            "be_mock_util.h",
+        ],
+    ),
     copts = [
         "-std=c++17",
     ],
@@ -28,15 +82,25 @@ cc_library(
         "..",  # for be/src includes
     ],
     deps = [
+        ":foundation",  # Our foundation layer
         "//bazel/third_party:gflags",
         "//bazel/third_party:glog",
         "//bazel/third_party:lz4",
         "//gensrc:gen_cpp_lib",  # Generated proto/thrift sources
-        # fmt is typically included in thirdparty but may need explicit import
-        # "//bazel/third_party:fmt",
+        # Note: Would depend on //be/src/util:foundation when created
+        # Currently has circular dependency with util - will be resolved
     ],
-    # Note: This has circular dependencies with io, cloud, util
-    # We'll resolve these incrementally as we add more BUILD files
+    visibility = ["//visibility:public"],
+)
+
+# Top-level common library (backward compatibility)
+# Other BUILD files should migrate to using :core or :foundation explicitly
+cc_library(
+    name = "common",
+    deps = [
+        ":foundation",
+        ":core",
+    ],
     visibility = ["//visibility:public"],
 )
 

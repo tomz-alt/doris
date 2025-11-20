@@ -35,8 +35,10 @@ cc_library(
         "..",
     ],
     deps = [
-        "//be/src/common:common",
-        "//be/src/util:util",
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:foundation",
+        "//be/src/util:core",
         "//be/src/io:io",
         "//gensrc:gen_cpp_lib",  # Generated proto/thrift
         "//bazel/third_party:glog",
@@ -64,8 +66,10 @@ cc_library(
     copts = ["-std=c++17"],
     deps = [
         ":runtime",
-        "//be/src/common:common",
-        "//be/src/util:util",
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:foundation",
+        "//be/src/util:core",
     ],
     visibility = ["//visibility:public"],
 )
@@ -82,8 +86,10 @@ cc_library(
     copts = ["-std=c++17"],
     deps = [
         ":runtime",
-        "//be/src/common:common",
-        "//be/src/util:util",
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:foundation",
+        "//be/src/util:core",
     ],
     visibility = ["//visibility:public"],
 )
@@ -100,8 +106,10 @@ cc_library(
     copts = ["-std=c++17"],
     deps = [
         ":runtime",
-        "//be/src/common:common",
-        "//be/src/util:util",
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:foundation",
+        "//be/src/util:core",
         "//be/src/io:io",
     ],
     visibility = ["//visibility:public"],
@@ -119,8 +127,10 @@ cc_library(
     copts = ["-std=c++17"],
     deps = [
         ":runtime",
-        "//be/src/common:common",
-        "//be/src/util:util",
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:foundation",
+        "//be/src/util:core",
     ],
     visibility = ["//visibility:public"],
 )
@@ -137,8 +147,10 @@ cc_library(
     copts = ["-std=c++17"],
     deps = [
         ":runtime",
-        "//be/src/common:common",
-        "//be/src/util:util",
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:foundation",
+        "//be/src/util:core",
     ],
     visibility = ["//visibility:public"],
 )
@@ -155,8 +167,10 @@ cc_library(
     copts = ["-std=c++17"],
     deps = [
         ":runtime",
-        "//be/src/common:common",
-        "//be/src/util:util",
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:foundation",
+        "//be/src/util:core",
     ],
     visibility = ["//visibility:public"],
 )

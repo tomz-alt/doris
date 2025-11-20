@@ -7,12 +7,38 @@
 # - Networking utilities
 # - Data structures and algorithms
 # - Performance profiling
+#
+# LAYERED ARCHITECTURE (to break circular dependencies):
+# - foundation: No BE dependencies (only third-party libs)
+# - core: Depends on foundation + common/foundation + common/core
+# - util: Top-level target (backward compatibility)
 
 package(default_visibility = ["//be:__subpackages__"])
 
-# Main utility library (split into smaller targets for better granularity)
+# Foundation layer: Low-level utilities with NO dependencies on other BE libraries
+# These can be used by common/core and other foundation layers
 cc_library(
-    name = "util",
+    name = "foundation",
+    hdrs = [
+        "alignment.h",        # Memory alignment macros (no deps)
+        "asan_util.h",        # ASAN utilities (sanitizer lib only)
+    ],
+    copts = [
+        "-std=c++17",
+    ],
+    includes = [
+        ".",
+        "..",  # for be/src includes
+    ],
+    # Only third-party dependencies, NO BE libraries
+    deps = [],
+    visibility = ["//visibility:public"],
+)
+
+# Core layer: Main utility functionality
+# Depends on: foundation, common/foundation, common/core, third-party
+cc_library(
+    name = "core",
     srcs = glob(
         [
             "*.cpp",
@@ -34,6 +60,9 @@ cc_library(
             "*.hpp",
         ],
         exclude = [
+            # Foundation headers (listed above)
+            "alignment.h",
+            "asan_util.h",
             # Subdirectories handled separately
             "arrow/*.h",
             "hash/*.h",
@@ -50,6 +79,9 @@ cc_library(
         "..",  # for be/src includes
     ],
     deps = [
+        ":foundation",  # Our foundation layer
+        "//be/src/common:foundation",  # Depends on common foundation
+        "//be/src/common:core",  # Depends on common core
         "//bazel/third_party:gflags",
         "//bazel/third_party:glog",
         "//bazel/third_party:gtest",
@@ -60,8 +92,17 @@ cc_library(
         "//bazel/third_party:bzip2",
         "//bazel/third_party:brpc",
         "//bazel/third_party:protobuf_local",
-        # Will add common after resolving circular deps
-        # "//be/src/common:common",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Top-level util library (backward compatibility)
+# Other BUILD files should migrate to using :core or :foundation explicitly
+cc_library(
+    name = "util",
+    deps = [
+        ":foundation",
+        ":core",
     ],
     visibility = ["//visibility:public"],
 )
@@ -73,7 +114,7 @@ cc_library(
     hdrs = glob(["arrow/*.h"]),
     copts = ["-std=c++17"],
     deps = [
-        ":util",
+        ":core",  # Updated to use core instead of util
         "//bazel/third_party:arrow",
     ],
     visibility = ["//visibility:public"],
@@ -85,7 +126,7 @@ cc_library(
     srcs = glob(["hash/*.cpp"]),
     hdrs = glob(["hash/*.h"]),
     copts = ["-std=c++17"],
-    deps = [":util"],
+    deps = [":core"],  # Updated to use core instead of util
     visibility = ["//visibility:public"],
 )
 
@@ -94,7 +135,7 @@ cc_library(
     name = "debug",
     hdrs = glob(["debug/*.h"]),
     copts = ["-std=c++17"],
-    deps = [":util"],
+    deps = [":core"],  # Updated to use core instead of util
     visibility = ["//visibility:public"],
 )
 
@@ -104,7 +145,7 @@ cc_library(
     srcs = glob(["mustache/*.cpp"]),
     hdrs = glob(["mustache/*.h"]),
     copts = ["-std=c++17"],
-    deps = [":util"],
+    deps = [":core"],  # Updated to use core instead of util
     visibility = ["//visibility:public"],
 )
 
@@ -117,6 +158,6 @@ cc_library(
         "-std=c++17",
         # Platform-specific SIMD flags will be added via .bazelrc
     ],
-    deps = [":util"],
+    deps = [":core"],  # Updated to use core instead of util
     visibility = ["//visibility:public"],
 )

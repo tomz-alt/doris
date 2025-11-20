@@ -13,11 +13,17 @@ exports_files([
 
 # Top-level backend library (combines all components)
 # This will be populated incrementally as we migrate more components
+# Note: Uses layered dependencies to break circular dependency cycles
 cc_library(
     name = "backend_libs",
     deps = [
-        "//be/src/common:common",
-        "//be/src/util:util",
+        # Foundation layers (no BE inter-dependencies)
+        "//be/src/common:foundation",
+        "//be/src/util:foundation",
+        # Core layers (depend on foundations)
+        "//be/src/common:core",
+        "//be/src/util:core",
+        # Higher-level layers (depend on foundations + cores)
         "//be/src/io:io",
         "//be/src/runtime:runtime",
         "//be/src/olap:olap",

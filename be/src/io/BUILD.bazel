@@ -8,6 +8,8 @@
 # - Azure object storage
 # - Broker filesystem
 # - File caching and buffering
+#
+# DEPENDENCIES: Uses layered common and util libraries to break circular dependencies
 
 package(default_visibility = ["//be:__subpackages__"])
 
@@ -32,8 +34,11 @@ cc_library(
         "..",
     ],
     deps = [
-        "//be/src/common:common",
-        "//be/src/util:util",
+        # Use layered dependencies to break circular deps
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:foundation",
+        "//be/src/util:core",
         "//bazel/third_party:glog",
         "//bazel/third_party:gflags",
         # HDFS support
@@ -69,8 +74,11 @@ cc_library(
     ],
     deps = [
         ":io",
-        "//be/src/common:common",
-        "//be/src/util:util",
+        # Use layered dependencies
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:foundation",
+        "//be/src/util:core",
         "//bazel/third_party:glog",
         # Cloud storage deps
         # "//bazel/third_party:aws_sdk",
@@ -91,8 +99,11 @@ cc_library(
     copts = ["-std=c++17"],
     deps = [
         ":io",
-        "//be/src/common:common",
-        "//be/src/util:util",
+        # Use layered dependencies
+        "//be/src/common:foundation",
+        "//be/src/common:core",
+        "//be/src/util:foundation",
+        "//be/src/util:core",
     ],
     visibility = ["//visibility:public"],
 )
