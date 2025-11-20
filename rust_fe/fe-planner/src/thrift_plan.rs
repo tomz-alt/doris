@@ -176,6 +176,9 @@ pub struct TOlapScanNode {
     /// Column descriptors - CRITICAL for BE to read from storage!
     #[serde(skip_serializing_if = "Option::is_none")]
     pub columns_desc: Option<Vec<TColumn>>,
+    /// Table keys type - CRITICAL for BE to know table model!
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_type: Option<i32>,  // TKeysType: DUP_KEYS=1, UNIQUE_KEYS=2, AGG_KEYS=3
     /// Column unique IDs to actually read and return (maps to descriptor col_unique_id)
     /// CRITICAL: Without this, BE doesn't know which columns to materialize!
     #[serde(skip_serializing_if = "Option::is_none")]

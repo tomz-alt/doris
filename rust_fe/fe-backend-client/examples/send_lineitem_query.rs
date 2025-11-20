@@ -56,6 +56,8 @@ async fn main() {
             table_name: Some("lineitem".to_string()),
             // CRITICAL: Full column descriptors for BE to read from storage!
             columns_desc: Some(fe_planner::thrift_plan::build_lineitem_columns_desc()),
+            // CRITICAL: Table keys type - lineitem is DUPLICATE KEY table!
+            key_type: Some(1),  // TKeysType::DUP_KEYS = 1
             // CRITICAL: Tell BE which columns to read and return (all 16 for SELECT *)
             output_column_unique_ids: Some(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
         }),

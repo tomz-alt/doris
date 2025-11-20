@@ -99,6 +99,7 @@ impl QueryPlanner {
                 is_preaggregation: true,
                 table_name: Some(table.name.clone()),
                 columns_desc: None,  // TODO: Generate from table schema
+                key_type: Some(1),  // DUP_KEYS for now (TPC-H tables are all DUPLICATE KEY)
                 output_column_unique_ids: Some(output_column_unique_ids),
             }),
         })

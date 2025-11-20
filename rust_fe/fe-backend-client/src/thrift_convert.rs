@@ -515,7 +515,7 @@ fn convert_olap_scan_node(
         key_column_type,  // Required Vec<TPrimitiveType>
         is_preaggregation: manual.is_preaggregation,  // Required bool
         sort_column: None,
-        key_type: None,
+        key_type: manual.key_type.map(|kt| doris_thrift::types::TKeysType(kt)),  // CRITICAL: Table model type!
         table_name: manual.table_name.clone(),
         columns_desc,  // CRITICAL: Full column metadata!
         sort_info: None,
