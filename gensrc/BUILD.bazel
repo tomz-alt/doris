@@ -1,97 +1,434 @@
-# Apache Doris - Generated Sources
-# Licensed to the Apache Software Foundation (ASF)
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
 #
-# This package contains generated code from:
-# - Protocol buffer (.proto) files
-# - Thrift (.thrift) files
-# - Custom script-based generation
+#   http://www.apache.org/licenses/LICENSE-2.0
 #
-# IMPORTANT: You must run 'make' in this directory before building with Bazel
-# to generate the required source files.
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# Generated Sources for Doris
+#
+# This BUILD file contains TWO approaches:
+# 1. Native Bazel rules (proto_library, genrules) - RECOMMENDED
+# 2. Legacy Makefile-based generation (backward compatibility)
+#
+# Use :gen_cpp_lib for native Bazel generation
+# Use :gen_cpp_lib_legacy for Makefile-based generation (requires 'make' first)
 
 package(default_visibility = ["//visibility:public"])
 
-# ===========================================
-# Protocol Buffer Rules
-# ===========================================
-
-# Load proto rules
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 
-# Note: Protobuf generation is handled by the existing Makefile
-# Once generated, we export the generated files as filegroups
-# In the future, this can be migrated to native proto_library rules
+# ============================================================================
+# OPTION 1: Native Bazel Rules (Recommended)
+# ============================================================================
 
-# Generated C++ proto sources (created by 'make' command)
-filegroup(
+# ----------------------------------------------------------------------------
+# Protocol Buffer (protobuf) Generation
+# ----------------------------------------------------------------------------
+
+# Define all proto_library targets
+proto_library(
+    name = "types_proto",
+    srcs = ["proto/types.proto"],
+)
+
+proto_library(
+    name = "runtime_profile_proto",
+    srcs = ["proto/runtime_profile.proto"],
+)
+
+proto_library(
+    name = "olap_file_proto",
+    srcs = ["proto/olap_file.proto"],
+    deps = [":olap_common_proto"],
+)
+
+proto_library(
+    name = "segment_v2_proto",
+    srcs = ["proto/segment_v2.proto"],
+)
+
+proto_library(
+    name = "olap_common_proto",
+    srcs = ["proto/olap_common.proto"],
+)
+
+proto_library(
+    name = "internal_service_proto",
+    srcs = ["proto/internal_service.proto"],
+    deps = [
+        ":data_proto",
+        ":descriptors_proto",
+        ":types_proto",
+    ],
+)
+
+proto_library(
+    name = "file_cache_proto",
+    srcs = ["proto/file_cache.proto"],
+)
+
+proto_library(
+    name = "function_service_proto",
+    srcs = ["proto/function_service.proto"],
+    deps = [":types_proto"],
+)
+
+proto_library(
+    name = "descriptors_proto",
+    srcs = ["proto/descriptors.proto"],
+    deps = [":types_proto"],
+)
+
+proto_library(
+    name = "column_data_file_proto",
+    srcs = ["proto/column_data_file.proto"],
+)
+
+proto_library(
+    name = "data_proto",
+    srcs = ["proto/data.proto"],
+)
+
+proto_library(
+    name = "cloud_proto",
+    srcs = ["proto/cloud.proto"],
+)
+
+# C++ code generation from proto files
+cc_proto_library(
+    name = "types_cc_proto",
+    deps = [":types_proto"],
+)
+
+cc_proto_library(
+    name = "runtime_profile_cc_proto",
+    deps = [":runtime_profile_proto"],
+)
+
+cc_proto_library(
+    name = "olap_file_cc_proto",
+    deps = [":olap_file_proto"],
+)
+
+cc_proto_library(
+    name = "segment_v2_cc_proto",
+    deps = [":segment_v2_proto"],
+)
+
+cc_proto_library(
+    name = "olap_common_cc_proto",
+    deps = [":olap_common_proto"],
+)
+
+cc_proto_library(
+    name = "internal_service_cc_proto",
+    deps = [":internal_service_proto"],
+)
+
+cc_proto_library(
+    name = "file_cache_cc_proto",
+    deps = [":file_cache_proto"],
+)
+
+cc_proto_library(
+    name = "function_service_cc_proto",
+    deps = [":function_service_proto"],
+)
+
+cc_proto_library(
+    name = "descriptors_cc_proto",
+    deps = [":descriptors_proto"],
+)
+
+cc_proto_library(
+    name = "column_data_file_cc_proto",
+    deps = [":column_data_file_proto"],
+)
+
+cc_proto_library(
+    name = "data_cc_proto",
+    deps = [":data_proto"],
+)
+
+cc_proto_library(
+    name = "cloud_cc_proto",
+    deps = [":cloud_proto"],
+)
+
+# Aggregate all proto-generated C++ libraries
+cc_library(
     name = "proto_gen_cpp",
-    srcs = glob([
-        "build/gen_cpp/proto/*.pb.h",
-        "build/gen_cpp/proto/*.pb.cc",
-    ]),
-    visibility = ["//visibility:public"],
+    deps = [
+        ":cloud_cc_proto",
+        ":column_data_file_cc_proto",
+        ":data_cc_proto",
+        ":descriptors_cc_proto",
+        ":file_cache_cc_proto",
+        ":function_service_cc_proto",
+        ":internal_service_cc_proto",
+        ":olap_common_cc_proto",
+        ":olap_file_cc_proto",
+        ":runtime_profile_cc_proto",
+        ":segment_v2_cc_proto",
+        ":types_cc_proto",
+    ],
 )
 
-# Individual proto libraries (for future migration to native rules)
-# proto_library(
-#     name = "internal_service_proto",
-#     srcs = ["proto/internal_service.proto"],
-#     deps = [
-#         ":types_proto",
-#         ":data_proto",
-#     ],
-# )
-#
-# cc_proto_library(
-#     name = "internal_service_cc_proto",
-#     deps = [":internal_service_proto"],
-# )
+# ----------------------------------------------------------------------------
+# Thrift Generation
+# ----------------------------------------------------------------------------
 
-# ===========================================
-# Thrift Rules
-# ===========================================
-
-# Generated C++ thrift sources (created by 'make' command)
+# All thrift source files
 filegroup(
+    name = "thrift_sources",
+    srcs = glob(["thrift/*.thrift"]),
+)
+
+# Genrule to generate C++ code from thrift files
+# Note: This uses the thrift compiler from thirdparty/installed/bin/thrift
+# Flags match Makefile: moveable_types, no_skeleton, allow-64bit-consts, strict
+genrule(
+    name = "thrift_gen",
+    srcs = [":thrift_sources"],
+    outs = [
+        # Each thrift file generates: _types.cpp, _types.h, _constants.cpp, _constants.h
+        # List generated for all 27 thrift files
+        "gen_thrift/AgentService_constants.cpp",
+        "gen_thrift/AgentService_constants.h",
+        "gen_thrift/AgentService_types.cpp",
+        "gen_thrift/AgentService_types.h",
+        "gen_thrift/BackendService_constants.cpp",
+        "gen_thrift/BackendService_constants.h",
+        "gen_thrift/BackendService_types.cpp",
+        "gen_thrift/BackendService_types.h",
+        "gen_thrift/Data_constants.cpp",
+        "gen_thrift/Data_constants.h",
+        "gen_thrift/Data_types.cpp",
+        "gen_thrift/Data_types.h",
+        "gen_thrift/DataSinks_constants.cpp",
+        "gen_thrift/DataSinks_constants.h",
+        "gen_thrift/DataSinks_types.cpp",
+        "gen_thrift/DataSinks_types.h",
+        "gen_thrift/Descriptors_constants.cpp",
+        "gen_thrift/Descriptors_constants.h",
+        "gen_thrift/Descriptors_types.cpp",
+        "gen_thrift/Descriptors_types.h",
+        "gen_thrift/DorisExternalService_constants.cpp",
+        "gen_thrift/DorisExternalService_constants.h",
+        "gen_thrift/DorisExternalService_types.cpp",
+        "gen_thrift/DorisExternalService_types.h",
+        "gen_thrift/Exprs_constants.cpp",
+        "gen_thrift/Exprs_constants.h",
+        "gen_thrift/Exprs_types.cpp",
+        "gen_thrift/Exprs_types.h",
+        "gen_thrift/ExternalTableSchema_constants.cpp",
+        "gen_thrift/ExternalTableSchema_constants.h",
+        "gen_thrift/ExternalTableSchema_types.cpp",
+        "gen_thrift/ExternalTableSchema_types.h",
+        "gen_thrift/FrontendService_constants.cpp",
+        "gen_thrift/FrontendService_constants.h",
+        "gen_thrift/FrontendService_types.cpp",
+        "gen_thrift/FrontendService_types.h",
+        "gen_thrift/HeartbeatService_constants.cpp",
+        "gen_thrift/HeartbeatService_constants.h",
+        "gen_thrift/HeartbeatService_types.cpp",
+        "gen_thrift/HeartbeatService_types.h",
+        "gen_thrift/MasterService_constants.cpp",
+        "gen_thrift/MasterService_constants.h",
+        "gen_thrift/MasterService_types.cpp",
+        "gen_thrift/MasterService_types.h",
+        "gen_thrift/MetricDefs_constants.cpp",
+        "gen_thrift/MetricDefs_constants.h",
+        "gen_thrift/MetricDefs_types.cpp",
+        "gen_thrift/MetricDefs_types.h",
+        "gen_thrift/Metrics_constants.cpp",
+        "gen_thrift/Metrics_constants.h",
+        "gen_thrift/Metrics_types.cpp",
+        "gen_thrift/Metrics_types.h",
+        "gen_thrift/NetworkTest_constants.cpp",
+        "gen_thrift/NetworkTest_constants.h",
+        "gen_thrift/NetworkTest_types.cpp",
+        "gen_thrift/NetworkTest_types.h",
+        "gen_thrift/Normalization_constants.cpp",
+        "gen_thrift/Normalization_constants.h",
+        "gen_thrift/Normalization_types.cpp",
+        "gen_thrift/Normalization_types.h",
+        "gen_thrift/Opcodes_constants.cpp",
+        "gen_thrift/Opcodes_constants.h",
+        "gen_thrift/Opcodes_types.cpp",
+        "gen_thrift/Opcodes_types.h",
+        "gen_thrift/PaloBrokerService_constants.cpp",
+        "gen_thrift/PaloBrokerService_constants.h",
+        "gen_thrift/PaloBrokerService_types.cpp",
+        "gen_thrift/PaloBrokerService_types.h",
+        "gen_thrift/PaloInternalService_constants.cpp",
+        "gen_thrift/PaloInternalService_constants.h",
+        "gen_thrift/PaloInternalService_types.cpp",
+        "gen_thrift/PaloInternalService_types.h",
+        "gen_thrift/Partitions_constants.cpp",
+        "gen_thrift/Partitions_constants.h",
+        "gen_thrift/Partitions_types.cpp",
+        "gen_thrift/Partitions_types.h",
+        "gen_thrift/PlanNodes_constants.cpp",
+        "gen_thrift/PlanNodes_constants.h",
+        "gen_thrift/PlanNodes_types.cpp",
+        "gen_thrift/PlanNodes_types.h",
+        "gen_thrift/Planner_constants.cpp",
+        "gen_thrift/Planner_constants.h",
+        "gen_thrift/Planner_types.cpp",
+        "gen_thrift/Planner_types.h",
+        "gen_thrift/QueryCache_constants.cpp",
+        "gen_thrift/QueryCache_constants.h",
+        "gen_thrift/QueryCache_types.cpp",
+        "gen_thrift/QueryCache_types.h",
+        "gen_thrift/QueryPlanExtra_constants.cpp",
+        "gen_thrift/QueryPlanExtra_constants.h",
+        "gen_thrift/QueryPlanExtra_types.cpp",
+        "gen_thrift/QueryPlanExtra_types.h",
+        "gen_thrift/RuntimeProfile_constants.cpp",
+        "gen_thrift/RuntimeProfile_constants.h",
+        "gen_thrift/RuntimeProfile_types.cpp",
+        "gen_thrift/RuntimeProfile_types.h",
+        "gen_thrift/Status_constants.cpp",
+        "gen_thrift/Status_constants.h",
+        "gen_thrift/Status_types.cpp",
+        "gen_thrift/Status_types.h",
+        "gen_thrift/Types_constants.cpp",
+        "gen_thrift/Types_constants.h",
+        "gen_thrift/Types_types.cpp",
+        "gen_thrift/Types_types.h",
+        "gen_thrift/parquet_constants.cpp",
+        "gen_thrift/parquet_constants.h",
+        "gen_thrift/parquet_types.cpp",
+        "gen_thrift/parquet_types.h",
+    ],
+    cmd = """
+        # Thrift compiler should be available from thirdparty
+        # If using system thrift, ensure it matches the version in thirdparty
+        THRIFT_BIN=$$(which thrift || echo "thirdparty/installed/bin/thrift")
+
+        if [ ! -x "$$THRIFT_BIN" ] && [ ! -x "thirdparty/installed/bin/thrift" ]; then
+            echo "ERROR: Thrift compiler not found."
+            echo "Please run: cd thirdparty && ./build-thirdparty.sh"
+            exit 1
+        fi
+
+        # Use thirdparty thrift if available
+        if [ -x "thirdparty/installed/bin/thrift" ]; then
+            THRIFT_BIN="thirdparty/installed/bin/thrift"
+        fi
+
+        # Create output directory
+        mkdir -p $(@D)
+
+        # Generate C++ code from each thrift file
+        # Flags match gensrc/thrift/Makefile:
+        # - moveable_types: Generate move constructors
+        # - no_skeleton: Don't generate server skeleton
+        # - allow-64bit-consts: Allow 64-bit integer constants
+        # - strict: Strict mode for better error checking
+        for thrift_file in $(SRCS); do
+            $$THRIFT_BIN \
+                -I gensrc/thrift \
+                --gen cpp:moveable_types,no_skeleton \
+                -out $(@D) \
+                --allow-64bit-consts \
+                -strict \
+                $$thrift_file || exit 1
+        done
+    """,
+    message = "Generating C++ code from Thrift IDL files (27 files)",
+    local = 1,  # Run locally, not sandboxed (needs thirdparty access)
+)
+
+# C++ library wrapping thrift-generated code
+cc_library(
     name = "thrift_gen_cpp",
-    srcs = glob([
-        "build/gen_cpp/thrift/*.h",
-        "build/gen_cpp/thrift/*.cpp",
-    ]),
-    visibility = ["//visibility:public"],
+    srcs = [":thrift_gen"],
+    hdrs = [":thrift_gen"],
+    copts = ["-std=c++17"],
+    includes = ["gen_thrift"],
+    deps = [
+        "//bazel/third_party:thrift",
+    ],
 )
 
-# Note: Thrift generation could be converted to genrule
-# genrule(
-#     name = "gen_thrift",
-#     srcs = glob(["thrift/*.thrift"]),
-#     outs = [...],
-#     cmd = "thrift --gen cpp -out $(@D) $(SRCS)",
-#     tools = ["@thrift_compiler//..."],
-# )
-
-# ===========================================
+# ----------------------------------------------------------------------------
 # Script-based Generation
-# ===========================================
+# ----------------------------------------------------------------------------
 
-# Generated C++ from custom scripts (created by 'make' command)
-filegroup(
-    name = "script_gen_cpp",
-    srcs = glob([
-        "build/gen_cpp/script/*.h",
-        "build/gen_cpp/script/*.cpp",
-    ]),
-    visibility = ["//visibility:public"],
+# Generate opcode functions from Python script
+genrule(
+    name = "gen_functions",
+    srcs = ["script/gen_functions.py"],
+    outs = [
+        "gen_script/opcode/functions.cc",
+        "gen_script/opcode/functions.h",
+    ],
+    cmd = """
+        mkdir -p $(@D)/opcode
+        cd $(@D)/opcode && python3 $(rootpath script/gen_functions.py)
+    """,
+    message = "Generating opcode functions from Python script",
 )
 
-# ===========================================
-# Combined Generated Sources
-# ===========================================
+# Generate build version information
+genrule(
+    name = "gen_version",
+    srcs = ["script/gen_build_version.sh"],
+    outs = [
+        "gen_script/version/build_version.h",
+        "gen_script/version/build_version.cc",
+    ],
+    cmd = """
+        mkdir -p $(@D)/version
+        export BUILD_DIR=$(@D)/version
+        bash $(location script/gen_build_version.sh)
+    """,
+    message = "Generating build version information",
+    stamp = 1,  # Regenerate on each build to capture version changes
+)
 
-# All generated C++ sources (for convenience)
-filegroup(
-    name = "gen_cpp",
+# C++ library for script-generated code
+cc_library(
+    name = "script_gen_cpp",
     srcs = [
+        ":gen_functions",
+        ":gen_version",
+    ],
+    hdrs = [
+        ":gen_functions",
+        ":gen_version",
+    ],
+    copts = ["-std=c++17"],
+    includes = [
+        "gen_script",
+        "gen_script/opcode",
+        "gen_script/version",
+    ],
+)
+
+# ----------------------------------------------------------------------------
+# Aggregate All Generated Sources (Native Bazel)
+# ----------------------------------------------------------------------------
+
+# Main library containing all generated C++ code
+# Use this target for native Bazel builds
+cc_library(
+    name = "gen_cpp_lib",
+    deps = [
         ":proto_gen_cpp",
         ":thrift_gen_cpp",
         ":script_gen_cpp",
@@ -99,31 +436,67 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-# Header-only filegroup for includes
+# ============================================================================
+# OPTION 2: Legacy Makefile-based Generation (Backward Compatibility)
+# ============================================================================
+
+# These filegroups reference sources generated by 'cd gensrc && make'
+# Use :gen_cpp_lib_legacy if you prefer the Makefile approach
+
 filegroup(
-    name = "gen_cpp_headers",
+    name = "proto_gen_cpp_makefile",
     srcs = glob([
-        "build/gen_cpp/**/*.h",
+        "build/gen_cpp/*.pb.cc",
+        "build/gen_cpp/*.pb.h",
+        "build/gen_cpp/proto/*.pb.cc",
+        "build/gen_cpp/proto/*.pb.h",
     ]),
-    visibility = ["//visibility:public"],
 )
 
-# ===========================================
-# Wrapper Library (for easy dependency)
-# ===========================================
+filegroup(
+    name = "thrift_gen_cpp_makefile",
+    srcs = glob([
+        "build/gen_cpp/*_types.cpp",
+        "build/gen_cpp/*_types.h",
+        "build/gen_cpp/*_constants.cpp",
+        "build/gen_cpp/*_constants.h",
+        "build/gen_cpp/thrift/*_types.cpp",
+        "build/gen_cpp/thrift/*_types.h",
+        "build/gen_cpp/thrift/*_constants.cpp",
+        "build/gen_cpp/thrift/*_constants.h",
+    ]),
+)
 
-# This wraps all generated sources into a single cc_library
-# Other targets can depend on this instead of individual filegroups
+filegroup(
+    name = "script_gen_cpp_makefile",
+    srcs = glob([
+        "build/gen_cpp/opcode/*.cc",
+        "build/gen_cpp/opcode/*.h",
+        "build/gen_cpp/build_version.*",
+        "build/gen_cpp/version/*",
+    ]),
+)
+
+# Legacy wrapper library (uses Makefile-generated sources)
+# Requires: cd gensrc && make (before Bazel build)
 cc_library(
-    name = "gen_cpp_lib",
-    srcs = [":gen_cpp"],
-    hdrs = [":gen_cpp_headers"],
+    name = "gen_cpp_lib_legacy",
+    srcs = [
+        ":proto_gen_cpp_makefile",
+        ":thrift_gen_cpp_makefile",
+        ":script_gen_cpp_makefile",
+    ],
+    hdrs = [
+        ":proto_gen_cpp_makefile",
+        ":thrift_gen_cpp_makefile",
+        ":script_gen_cpp_makefile",
+    ],
     copts = ["-std=c++17"],
     includes = [
         "build/gen_cpp",
         "build/gen_cpp/proto",
         "build/gen_cpp/thrift",
-        "build/gen_cpp/script",
+        "build/gen_cpp/opcode",
     ],
     deps = [
         "//bazel/third_party:protobuf_local",
@@ -132,21 +505,23 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-# ===========================================
-# Build Instructions
-# ===========================================
+# ============================================================================
+# Usage Instructions
+# ============================================================================
 
-# Before building with Bazel, you must generate sources:
-#   cd gensrc && make
+# RECOMMENDED: Use native Bazel generation
+#   bazel build //gensrc:gen_cpp_lib
 #
-# This runs:
-#   - protoc on proto/*.proto files
-#   - thrift on thrift/*.thrift files
-#   - custom scripts in script/
+# This will automatically generate all sources using Bazel rules.
+# No need to run 'make' separately.
 #
-# Generated files appear in build/gen_cpp/
+# ALTERNATIVE: Use Makefile-based generation (backward compatibility)
+#   cd gensrc && make    # Generate sources with Makefile
+#   bazel build //be/src/common:common  # Then build with Bazel
+#   (BE components currently use :gen_cpp_lib_legacy)
 #
-# Future work: Convert to native Bazel rules
-#   - proto_library for .proto files
-#   - genrule for thrift (no native thrift_library yet)
-#   - genrule for custom scripts
+# MIGRATION PATH:
+#   1. Validate native Bazel generation produces identical output
+#   2. Update BE component BUILD files to use :gen_cpp_lib
+#   3. Remove legacy :gen_cpp_lib_legacy target
+#   4. Remove gensrc/Makefile
